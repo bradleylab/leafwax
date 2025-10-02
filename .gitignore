@@ -27,3 +27,4 @@
 # Generated docs / vignettes (if built)
 doc/
 Meta/
+.serena/
