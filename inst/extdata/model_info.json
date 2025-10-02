@@ -1,0 +1,149 @@
+{
+  "version": "1.0.0",
+  "description": "Leafwax hydrogen isotope inversion models",
+  "models": {
+    "baseline": {
+      "name": "baseline",
+      "description": "Basic OIPC model without spatial or environmental effects",
+      "is_spatial": false,
+      "required_predictors": [],
+      "optional_predictors": [],
+      "parameters": ["beta_0", "beta_oipc", "sigma"],
+      "file_size_kb": 247
+    },
+    "baseline_sp": {
+      "name": "baseline_sp",
+      "description": "Basic OIPC model with spatial Gaussian process",
+      "is_spatial": true,
+      "required_predictors": ["longitude", "latitude"],
+      "optional_predictors": [],
+      "parameters": ["beta_0", "beta_oipc", "sigma", "lambda_decay", "spatial_effects"],
+      "file_size_kb": 571
+    },
+    "baseline_env": {
+      "name": "baseline_env",
+      "description": "OIPC model with elevation effects",
+      "is_spatial": false,
+      "required_predictors": ["elevation"],
+      "optional_predictors": [],
+      "parameters": ["beta_0", "beta_oipc", "sigma", "beta_elev"],
+      "file_size_kb": 246
+    },
+    "baseline_env_sp": {
+      "name": "baseline_env_sp",
+      "description": "OIPC + elevation + spatial effects",
+      "is_spatial": true,
+      "required_predictors": ["longitude", "latitude", "elevation"],
+      "optional_predictors": [],
+      "parameters": ["beta_0", "beta_oipc", "sigma", "beta_elev", "spatial_effects"],
+      "file_size_kb": 564
+    },
+    "baseline_veg": {
+      "name": "baseline_veg",
+      "description": "OIPC model with vegetation effects (C4/C3)",
+      "is_spatial": false,
+      "required_predictors": ["c4_fraction"],
+      "optional_predictors": ["vegetation_type"],
+      "parameters": ["beta_0", "beta_oipc", "sigma", "beta_c4"],
+      "file_size_kb": 676
+    },
+    "baseline_veg_sp": {
+      "name": "baseline_veg_sp",
+      "description": "OIPC + vegetation + spatial effects",
+      "is_spatial": true,
+      "required_predictors": ["longitude", "latitude", "c4_fraction"],
+      "optional_predictors": ["vegetation_type"],
+      "parameters": ["beta_0", "beta_oipc", "sigma", "beta_c4", "spatial_effects"],
+      "file_size_kb": 1200
+    },
+    "c4_only_sp": {
+      "name": "c4_only_sp",
+      "description": "OIPC + C4 fraction + spatial effects",
+      "is_spatial": true,
+      "required_predictors": ["longitude", "latitude", "c4_fraction"],
+      "optional_predictors": [],
+      "parameters": ["beta_0", "beta_oipc", "sigma", "beta_c4", "spatial_effects"],
+      "file_size_kb": 650
+    },
+    "elevation_only_sp": {
+      "name": "elevation_only_sp",
+      "description": "OIPC + elevation + spatial effects",
+      "is_spatial": true,
+      "required_predictors": ["longitude", "latitude", "elevation"],
+      "optional_predictors": [],
+      "parameters": ["beta_0", "beta_oipc", "sigma", "beta_elev", "spatial_effects"],
+      "file_size_kb": 565
+    },
+    "elevation_c4_sp": {
+      "name": "elevation_c4_sp",
+      "description": "OIPC + elevation + C4 + spatial effects",
+      "is_spatial": true,
+      "required_predictors": ["longitude", "latitude", "elevation", "c4_fraction"],
+      "optional_predictors": [],
+      "parameters": ["beta_0", "beta_oipc", "sigma", "beta_elev", "beta_c4", "spatial_effects"],
+      "file_size_kb": 653
+    },
+    "elevation_c4_interact_sp": {
+      "name": "elevation_c4_interact_sp",
+      "description": "OIPC + elevation × C4 interaction + spatial effects",
+      "is_spatial": true,
+      "required_predictors": ["longitude", "latitude", "elevation", "c4_fraction"],
+      "optional_predictors": [],
+      "parameters": ["beta_0", "beta_oipc", "sigma", "beta_elev", "beta_c4", "beta_interaction", "spatial_effects"],
+      "file_size_kb": 866
+    },
+    "full": {
+      "name": "full",
+      "description": "Full model with elevation + vegetation effects",
+      "is_spatial": false,
+      "required_predictors": ["elevation", "c4_fraction"],
+      "optional_predictors": ["pft_tree", "pft_shrub", "pft_grass"],
+      "parameters": ["beta_0", "beta_oipc", "sigma", "beta_elev", "beta_c4", "beta_pft"],
+      "file_size_kb": 472
+    },
+    "full_sp": {
+      "name": "full_sp",
+      "description": "Full model with all effects + spatial GP",
+      "is_spatial": true,
+      "required_predictors": ["longitude", "latitude", "elevation", "c4_fraction"],
+      "optional_predictors": ["pft_tree", "pft_shrub", "pft_grass"],
+      "parameters": ["beta_0", "beta_oipc", "sigma", "beta_elev", "beta_c4", "beta_pft", "spatial_effects"],
+      "file_size_kb": 1200
+    },
+    "full_interact": {
+      "name": "full_interact",
+      "description": "Full model with interactions (no spatial)",
+      "is_spatial": false,
+      "required_predictors": ["elevation", "c4_fraction"],
+      "optional_predictors": ["pft_tree", "pft_shrub", "pft_grass"],
+      "parameters": ["beta_0", "beta_oipc", "sigma", "beta_elev", "beta_c4", "beta_pft", "beta_interactions"],
+      "file_size_kb": 679
+    },
+    "full_interact_sp": {
+      "name": "full_interact_sp",
+      "description": "Full model with all interactions + spatial GP",
+      "is_spatial": true,
+      "required_predictors": ["longitude", "latitude", "elevation", "c4_fraction"],
+      "optional_predictors": ["pft_tree", "pft_shrub", "pft_grass"],
+      "parameters": ["beta_0", "beta_oipc", "sigma", "beta_elev", "beta_c4", "beta_pft", "beta_interactions", "spatial_effects"],
+      "file_size_kb": 1600
+    }
+  },
+  "total_size_mb": 10.5,
+  "spatial_models": [
+    "baseline_sp", "baseline_env_sp", "baseline_veg_sp",
+    "c4_only_sp", "elevation_only_sp", "elevation_c4_sp",
+    "elevation_c4_interact_sp", "full_sp", "full_interact_sp"
+  ],
+  "non_spatial_models": [
+    "baseline", "baseline_env", "baseline_veg",
+    "full", "full_interact"
+  ],
+  "notes": {
+    "coordinates": "Longitude and latitude are always optional but recommended for better predictions",
+    "elevation": "Elevation should be provided in meters above sea level",
+    "c4_fraction": "C4 vegetation fraction as percentage (0-100)",
+    "pft": "Plant functional type fractions should sum to 1.0",
+    "spatial_knots": "All spatial models use 120 Fibonacci sphere knots for GP approximation"
+  }
+}

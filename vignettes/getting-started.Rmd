@@ -1,0 +1,289 @@
+---
+title: "Getting Started with leafwax"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Getting Started with leafwax}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+## Introduction
+
+The `leafwax` package provides tools for Bayesian inversion of leaf wax hydrogen isotope measurements (δ²H) to reconstruct past precipitation isotope values. Leaf waxes are long-chain lipid compounds produced by plants that preserve the hydrogen isotopic composition of the water used during their synthesis. By measuring the δ²H of these compounds in sediments or soils, we can reconstruct past hydrological conditions.
+
+This vignette will guide you through:
+
+1. Understanding the available models
+2. Performing basic inversions
+3. Working with multiple locations
+4. Choosing the right model for your data
+5. Interpreting uncertainty intervals
+
+## Installation and Setup
+
+```{r setup}
+library(leafwax)
+```
+
+## Understanding Available Models
+
+The package includes 14 calibration models with different levels of complexity:
+
+```{r models}
+# List all available models
+models <- available_models()
+print(models)
+
+# Get detailed information about a specific model
+model_info <- get_model_parameters("baseline_sp")
+print(model_info$description)
+```
+
+### Model Categories
+
+**Basic Models:**
+- `baseline`: Simple OIPC-based calibration without spatial effects
+- `baseline_sp`: Basic model with spatial Gaussian process
+
+**Environmental Models:**
+- `baseline_env`: Includes elevation effects
+- `baseline_env_sp`: Elevation with spatial correlation
+- `elevation_only_sp`: Focuses solely on elevation effects
+
+**Vegetation Models:**
+- `baseline_veg`: Includes plant functional type (PFT) effects
+- `baseline_veg_sp`: PFT with spatial correlation
+- `c4_only_sp`: Focuses on C4 vegetation effects
+
+**Complex Models:**
+- `full`: Combines elevation and vegetation effects
+- `full_sp`: Full model with spatial correlation
+- `full_interact`: Includes interaction terms
+- `full_interact_sp`: Complete model with all effects
+
+## Basic Example: Single Location
+
+Let's start with a simple inversion at a single location:
+
+```{r single-location}
+# Perform inversion with the baseline model
+result <- invert_d2h(
+  d2h_wax = -150,          # Leaf wax δ²H value (‰)
+  d2h_wax_err = 3,         # Measurement uncertainty (‰)
+  longitude = -120,        # Longitude (decimal degrees)
+  latitude = 40,           # Latitude (decimal degrees)
+  model = "baseline"       # Model selection
+)
+
+# View the results
+print(result)
+```
+
+The result contains:
+- `d2h_precip_mean`: Mean predicted precipitation δ²H
+- `d2h_precip_sd`: Standard deviation of the prediction
+- `d2h_precip_lower/upper`: 90% credible interval bounds
+
+## Multiple Locations
+
+The package efficiently handles multiple locations simultaneously:
+
+```{r multi-location}
+# Create a dataset with multiple sites
+sites <- data.frame(
+  site = c("Forest", "Desert", "Mountain", "Coast"),
+  d2h_wax = c(-150, -120, -180, -140),
+  longitude = c(-120, -115, -105, -124),
+  latitude = c(45, 35, 40, 42),
+  elevation = c(500, 1200, 2500, 50)
+)
+
+# Perform batch inversion
+results <- invert_d2h(
+  d2h_wax = sites$d2h_wax,
+  longitude = sites$longitude,
+  latitude = sites$latitude,
+  elevation = sites$elevation,
+  model = "baseline_env"  # Use model with elevation
+)
+
+# Combine with original data
+sites_with_results <- cbind(sites, results)
+print(sites_with_results[, c("site", "d2h_wax", "d2h_precip_mean", "d2h_precip_sd")])
+```
+
+## Choosing the Right Model
+
+The package provides tools to help select the appropriate model based on your available data:
+
+```{r model-selection}
+# Get model recommendations based on available data
+recommendations <- get_model_recommendations(
+  has_elevation = TRUE,    # We have elevation data
+  has_c4 = FALSE,          # No C4 vegetation data
+  has_pft = FALSE,         # No PFT data
+  prefer_spatial = TRUE    # Prefer spatial models for better uncertainty
+)
+
+# View top 3 recommendations
+for(i in 1:min(3, length(recommendations))) {
+  cat("Model", i, ":", names(recommendations)[i], "\n")
+  cat("  Score:", recommendations[[i]]$score, "\n")
+  cat("  Description:", recommendations[[i]]$description, "\n\n")
+}
+```
+
+### Validate Your Inputs
+
+Before running an inversion, validate that your data matches the model requirements:
+
+```{r validation}
+# Validate inputs for a specific model
+validation <- validate_model_inputs(
+  model_name = "baseline_env_sp",
+  d2h_wax = -150,
+  longitude = -120,
+  latitude = 40,
+  elevation = 1200,
+  verbose = TRUE
+)
+```
+
+## Working with Spatial Models
+
+Spatial models use Gaussian processes with 125 knots on a Fibonacci sphere for better uncertainty quantification:
+
+```{r spatial}
+# Compare non-spatial vs spatial model
+result_basic <- invert_d2h(
+  d2h_wax = -150,
+  longitude = -120,
+  latitude = 40,
+  model = "baseline"
+)
+
+result_spatial <- invert_d2h(
+  d2h_wax = -150,
+  longitude = -120,
+  latitude = 40,
+  model = "baseline_sp"
+)
+
+cat("Basic model:\n")
+cat("  Mean:", round(result_basic$d2h_precip_mean, 1), "‰\n")
+cat("  SD:", round(result_basic$d2h_precip_sd, 1), "‰\n")
+cat("  90% CI width:", round(result_basic$d2h_precip_upper - result_basic$d2h_precip_lower, 1), "‰\n\n")
+
+cat("Spatial model:\n")
+cat("  Mean:", round(result_spatial$d2h_precip_mean, 1), "‰\n")
+cat("  SD:", round(result_spatial$d2h_precip_sd, 1), "‰\n")
+cat("  90% CI width:", round(result_spatial$d2h_precip_upper - result_spatial$d2h_precip_lower, 1), "‰\n")
+```
+
+Note that spatial models typically have larger uncertainties because they account for spatial correlation in the residuals.
+
+## Interpreting Uncertainty
+
+The package provides full uncertainty propagation from analytical errors through model parameters:
+
+```{r uncertainty}
+# Compare effect of measurement uncertainty
+low_error <- invert_d2h(
+  d2h_wax = -150,
+  d2h_wax_err = 1,  # Low measurement error
+  longitude = -120,
+  latitude = 40,
+  model = "baseline"
+)
+
+high_error <- invert_d2h(
+  d2h_wax = -150,
+  d2h_wax_err = 5,  # High measurement error
+  longitude = -120,
+  latitude = 40,
+  model = "baseline"
+)
+
+cat("Effect of measurement uncertainty:\n")
+cat("Low error (1‰):\n")
+cat("  Prediction SD:", round(low_error$d2h_precip_sd, 1), "‰\n")
+cat("High error (5‰):\n")
+cat("  Prediction SD:", round(high_error$d2h_precip_sd, 1), "‰\n")
+```
+
+## Advanced Usage: Full Posterior Draws
+
+For more detailed analysis, you can access the full posterior distribution:
+
+```{r posterior, eval=FALSE}
+# Get full posterior draws (not run in vignette due to size)
+result_full <- invert_d2h(
+  d2h_wax = -150,
+  longitude = -120,
+  latitude = 40,
+  model = "baseline",
+  return_full = TRUE
+)
+
+# Access posterior draws
+posterior_draws <- result_full$posterior_draws
+hist(posterior_draws[1,],
+     main = "Posterior Distribution",
+     xlab = "Precipitation δ²H (‰)",
+     col = "lightblue")
+```
+
+## Best Practices
+
+1. **Start simple**: Begin with the `baseline` model to establish a baseline prediction
+2. **Add complexity gradually**: Include elevation or vegetation effects if you have the data
+3. **Use spatial models** when you need robust uncertainty quantification
+4. **Validate inputs**: Always check that your data matches model requirements
+5. **Consider uncertainty**: Remember that more complex models may have larger (but more realistic) uncertainties
+
+## Troubleshooting
+
+### Common Issues
+
+**Model not found:**
+```{r, eval=FALSE}
+# Check available models
+models <- available_models()
+print(models)
+```
+
+**Missing covariates:**
+```{r, eval=FALSE}
+# The model will warn you about missing required data
+# Use a simpler model or provide the missing data
+```
+
+**Large uncertainties:**
+```{r, eval=FALSE}
+# This is often correct - spatial models account for more sources of uncertainty
+# Check your measurement errors and consider using non-spatial models if appropriate
+```
+
+## Summary
+
+The `leafwax` package provides a comprehensive framework for leaf wax isotope inversion with:
+
+- Multiple models for different data availability scenarios
+- Proper uncertainty propagation
+- Spatial correlation via Gaussian processes
+- Automated model selection tools
+- Comprehensive validation functions
+
+For more detailed examples and advanced usage, see the other vignettes and the package documentation.
+
+## References
+
+- Bowen, G. J., et al. (2019). Isotopes in the water cycle. *Annu. Rev. Earth Planet. Sci.* 47, 453-479.
+- Sachse, D., et al. (2012). Molecular paleohydrology. *Annu. Rev. Earth Planet. Sci.* 40, 221-249.

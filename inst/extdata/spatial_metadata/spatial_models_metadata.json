@@ -1,0 +1,128 @@
+{
+  "baseline_sp": {
+    "model_name": "baseline_sp",
+    "n_draws": 12000,
+    "parameters": ["beta_0", "beta_oipc", "sigma", "lambda_decay", "effective_scale_km", "ls_intercept_km", "ls_slope_km", "sigma_intercept_spatial", "sigma_slope_spatial", ".chain", ".iteration", ".draw"],
+    "has_spatial": true,
+    "spatial_params": ["lambda_decay", "effective_scale_km", "ls_intercept_km", "ls_slope_km", "sigma_intercept_spatial", "sigma_slope_spatial"],
+    "lambda_decay_range": [1.5156, 32.3637],
+    "effective_scale_range": [1.5156, 32.3637],
+    "n_knots": 120,
+    "coordinate_info": {
+      "note": "Coordinates are standardized at runtime based on input data",
+      "knot_coords_file": "baseline_sp_knots.rds"
+    }
+  },
+  "baseline_env_sp": {
+    "model_name": "baseline_env_sp",
+    "n_draws": 12000,
+    "parameters": ["beta_0", "beta_oipc", "sigma", "lambda_decay", "effective_scale_km", "ls_intercept_km", "ls_slope_km", "sigma_intercept_spatial", "sigma_slope_spatial", ".chain", ".iteration", ".draw"],
+    "has_spatial": true,
+    "spatial_params": ["lambda_decay", "effective_scale_km", "ls_intercept_km", "ls_slope_km", "sigma_intercept_spatial", "sigma_slope_spatial"],
+    "lambda_decay_range": [1.3976, 33.4136],
+    "effective_scale_range": [1.3976, 33.4136],
+    "n_knots": 120,
+    "coordinate_info": {
+      "note": "Coordinates are standardized at runtime based on input data",
+      "knot_coords_file": "baseline_env_sp_knots.rds"
+    }
+  },
+  "baseline_veg_sp": {
+    "model_name": "baseline_veg_sp",
+    "n_draws": 12000,
+    "parameters": ["beta_0", "beta_oipc", "sigma", "lambda_decay", "effective_scale_km", "beta_c4", "beta_oipc_x_c4", "beta_tree", "beta_shrub", "beta_grass", "beta_oipc_x_tree", "beta_oipc_x_shrub", "beta_oipc_x_grass", "ls_intercept_km", "ls_slope_km", "sigma_intercept_spatial", "sigma_slope_spatial", ".chain", ".iteration", ".draw"],
+    "has_spatial": true,
+    "spatial_params": ["lambda_decay", "effective_scale_km", "ls_intercept_km", "ls_slope_km", "sigma_intercept_spatial", "sigma_slope_spatial"],
+    "lambda_decay_range": [1.4983, 65.2298],
+    "effective_scale_range": [1.4983, 65.2298],
+    "n_knots": 120,
+    "coordinate_info": {
+      "note": "Coordinates are standardized at runtime based on input data",
+      "knot_coords_file": "baseline_veg_sp_knots.rds"
+    }
+  },
+  "c4_only_sp": {
+    "model_name": "c4_only_sp",
+    "n_draws": 12000,
+    "parameters": ["beta_0", "beta_oipc", "sigma", "lambda_decay", "effective_scale_km", "beta_c4", "ls_intercept_km", "ls_slope_km", "sigma_intercept_spatial", "sigma_slope_spatial", ".chain", ".iteration", ".draw"],
+    "has_spatial": true,
+    "spatial_params": ["lambda_decay", "effective_scale_km", "ls_intercept_km", "ls_slope_km", "sigma_intercept_spatial", "sigma_slope_spatial"],
+    "lambda_decay_range": [1.3384, 41.3986],
+    "effective_scale_range": [1.3384, 41.3986],
+    "n_knots": 120,
+    "coordinate_info": {
+      "note": "Coordinates are standardized at runtime based on input data",
+      "knot_coords_file": "c4_only_sp_knots.rds"
+    }
+  },
+  "elevation_only_sp": {
+    "model_name": "elevation_only_sp",
+    "n_draws": 12000,
+    "parameters": ["beta_0", "beta_oipc", "sigma", "lambda_decay", "effective_scale_km", "ls_intercept_km", "ls_slope_km", "sigma_intercept_spatial", "sigma_slope_spatial", ".chain", ".iteration", ".draw"],
+    "has_spatial": true,
+    "spatial_params": ["lambda_decay", "effective_scale_km", "ls_intercept_km", "ls_slope_km", "sigma_intercept_spatial", "sigma_slope_spatial"],
+    "lambda_decay_range": [1.3965, 32.1424],
+    "effective_scale_range": [1.3965, 32.1424],
+    "n_knots": 120,
+    "coordinate_info": {
+      "note": "Coordinates are standardized at runtime based on input data",
+      "knot_coords_file": "elevation_only_sp_knots.rds"
+    }
+  },
+  "elevation_c4_sp": {
+    "model_name": "elevation_c4_sp",
+    "n_draws": 12000,
+    "parameters": ["beta_0", "beta_oipc", "sigma", "lambda_decay", "effective_scale_km", "beta_c4", "ls_intercept_km", "ls_slope_km", "sigma_intercept_spatial", "sigma_slope_spatial", ".chain", ".iteration", ".draw"],
+    "has_spatial": true,
+    "spatial_params": ["lambda_decay", "effective_scale_km", "ls_intercept_km", "ls_slope_km", "sigma_intercept_spatial", "sigma_slope_spatial"],
+    "lambda_decay_range": [1.572, 30.7932],
+    "effective_scale_range": [1.572, 30.7932],
+    "n_knots": 120,
+    "coordinate_info": {
+      "note": "Coordinates are standardized at runtime based on input data",
+      "knot_coords_file": "elevation_c4_sp_knots.rds"
+    }
+  },
+  "elevation_c4_interact_sp": {
+    "model_name": "elevation_c4_interact_sp",
+    "n_draws": 16000,
+    "parameters": ["beta_0", "beta_oipc", "sigma", "lambda_decay", "effective_scale_km", "beta_c4", "ls_intercept_km", "ls_slope_km", "sigma_intercept_spatial", "sigma_slope_spatial", ".chain", ".iteration", ".draw"],
+    "has_spatial": true,
+    "spatial_params": ["lambda_decay", "effective_scale_km", "ls_intercept_km", "ls_slope_km", "sigma_intercept_spatial", "sigma_slope_spatial"],
+    "lambda_decay_range": [1.2852, 26.2508],
+    "effective_scale_range": [1.2852, 26.2508],
+    "n_knots": 120,
+    "coordinate_info": {
+      "note": "Coordinates are standardized at runtime based on input data",
+      "knot_coords_file": "elevation_c4_interact_sp_knots.rds"
+    }
+  },
+  "full_sp": {
+    "model_name": "full_sp",
+    "n_draws": 16000,
+    "parameters": ["beta_0", "beta_oipc", "sigma", "lambda_decay", "effective_scale_km", "beta_c4", "beta_oipc_x_c4", "beta_tree", "beta_shrub", "beta_grass", "beta_oipc_x_tree", "beta_oipc_x_shrub", "beta_oipc_x_grass", "ls_intercept_km", "ls_slope_km", "sigma_intercept_spatial", "sigma_slope_spatial", ".chain", ".iteration", ".draw"],
+    "has_spatial": true,
+    "spatial_params": ["lambda_decay", "effective_scale_km", "ls_intercept_km", "ls_slope_km", "sigma_intercept_spatial", "sigma_slope_spatial"],
+    "lambda_decay_range": [1.4619, 51.7287],
+    "effective_scale_range": [1.4619, 51.7287],
+    "n_knots": 120,
+    "coordinate_info": {
+      "note": "Coordinates are standardized at runtime based on input data",
+      "knot_coords_file": "full_sp_knots.rds"
+    }
+  },
+  "full_interact_sp": {
+    "model_name": "full_interact_sp",
+    "n_draws": 16000,
+    "parameters": ["beta_0", "beta_oipc", "sigma", "lambda_decay", "effective_scale_km", "beta_c4", "beta_oipc_x_c4", "beta_tree", "beta_shrub", "beta_grass", "beta_oipc_x_tree", "beta_oipc_x_shrub", "beta_oipc_x_grass", "ls_intercept_km", "ls_slope_km", "sigma_intercept_spatial", "sigma_slope_spatial", ".chain", ".iteration", ".draw"],
+    "has_spatial": true,
+    "spatial_params": ["lambda_decay", "effective_scale_km", "ls_intercept_km", "ls_slope_km", "sigma_intercept_spatial", "sigma_slope_spatial"],
+    "lambda_decay_range": [1.6535, 38.4468],
+    "effective_scale_range": [1.6535, 38.4468],
+    "n_knots": 120,
+    "coordinate_info": {
+      "note": "Coordinates are standardized at runtime based on input data",
+      "knot_coords_file": "full_interact_sp_knots.rds"
+    }
+  }
+}

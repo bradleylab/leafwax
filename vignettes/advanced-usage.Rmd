@@ -1,0 +1,563 @@
+---
+title: "Advanced Usage and Workflows"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Advanced Usage and Workflows}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 7,
+  fig.height = 5
+)
+```
+
+```{r setup}
+library(leafwax)
+```
+
+## Introduction
+
+This vignette covers advanced features of the `leafwax` package including ensemble predictions, custom spatial grids, performance optimization, and integration with other R packages.
+
+## Ensemble Methods
+
+### Why Use Ensembles?
+
+Model ensembles provide more robust predictions by:
+- Accounting for structural uncertainty
+- Reducing overfitting to specific model assumptions
+- Providing more realistic uncertainty estimates
+
+### Basic Ensemble
+
+```{r eval=FALSE}
+# Equal-weight ensemble
+ensemble_results <- invert_d2H_ensemble(
+  data = example_data,
+  models = c("b0b1", "b0b1_elev", "b0b1_sp"),
+  ensemble_method = "equal"
+)
+
+# View ensemble statistics
+print(ensemble_results$ensemble_summary)
+```
+
+### Weighted Ensemble
+
+Weight models by their cross-validation performance:
+
+```{r eval=FALSE}
+# Define model weights based on R²
+model_weights <- c(
+  b0b1 = 0.68,
+  b0b1_elev = 0.72,
+  b0b1_sp = 0.81
+)
+
+# Normalize weights
+model_weights <- model_weights / sum(model_weights)
+
+# Custom weighted ensemble
+weighted_ensemble <- function(data, models, weights) {
+  all_predictions <- list()
+
+  for (i in seq_along(models)) {
+    model_pred <- predict_d2h_precip(data, model = models[i])
+    all_predictions[[i]] <- model_pred$d2h_precip_mean * weights[i]
+  }
+
+  # Weighted average
+  ensemble_mean <- Reduce("+", all_predictions)
+  return(ensemble_mean)
+}
+
+ensemble_pred <- weighted_ensemble(
+  example_data,
+  names(model_weights),
+  model_weights
+)
+```
+
+### Bayesian Model Averaging
+
+```{r eval=FALSE}
+# Compare models and get ensemble
+comparison <- compare_models(
+  data = example_data,
+  models = c("b0b1", "b0b1_elev", "b0b1_sp", "b0b1_elev_sp"),
+  summary_fun = mean,  # or median, weighted.mean
+  return_all = FALSE   # Return ensemble summary
+)
+
+print(comparison)
+```
+
+## Custom Spatial Grids and Lookup Tables
+
+### Creating Regional Lookup Tables
+
+For focused regional studies, create high-resolution lookup tables:
+
+```{r eval=FALSE}
+# Western US high-resolution grid
+western_us_lookup <- create_regional_lookup(
+  model_name = "b0b1_elev_sp",
+  lon_range = c(-125, -100),
+  lat_range = c(32, 49),
+  resolution = 0.25,  # Quarter degree
+  n_draws = 500
+)
+
+# Use for predictions
+results <- get_spatial_params(
+  longitude = c(-120, -115, -110),
+  latitude = c(45, 42, 38),
+  lookup_table = western_us_lookup,
+  method = "bilinear"
+)
+```
+
+### Custom Grid Generation
+
+```{r eval=FALSE}
+# Create custom irregular grid
+my_grid <- data.frame(
+  lon = c(-120, -115, -110, -105, -100),
+  lat = c(35, 37, 39, 41, 43),
+  cell_id = 1:5
+)
+
+# Generate lookup table for custom points
+custom_lookup <- create_lookup_table(
+  model_name = "b0b1_sp",
+  grid = my_grid,
+  n_draws = 100
+)
+```
+
+### Adaptive Grid Resolution
+
+```{r eval=FALSE}
+# Variable resolution based on data density
+create_adaptive_grid <- function(data, min_res = 0.5, max_res = 2) {
+  # Calculate data density
+  library(sp)
+  library(raster)
+
+  # Create density raster
+  coords <- data[, c("longitude", "latitude")]
+  sp_points <- SpatialPoints(coords)
+
+  # Determine optimal resolution per region
+  # ... implementation details ...
+
+  return(adaptive_grid)
+}
+```
+
+## Performance Optimization
+
+### Parallel Processing
+
+```{r eval=FALSE}
+# Setup parallel backend
+library(parallel)
+n_cores <- detectCores() - 1
+
+# Parallel batch processing
+large_dataset <- data.frame(
+  site_id = 1:10000,
+  d2h_wax = rnorm(10000, -140, 20),
+  longitude = runif(10000, -120, -80),
+  latitude = runif(10000, 25, 45)
+)
+
+# Process in parallel
+results <- batch_predict(
+  large_dataset,
+  chunk_size = 500,
+  parallel = TRUE,
+  n_cores = n_cores
+)
+```
+
+### Memory Management
+
+```{r eval=FALSE}
+# Monitor memory during processing
+monitor_memory("Before processing")
+
+# Process in memory-efficient chunks
+process_large_file <- function(file_path, chunk_rows = 1000) {
+  con <- file(file_path, "r")
+  header <- readLines(con, n = 1)
+
+  all_results <- list()
+  chunk_num <- 1
+
+  while (length(lines <- readLines(con, n = chunk_rows)) > 0) {
+    # Process chunk
+    chunk_data <- read.csv(textConnection(c(header, lines)))
+
+    # Make predictions
+    chunk_results <- predict_d2h_precip(chunk_data)
+
+    # Store results
+    all_results[[chunk_num]] <- chunk_results
+
+    # Clean up
+    rm(chunk_data, chunk_results)
+    gc()
+
+    chunk_num <- chunk_num + 1
+    monitor_memory(paste("Chunk", chunk_num))
+  }
+
+  close(con)
+  return(do.call(rbind, all_results))
+}
+```
+
+### Caching Strategies
+
+```{r eval=FALSE}
+# Setup persistent cache
+options(leafwax.cache_dir = "~/leafwax_cache")
+
+# Pre-cache all spatial models
+spatial_models <- c("b0b1_sp", "b0b1_elev_sp", "b0b1_c4_sp")
+
+for (model in spatial_models) {
+  # Download if needed
+  if (!check_data_cache(model, "standard")) {
+    download_model_data(model, "standard")
+  }
+
+  # Create and cache lookup table
+  lookup <- create_lookup_table(model, cache_dir = "~/leafwax_cache")
+}
+
+# Now predictions are fast
+results <- predict_d2h_precip(data, model = "b0b1_sp", use_lookup = TRUE)
+```
+
+## Working with Uncertainty
+
+### Full Posterior Distributions
+
+```{r eval=FALSE}
+# Get full posterior draws
+full_results <- predict_d2h_precip(
+  example_data,
+  model = "b0b1_elev",
+  return_draws = TRUE,
+  n_draws = 2000
+)
+
+# Access posterior draws matrix
+posterior_draws <- full_results$posterior_draws
+dim(posterior_draws)  # n_locations x n_draws
+
+# Custom uncertainty analysis
+library(ggplot2)
+
+# Plot full distribution for first site
+first_site_draws <- posterior_draws[1, ]
+
+ggplot(data.frame(x = first_site_draws), aes(x = x)) +
+  geom_histogram(bins = 50, fill = "skyblue", color = "black") +
+  geom_vline(xintercept = quantile(first_site_draws, c(0.025, 0.975)),
+             linetype = "dashed", color = "red") +
+  labs(x = "Precipitation δ²H (‰)",
+       y = "Frequency",
+       title = "Posterior Distribution - Site 1") +
+  theme_minimal()
+```
+
+### Propagating Uncertainty
+
+```{r eval=FALSE}
+# Propagate measurement uncertainty
+propagate_uncertainty <- function(data, n_monte_carlo = 100) {
+  n_sites <- nrow(data)
+  mc_results <- array(NA, dim = c(n_sites, n_monte_carlo))
+
+  for (i in 1:n_monte_carlo) {
+    # Perturb measurements within uncertainty
+    perturbed_data <- data
+    perturbed_data$d2h_wax <- rnorm(
+      n_sites,
+      mean = data$d2h_wax,
+      sd = data$d2h_wax_sd
+    )
+
+    # Get predictions
+    pred <- predict_d2h_precip(perturbed_data, verbose = FALSE)
+    mc_results[, i] <- pred$d2h_precip_mean
+  }
+
+  # Summarize
+  total_uncertainty <- data.frame(
+    mean = rowMeans(mc_results),
+    sd = apply(mc_results, 1, sd),
+    lower_95 = apply(mc_results, 1, quantile, 0.025),
+    upper_95 = apply(mc_results, 1, quantile, 0.975)
+  )
+
+  return(total_uncertainty)
+}
+
+uncertainty_results <- propagate_uncertainty(example_data)
+```
+
+## Integration with Other Packages
+
+### Integration with sf for Spatial Data
+
+```{r eval=FALSE}
+library(sf)
+
+# Convert to spatial object
+sites_sf <- st_as_sf(
+  example_data,
+  coords = c("longitude", "latitude"),
+  crs = 4326
+)
+
+# Add predictions
+predictions <- predict_d2h_precip(example_data)
+sites_sf <- cbind(sites_sf, predictions)
+
+# Spatial operations
+library(tmap)
+tm_shape(sites_sf) +
+  tm_dots(col = "d2h_precip_mean",
+          size = 0.5,
+          palette = "RdBu",
+          title = "Precip δ²H") +
+  tm_layout(legend.outside = TRUE)
+```
+
+### Time Series Analysis
+
+```{r eval=FALSE}
+# Analyze temporal trends
+library(lubridate)
+library(dplyr)
+
+# Add time component
+temporal_data <- example_data %>%
+  mutate(
+    year = rep(2000:2009, each = 1),
+    date = ymd(paste(year, "06", "15"))
+  )
+
+# Get predictions
+temporal_predictions <- predict_d2h_precip(temporal_data)
+temporal_data <- cbind(temporal_data, temporal_predictions)
+
+# Analyze trends
+library(ggplot2)
+ggplot(temporal_data, aes(x = date, y = d2h_precip_mean)) +
+  geom_point() +
+  geom_smooth(method = "loess") +
+  geom_ribbon(aes(ymin = d2h_precip_lower,
+                  ymax = d2h_precip_upper),
+              alpha = 0.3) +
+  labs(x = "Date", y = "Precipitation δ²H (‰)",
+       title = "Temporal Reconstruction") +
+  theme_minimal()
+```
+
+### Machine Learning Integration
+
+```{r eval=FALSE}
+# Use leafwax predictions as features
+library(randomForest)
+
+# Get predictions from multiple models
+features <- data.frame(
+  b0b1 = predict_d2h_precip(data, model = "b0b1")$d2h_precip_mean,
+  b0b1_elev = predict_d2h_precip(data, model = "b0b1_elev")$d2h_precip_mean,
+  b0b1_sp = predict_d2h_precip(data, model = "b0b1_sp")$d2h_precip_mean
+)
+
+# Train meta-model
+# rf_model <- randomForest(true_values ~ ., data = features)
+```
+
+## Custom Workflows
+
+### Workflow 1: Site Selection
+
+```{r eval=FALSE}
+# Identify optimal sampling locations
+identify_gaps <- function(existing_sites, target_region, min_distance = 50) {
+  # Create spatial grid
+  grid <- generate_global_grid(
+    lon_min = target_region[1],
+    lon_max = target_region[2],
+    lat_min = target_region[3],
+    lat_max = target_region[4],
+    resolution = 1
+  )
+
+  # Calculate distances to existing sites
+  library(geosphere)
+
+  gaps <- grid
+  gaps$min_dist <- apply(grid[, c("lon", "lat")], 1, function(pt) {
+    dists <- distGeo(pt, existing_sites[, c("longitude", "latitude")])
+    min(dists) / 1000  # Convert to km
+  })
+
+  # Identify gaps
+  gaps <- gaps[gaps$min_dist > min_distance, ]
+
+  return(gaps[order(gaps$min_dist, decreasing = TRUE), ])
+}
+```
+
+### Workflow 2: Cross-Validation
+
+```{r eval=FALSE}
+# Leave-one-out cross-validation
+cross_validate_model <- function(data, model_name) {
+  n <- nrow(data)
+  predictions <- numeric(n)
+
+  for (i in 1:n) {
+    # Training data (all except i)
+    train_data <- data[-i, ]
+    test_data <- data[i, ]
+
+    # Note: In practice, you'd retrain the model here
+    # For demonstration, we'll just use predictions
+    pred <- predict_d2h_precip(test_data, model = model_name)
+    predictions[i] <- pred$d2h_precip_mean
+  }
+
+  # Calculate metrics
+  rmse <- sqrt(mean((predictions - data$true_d2h_precip)^2))
+  r2 <- cor(predictions, data$true_d2h_precip)^2
+
+  return(list(predictions = predictions, rmse = rmse, r2 = r2))
+}
+```
+
+### Workflow 3: Publication-Ready Outputs
+
+```{r eval=FALSE}
+# Generate publication table
+create_publication_table <- function(data, results) {
+  pub_table <- data.frame(
+    Site = data$site_id,
+    Longitude = sprintf("%.2f°%s",
+                       abs(data$longitude),
+                       ifelse(data$longitude < 0, "W", "E")),
+    Latitude = sprintf("%.2f°%s",
+                      abs(data$latitude),
+                      ifelse(data$latitude < 0, "S", "N")),
+    `Elevation (m)` = data$elevation,
+    `δ²H_wax (‰)` = sprintf("%.1f ± %.1f",
+                            data$d2h_wax,
+                            data$d2h_wax_sd),
+    `δ²H_precip (‰)` = sprintf("%.1f (%.1f–%.1f)",
+                               results$d2h_precip_mean,
+                               results$d2h_precip_lower,
+                               results$d2h_precip_upper),
+    check.names = FALSE
+  )
+
+  return(pub_table)
+}
+
+# Export to LaTeX
+library(xtable)
+pub_table <- create_publication_table(example_data[1:5,], results[1:5,])
+print(xtable(pub_table), include.rownames = FALSE)
+```
+
+## Troubleshooting Performance
+
+### Profiling Code
+
+```{r eval=FALSE}
+# Profile predictions
+library(profvis)
+
+profvis({
+  results <- predict_d2h_precip(large_dataset)
+})
+
+# Benchmark different approaches
+library(microbenchmark)
+
+microbenchmark(
+  direct = predict_d2h_precip(example_data, use_lookup = FALSE),
+  lookup = predict_d2h_precip(example_data, use_lookup = TRUE),
+  times = 10
+)
+```
+
+### Optimizing for Production
+
+```{r eval=FALSE}
+# Production configuration
+setup_production <- function() {
+  # Set optimal configuration
+  options(
+    leafwax.auto_download = FALSE,  # Prevent unexpected downloads
+    leafwax.cache_dir = "/data/leafwax_cache",  # Fast SSD
+    leafwax.verbose = FALSE  # Reduce output
+  )
+
+  # Pre-load frequently used models
+  models_to_preload <- c("b0b1", "b0b1_elev", "b0b1_sp")
+
+  for (model in models_to_preload) {
+    assign(
+      paste0("cached_", model),
+      load_posteriors(model, verbose = FALSE),
+      envir = .GlobalEnv
+    )
+  }
+
+  # Create lookup tables
+  cache_all_lookup_tables(
+    cache_dir = getOption("leafwax.cache_dir"),
+    n_draws = 500
+  )
+
+  cat("Production environment configured\n")
+}
+
+setup_production()
+```
+
+## Summary
+
+This vignette covered:
+
+1. **Ensemble methods** for robust predictions
+2. **Custom spatial grids** for regional studies
+3. **Performance optimization** techniques
+4. **Uncertainty quantification** approaches
+5. **Integration** with other R packages
+6. **Custom workflows** for specific applications
+
+For more information:
+- See [Getting Started](getting-started.html) for basics
+- See [Model Descriptions](model-descriptions.html) for model details
+- Check the [API Reference](../reference/index.html) for function documentation
+
+## Session Info
+
+```{r}
+sessionInfo()
+```

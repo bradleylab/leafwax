@@ -1,0 +1,29 @@
+# R session files
+.Rhistory
+.RData
+.Ruserdata
+
+# RStudio project files
+.Rproj.user/
+*.Rproj
+
+# Build output
+.Rcheck/
+.Rbuildignore
+
+# Package tarballs
+*.tar.gz
+
+# Compiled objects
+*.o
+*.so
+*.dll
+
+# Temporary files
+*.swp
+*~
+.DS_Store
+
+# Generated docs / vignettes (if built)
+doc/
+Meta/
