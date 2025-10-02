@@ -1,7 +1,7 @@
 # leafwax
 
 <!-- badges: start -->
-[![R-CMD-check](https://github.com/bradleylab/leafwax/workflows/R-CMD-check/badge.svg)](https://github.com/bradleylab/leafwax/actions)
+[![R-CMD-check](https://github.com/bradleylab/leafwax/actions/workflows/R-CMD-check.yaml/badge.svg?branch=master)](https://github.com/bradleylab/leafwax/actions/workflows/R-CMD-check.yaml)
 [![CRAN status](https://www.r-pkg.org/badges/version/leafwax)](https://CRAN.R-project.org/package=leafwax)
 <!-- badges: end -->
 
