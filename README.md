@@ -1,7 +1,7 @@
 # leafwax
 
 <!-- badges: start -->
-[![R-CMD-check](https://github.com/yourusername/leafwax/workflows/R-CMD-check/badge.svg)](https://github.com/yourusername/leafwax/actions)
+[![R-CMD-check](https://github.com/bradleylab/leafwax/workflows/R-CMD-check/badge.svg)](https://github.com/bradleylab/leafwax/actions)
 [![CRAN status](https://www.r-pkg.org/badges/version/leafwax)](https://CRAN.R-project.org/package=leafwax)
 <!-- badges: end -->
 
@@ -24,7 +24,7 @@ You can install the development version of leafwax from GitHub:
 
 ```r
 # install.packages("devtools")
-devtools::install_github("yourusername/leafwax")
+devtools::install_github("bradleylab/leafwax")
 ```
 
 The package will be submitted to CRAN soon. Once available, you can install it with:
@@ -153,28 +153,22 @@ ggplot(result, aes(x = d2h_wax, y = d2h_precip_mean)) +
 If you use this package in your research, please cite:
 
 ```
-@software{leafwax2024,
-  title = {leafwax: Bayesian Calibration of Leaf Wax Hydrogen Isotope Reconstructions},
-  author = {Your Name},
-  year = {2024},
-  url = {https://github.com/yourusername/leafwax}
+@misc{leafwax,
+  author       = {Bradley, Alexander S.},
+  title        = {leafwax: Bayesian Calibration and Inversion of Leaf Wax δ²H},
+  year         = {2025},
+  howpublished = {\url{https://github.com/bradleylab/leafwax}},
+  note         = {Unpublished R package}
 }
 ```
 
-And cite the underlying methodological papers:
-
-- Bowen, G. J., et al. (2019). Isotopes in the water cycle: Regional-to global-scale patterns and applications. *Annual Review of Earth and Planetary Sciences*, 47, 453-479.
-- Sachse, D., et al. (2012). Molecular paleohydrology: Interpreting the hydrogen-isotopic composition of lipid biomarkers from photosynthesizing organisms. *Annual Review of Earth and Planetary Sciences*, 40, 221-249.
 
 ## Getting Help
 
-- **Documentation**: Full documentation is available at [package website]
+- **Documentation**: Full documentation is available at [https://github.com/bradleylab/leafwax/](https://github.com/bradleylab/leafwax/)
 - **Vignettes**: See `vignette("getting-started", package = "leafwax")`
-- **Issues**: Report bugs at [GitHub Issues](https://github.com/yourusername/leafwax/issues)
+- **Issues**: Report bugs at [GitHub Issues](https://github.com/bradleylab/leafwax/issues)
 
-## Contributing
-
-Contributions are welcome! Please read our [Contributing Guide](CONTRIBUTING.md) for details on our code of conduct and the process for submitting pull requests.
 
 ## License
 
