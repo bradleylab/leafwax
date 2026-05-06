@@ -153,6 +153,12 @@ dir.create(OUT_KNOT_DIR, recursive = TRUE, showWarnings = FALSE)
 
 cat("Converting v10 posteriors -> leafwax format\n")
 cat("Source: ", V10_RESULTS_DIR, "\n", sep = "")
+cat("Source mtime: ",
+    format(file.info(V10_RESULTS_DIR)$mtime, "%Y-%m-%d %H:%M:%S %Z"),
+    "\n", sep = "")
+cat("posterior_draws.rds files found: ",
+    length(Sys.glob(file.path(V10_RESULTS_DIR, "*", "posterior_draws.rds"))),
+    "\n", sep = "")
 cat("Target: ", OUT_POST_DIR, "\n", sep = "")
 cat(strrep("-", 70), "\n", sep = "")
 
