@@ -286,10 +286,26 @@ invert_d2h <- function(d2h_wax, d2h_wax_err = NULL,
   # Get draws
   draws <- model$draws
   n_iter <- nrow(draws)
-  
+
   # Initialize posterior prediction matrix
   d2h_precip_post <- matrix(NA, nrow = n_iter, ncol = n_obs)
-  
+
+  # Initialize scaling early so the elevation and spatial blocks below can
+  # reference it. Defaults are used when model$scaling is NULL.
+  if (is.null(model$scaling)) {
+    scaling <- list(
+      d2H_mean = -200, d2H_sd = 50,
+      oipc_mean = -50, oipc_sd = 50,
+      c4_mean = 25,   c4_sd = 25,
+      lon_mean = 0,   lon_sd = 90,
+      lat_mean = 0,   lat_sd = 45,
+      elev_mean = 1000, elev_sd = 1000
+    )
+    if (verbose) cat("  Using default scaling parameters (model lacks scaling data)\n")
+  } else {
+    scaling <- model$scaling
+  }
+
   # Get base parameters
   base_params <- model$get_base_params()
   beta_0 <- base_params$beta_0
@@ -466,27 +482,8 @@ invert_d2h <- function(d2h_wax, d2h_wax_err = NULL,
     }
   }
   
-  # Handle missing scaling parameters - use sensible defaults based on literature
-  if (is.null(model$scaling)) {
-    # Create default scaling parameters based on typical leafwax data ranges
-    scaling <- list(
-      d2H_mean = -200,  # Typical leaf wax d2H mean
-      d2H_sd = 50,      # Typical leaf wax d2H standard deviation
-      oipc_mean = -50,  # Typical precipitation d2H mean
-      oipc_sd = 50,     # Typical precipitation d2H standard deviation
-      c4_mean = 25,     # Global average C4 percentage
-      c4_sd = 25,       # C4 percentage standard deviation
-      lon_mean = 0,     # Longitude mean (global)
-      lon_sd = 90,      # Longitude standard deviation
-      lat_mean = 0,     # Latitude mean (global)
-      lat_sd = 45,      # Latitude standard deviation
-      elev_mean = 1000, # Elevation mean in meters
-      elev_sd = 1000    # Elevation standard deviation
-    )
-    if (verbose) cat("  Using default scaling parameters (model lacks scaling data)\n")
-  } else {
-    scaling <- model$scaling
-  }
+  # scaling was initialized at the top of the function (above) so the
+  # elevation and spatial blocks can use it. No re-initialization here.
 
   # Standardize predictors using available scaling
   d2h_wax_std <- (d2h_wax - scaling$d2H_mean) / scaling$d2H_sd
