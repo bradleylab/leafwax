@@ -128,12 +128,33 @@ load_posteriors <- function(model_name, n_draws = NULL, verbose = TRUE) {
     }
   }
 
+  # Load standardization parameters used during v10 model fitting.
+  # All 14 model variants share an identical scaling_params list, so a
+  # single shipped file covers every model.
+  scaling <- NULL
+  scaling_file <- system.file("extdata", "scaling_params.rds",
+                              package = "leafwax")
+  if (!file.exists(scaling_file) || scaling_file == "") {
+    local_scaling <- file.path("inst", "extdata", "scaling_params.rds")
+    if (file.exists(local_scaling)) scaling_file <- local_scaling
+  }
+  if (file.exists(scaling_file) && scaling_file != "") {
+    scaling <- readRDS(scaling_file)
+    if (verbose) {
+      cat("  Loaded standardization parameters (",
+          length(scaling) - 1L, " fields)\n", sep = "")
+    }
+  } else if (verbose) {
+    cat("  No scaling_params.rds found; invert_d2H will fall back to placeholder defaults\n")
+  }
+
   # Create model object with helper functions
   model <- structure(
     list(
       draws = draws,
       metadata = metadata,
       spatial = spatial,
+      scaling = scaling,
 
       # Helper function to get base parameters
       get_base_params = function() {
