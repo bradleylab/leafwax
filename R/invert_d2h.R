@@ -372,114 +372,24 @@ invert_d2h <- function(d2h_wax, d2h_wax_err = NULL,
     }
   }
   
-  # Get spatial effects if applicable
-  spatial_effect <- matrix(0, nrow = n_iter, ncol = n_obs)
+  # Get dual-GP spatial effects (intercept and slope) at the prediction
+  # site(s). v10 uses a Matern 3/2 kernel in standardized 2D coordinate
+  # space, with two independent GPs sharing knot positions and length
+  # scale but having distinct sigma and z. predict_spatial_dual_gp
+  # returns matrices for both fields; intercept goes into mu, slope
+  # multiplies oipc in the inversion (below).
+  intercept_effect <- matrix(0, nrow = n_iter, ncol = n_obs)
+  slope_effect     <- matrix(0, nrow = n_iter, ncol = n_obs)
   if (model_meta$has_gp) {
-    spatial_params <- model$get_spatial_params()
-    
-    if (!is.null(spatial_params$z_spatial) && !is.null(model$spatial$knot_locs)) {
-      # We need to predict at new locations using the GP
-      z_spatial <- spatial_params$z_spatial
-      sigma_gp <- spatial_params$sigma_gp
-      ls_gp <- spatial_params$ls_gp
-      knot_locs <- model$spatial$knot_locs
-      
-      # Standardize coordinates using stored scaling parameters
-      if (!is.null(scaling$lon_mean)) {
-        lon_std <- (longitude - scaling$lon_mean) / scaling$lon_sd
-        lat_std <- (latitude - scaling$lat_mean) / scaling$lat_sd
-      } else {
-        # Fallback to simple standardization
-        warning("Coordinate scaling parameters not found. Using simple standardization.")
-        lon_std <- (longitude - mean(longitude)) / sd(longitude)
-        lat_std <- (latitude - mean(latitude)) / sd(latitude)
-      }
-      
-      coords_new <- cbind(lon_std, lat_std)
-      
-      # Check if we have K_knots matrix
-      if (!is.null(model$spatial$K_knots)) {
-        K_knots <- model$spatial$K_knots
-        
-        # For each posterior draw
-        for (iter in 1:n_iter) {
-          # Current hyperparameters
-          ls_current <- ls_gp[iter]
-          sigma_current <- sigma_gp[iter]
-          z_current <- z_spatial[iter, ]
-          
-          # Compute covariance between new locations and knots
-          K_new_knots <- matrix(NA, n_obs, nrow(knot_locs))
-          for (i in 1:n_obs) {
-            for (j in 1:nrow(knot_locs)) {
-              dist_sq <- sum((coords_new[i, ] - knot_locs[j, ])^2)
-              K_new_knots[i, j] <- exp(-sqrt(dist_sq) / ls_current)
-            }
-          }
-          
-          # Add jitter for numerical stability
-          K_knots_reg <- K_knots + diag(1e-6, nrow(K_knots))
-          
-          # Predictive process: spatial_effect = sigma_gp * K_new_knots * inv(K_knots) * z
-          spatial_effect[iter, ] <- sigma_current * K_new_knots %*% solve(K_knots_reg, z_current)
-        }
-      } else {
-        # If K_knots is missing, we need to reconstruct it
-        warning("K_knots matrix not found. Reconstructing from knot locations...")
-        
-        # Pre-compute distance matrices to avoid repeated calculations
-        n_knots <- nrow(knot_locs)
-        knot_dists_sq <- matrix(0, n_knots, n_knots)
-        for (i in 1:(n_knots-1)) {
-          for (j in (i+1):n_knots) {
-            d_sq <- sum((knot_locs[i, ] - knot_locs[j, ])^2)
-            knot_dists_sq[i, j] <- d_sq
-            knot_dists_sq[j, i] <- d_sq
-          }
-        }
-        
-        new_knot_dists_sq <- matrix(0, n_obs, n_knots)
-        for (i in 1:n_obs) {
-          for (j in 1:n_knots) {
-            new_knot_dists_sq[i, j] <- sum((coords_new[i, ] - knot_locs[j, ])^2)
-          }
-        }
-        
-        # Progress indicator for long computations
-        if (n_iter > 100 && verbose) {
-          cat("  Computing spatial effects for", n_iter, "iterations...\n")
-          pb <- txtProgressBar(min = 0, max = n_iter, style = 3)
-        }
-        
-        for (iter in 1:n_iter) {
-          if (n_iter > 100 && verbose && iter %% 50 == 0) {
-            setTxtProgressBar(pb, iter)
-          }
-          
-          # Current hyperparameters
-          ls_current <- ls_gp[iter]
-          sigma_current <- sigma_gp[iter]
-          z_current <- z_spatial[iter, ]
-          
-          # Reconstruct K_knots using pre-computed distances
-          K_knots_iter <- exp(-sqrt(knot_dists_sq) / ls_current)
-          diag(K_knots_iter) <- 1.0
-          
-          # Compute covariance between new locations and knots
-          K_new_knots <- exp(-sqrt(new_knot_dists_sq) / ls_current)
-          
-          # Add jitter for numerical stability
-          K_knots_reg <- K_knots_iter + diag(1e-6, n_knots)
-          
-          # Predictive process - use solve() which is faster than matrix inverse
-          spatial_effect[iter, ] <- sigma_current * K_new_knots %*% solve(K_knots_reg, z_current)
-        }
-        
-        if (n_iter > 100 && verbose) {
-          close(pb)
-        }
-      }
+    if (is.null(model$spatial$knot_locs)) {
+      stop("Spatial model loaded without knot_locs; cannot predict at new sites.")
     }
+    if (verbose) cat("  Computing dual-GP spatial effects (Matern 3/2)...\n")
+    coords_new <- cbind(longitude, latitude)
+    dual <- predict_spatial_dual_gp(coords_new, model$spatial$knot_locs,
+                                    draws, scaling)
+    intercept_effect <- dual$intercept
+    slope_effect     <- dual$slope
   }
   
   # scaling was initialized at the top of the function (above) so the
@@ -495,15 +405,22 @@ invert_d2h <- function(d2h_wax, d2h_wax_err = NULL,
   if (verbose) cat("Computing predictions...\n")
   
   for (iter in 1:n_iter) {
-    # Build the mean prediction
-    mu_std <- beta_0[iter] + 
+    # Build the non-OIPC part of the linear predictor.
+    # The OIPC slope (with its spatially-varying perturbation) is handled
+    # separately during inversion below.
+    mu_std <- beta_0[iter] +
       elev_effect[iter, ] +
       beta_c4[iter] * c4_std +
       beta_tree[iter] * pft_tree +
       beta_shrub[iter] * pft_shrub +
       beta_grass[iter] * pft_grass +
-      spatial_effect[iter, ]
-    
+      intercept_effect[iter, ]
+
+    # Site-specific effective slope: global mean plus the spatially-varying
+    # perturbation at this location for this draw. v10 fitted a slope GP
+    # (z_slope_spatial[*]) on top of the global beta_oipc.
+    beta_oipc_eff <- beta_oipc[iter] + slope_effect[iter, ]
+
     # CRITICAL: Implement uncertainty propagation correctly
     # The measurement has uncertainty, but we don't add sigma here
     # because sigma represents unexplained variance that's already
@@ -511,10 +428,10 @@ invert_d2h <- function(d2h_wax, d2h_wax_err = NULL,
     for (i in 1:n_obs) {
       # Only add measurement uncertainty
       d2h_wax_with_error <- rnorm(1, d2h_wax_std[i], d2h_wax_err_std[i])
-      
+
       # Invert to get precipitation d2H (in standardized space)
-      d2h_precip_std <- (d2h_wax_with_error - mu_std[i]) / beta_oipc[iter]
-      
+      d2h_precip_std <- (d2h_wax_with_error - mu_std[i]) / beta_oipc_eff[i]
+
       # Back-transform to original scale
       d2h_precip_post[iter, i] <- d2h_precip_std * scaling$oipc_sd + scaling$oipc_mean
     }
