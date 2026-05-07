@@ -534,7 +534,10 @@ validate_inputs <- function(d2h_wax, longitude, latitude,
     }
   }
 
-  if (model_info$has_pft) {
+  # v10 metadata uses `has_vegetation`; the older `has_pft` field is kept
+  # as a fallback so legacy callers passing in their own metadata still work.
+  has_pft_flag <- isTRUE(model_info$has_vegetation %||% model_info$has_pft)
+  if (has_pft_flag) {
     if (is.null(pft_tree) || is.null(pft_shrub) || is.null(pft_grass)) {
       stop("Model ", model_name, " requires pft_tree, pft_shrub, and pft_grass")
     }
