@@ -144,7 +144,7 @@ get_all_model_metadata <- function() {
 
     elevation_c4_interact_sp = list(
       name = "elevation_c4_interact_sp",
-      description = "OIPC + elevation × C4 interaction + spatial effects",
+      description = "OIPC + elevation x C4 interaction + spatial effects",
       has_spatial = TRUE,
       has_elevation = TRUE,
       has_c4 = TRUE,

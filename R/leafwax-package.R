@@ -79,9 +79,7 @@
 #'   prefer_spatial = TRUE
 #' )
 #'
-#' @keywords package
-#' @docType package
-#' @name leafwax
-#' @importFrom stats rnorm quantile sd median
-#' @importFrom utils read.csv write.csv
-NULL
+#' @keywords internal
+#' @importFrom stats rnorm quantile sd median runif cor aggregate
+#' @importFrom utils read.csv write.csv data setTxtProgressBar txtProgressBar
+"_PACKAGE"

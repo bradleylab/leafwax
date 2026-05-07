@@ -3,47 +3,34 @@
 \docType{data}
 \name{example_data}
 \alias{example_data}
-\title{Example leaf wax d2H data}
+\title{Example leaf wax hydrogen isotope data}
 \format{
 A data frame with 10 rows and 10 variables:
 \describe{
-\item{site_id}{Site identifier (character)}
-\item{longitude}{Longitude in decimal degrees (numeric)}
-\item{latitude}{Latitude in decimal degrees (numeric)}
-\item{elevation}{Elevation in meters above sea level (numeric)}
-\item{d2h_wax}{Leaf wax d2H values in per mil (numeric)}
-\item{d2h_wax_sd}{Measurement uncertainty in per mil (numeric)}
-\item{c4_fraction}{Fraction of C4 vegetation (0-1) (numeric)}
-\item{pft_tree}{Fraction of tree plant functional type (numeric)}
-\item{pft_shrub}{Fraction of shrub plant functional type (numeric)}
-\item{pft_grass}{Fraction of grass plant functional type (numeric)}
+\item{site_id}{Character, site identifier}
+\item{longitude}{Numeric, longitude in decimal degrees (-180 to 180)}
+\item{latitude}{Numeric, latitude in decimal degrees (-90 to 90)}
+\item{elevation}{Numeric, elevation in meters above sea level}
+\item{d2h_wax}{Numeric, leaf wax hydrogen isotope value in per mil VSMOW}
+\item{d2h_wax_sd}{Numeric, analytical uncertainty in per mil}
+\item{c4_fraction}{Numeric, C4 vegetation fraction (0-1)}
+\item{pft_tree}{Numeric, tree plant functional type fraction (0-1)}
+\item{pft_shrub}{Numeric, shrub plant functional type fraction (0-1)}
+\item{pft_grass}{Numeric, grass plant functional type fraction (0-1)}
 }
 }
 \source{
-Simulated data for package examples
+Synthetic values designed to span the calibration range.
 }
 \usage{
 example_data
 }
 \description{
-A dataset containing simulated leaf wax hydrogen isotope measurements
-from 10 sites across North America, along with environmental covariates.
-This dataset is designed for demonstrating the package's functionality.
+A 10-row data frame of synthetic leaf wax hydrogen isotope
+measurements bundled for demonstration and testing.
 }
 \examples{
 data(example_data)
 head(example_data)
-
-# Use in inversion
-\dontrun{
-results <- invert_d2h(
-  d2h_wax = example_data$d2h_wax,
-  d2h_wax_err = example_data$d2h_wax_sd,
-  longitude = example_data$longitude,
-  latitude = example_data$latitude,
-  elevation = example_data$elevation,
-  model_name = "b0b1"
-)
-}
 }
 \keyword{datasets}

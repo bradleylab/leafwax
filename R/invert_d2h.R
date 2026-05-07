@@ -177,7 +177,7 @@ use_example_data <- function(model_name) {
 #' @param pft_tree Numeric vector of tree PFT fraction (0-1)
 #' @param pft_shrub Numeric vector of shrub PFT fraction (0-1)
 #' @param pft_grass Numeric vector of grass PFT fraction (0-1)
-#' @param model Character string specifying which model to use (default: "baseline").
+#' @param model_name Character string specifying which model to use (default: "baseline").
 #'   Available models: "baseline", "baseline_sp", "baseline_env", "baseline_env_sp",
 #'   "baseline_veg", "baseline_veg_sp", "c4_only_sp", "elevation_only_sp",
 #'   "elevation_c4_sp", "elevation_c4_interact_sp", "full", "full_sp",
@@ -490,28 +490,16 @@ invert_d2h <- function(d2h_wax, d2h_wax_err = NULL,
   }
 }
 
-#' Invert leaf wax d2H to precipitation d2H (uppercase wrapper for compatibility)
-#' 
-#' This is a wrapper function that maintains backward compatibility with code
-#' that uses the uppercase function name and original parameter names.
-#' 
+#' @rdname invert_d2h
 #' @param d2H_wax Numeric vector of leaf wax d2H values (per mil)
 #' @param d2H_wax_sd Numeric vector of measurement uncertainties (per mil)
-#' @param longitude Numeric vector of longitudes (decimal degrees)
-#' @param latitude Numeric vector of latitudes (decimal degrees)
-#' @param elevation Numeric vector of elevations (meters)
 #' @param elevation_sd Elevation uncertainty (not used, kept for compatibility)
 #' @param c4_fraction Numeric vector of C4 vegetation percentage (0-100)
 #' @param c4_fraction_sd C4 fraction uncertainty (not used, kept for compatibility)
-#' @param pft_tree Numeric vector of tree PFT fraction (0-1)
-#' @param pft_shrub Numeric vector of shrub PFT fraction (0-1)
-#' @param pft_grass Numeric vector of grass PFT fraction (0-1)
 #' @param model_name Character string specifying which model to use
 #' @param n_posterior_draws Integer number of posterior draws to use
-#' 
-#' @return Same as invert_d2h
 #' @export
-invert_d2H <- function(d2H_wax, 
+invert_d2H <- function(d2H_wax,
                       d2H_wax_sd,
                       longitude,
                       latitude,

@@ -110,7 +110,7 @@ check_data_cache <- function(model_name,
   if (verbose) {
     cat("Checking for", data_type, "data for model", model_name, "\n")
     for (i in seq_along(expected_files)) {
-      status <- ifelse(files_exist[i], "✓", "✗")
+      status <- ifelse(files_exist[i], "[OK]", "[X]")
       cat("  ", status, basename(expected_files[i]), "\n")
     }
   }
@@ -118,27 +118,11 @@ check_data_cache <- function(model_name,
   return(all(files_exist))
 }
 
-#' Download model data from GitHub releases
-#'
-#' Downloads model posterior data from GitHub releases or other configured sources.
-#' Data is cached locally for future use.
-#'
-#' @param model_name Character string specifying the model name (NULL for all)
-#' @param data_type Type of data to download: "minimal", "standard", or "full"
-#' @param force Logical, whether to re-download even if data exists
-#' @param timeout Download timeout in seconds
-#' @param verbose Logical, whether to print download progress
-#' @return Logical indicating success
-#' @export
-#' @examples
-#' \dontrun{
-#' # Download standard data for a specific model
-#' download_model_data("b0b1_sp", "standard")
-#'
-#' # Download minimal data for all models
-#' download_model_data(NULL, "minimal")
-#' }
-download_model_data <- function(model_name = NULL,
+# Legacy v0.1.0 download_model_data implementation. The exported
+# version is now defined in R/download_data.R; keeping this body
+# would shadow that function and confuse roxygen, so it is renamed
+# and unexported here.
+.download_model_data_v0_1 <- function(model_name = NULL,
                                data_type = c("minimal", "standard", "full"),
                                force = FALSE,
                                timeout = 300,
@@ -205,7 +189,7 @@ download_model_data <- function(model_name = NULL,
         }
 
         # Use download.file with appropriate options
-        download_result <- download.file(
+        download_result <- utils::download.file(
           url = url,
           destfile = local_path,
           mode = "wb",

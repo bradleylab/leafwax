@@ -1,6 +1,6 @@
 Package: leafwax
 Title: Bayesian Inversion of Leaf Wax d2H to Precipitation d2H
-Version: 0.1.0
+Version: 0.2.0
 Authors@R:
     person("Alex", "Bradley", , "abradley@wustl.edu", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0002-4044-2802"))
@@ -10,22 +10,19 @@ Description: Bayesian inversion of leaf wax hydrogen isotopes to reconstruct
     Gaussian processes. Models are pre-computed using Stan and stored as
     posterior distributions for fast prediction without requiring Stan installation.
 License: MIT + file LICENSE
-URL: https://github.com/yourusername/leafwax
-BugReports: https://github.com/yourusername/leafwax/issues
+URL: https://github.com/bradleylab/leafwax
+BugReports: https://github.com/bradleylab/leafwax/issues
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.2
+RoxygenNote: 7.3.3
 Imports:
     stats,
-    utils,
-    methods
+    utils
 Suggests:
     rappdirs,
-    knitr,
-    rmarkdown,
+    jsonlite,
     testthat (>= 3.0.0)
-VignetteBuilder: knitr
-Depends: 
+Depends:
     R (>= 3.5.0)
 LazyData: true
 LazyDataCompression: xz

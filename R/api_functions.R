@@ -129,7 +129,7 @@ predict_d2h_precip <- function(data = NULL,
 
   # Auto-select model if requested
   if (model == "auto") {
-    model <- select_best_model(
+    model <- select_best_model_from_flags(
       has_elevation = !is.null(elevation),
       has_c4 = !is.null(c4_fraction),
       has_pft = !is.null(pft_tree) && !is.null(pft_shrub) && !is.null(pft_grass),
@@ -225,128 +225,115 @@ predict_d2h_precip <- function(data = NULL,
 
 #' Select best model based on available data
 #'
-#' Automatically selects the most appropriate model based on which
-#' covariates are available in the data.
+#' Automatically selects the most appropriate v10 model name from the 14
+#' shipped variants given which covariates the user has available.
+#' Spatial-aware models are preferred when `prefer_spatial = TRUE`.
 #'
 #' @param has_elevation Logical, whether elevation data is available
 #' @param has_c4 Logical, whether C4 vegetation data is available
 #' @param has_pft Logical, whether PFT data is available
 #' @param prefer_spatial Logical, whether to prefer spatial models
 #' @param verbose Logical, whether to print selection reasoning
-#' @return Character string with selected model name
+#' @return Character string with selected v10 model name
 #' @export
-select_best_model <- function(has_elevation = FALSE,
-                            has_c4 = FALSE,
-                            has_pft = FALSE,
-                            prefer_spatial = TRUE,
-                            verbose = FALSE) {
+select_best_model_from_flags <- function(has_elevation = FALSE,
+                                         has_c4 = FALSE,
+                                         has_pft = FALSE,
+                                         prefer_spatial = TRUE,
+                                         verbose = FALSE) {
+  available <- available_models()
+  pref <- function(name) name %in% available
 
-  # Build model name based on available covariates
-  components <- c("b0b1")
-
-  if (has_elevation) {
-    components <- c(components, "elev")
-  }
-  if (has_c4) {
-    components <- c(components, "c4")
-  }
-  if (has_pft) {
-    components <- c(components, "pft")
-  }
-  if (prefer_spatial) {
-    components <- c(components, "sp")
-  }
-
-  model_name <- paste(components, collapse = "_")
-
-  # Check if this model exists
-  data(model_metadata, envir = environment())
-  if (model_name %in% names(model_metadata)) {
-    if (verbose) {
-      cat("Selected model:", model_name, "\n")
-      cat("Reason: Best match for available covariates\n")
+  # Pick the richest model that uses every covariate the user has.
+  # If prefer_spatial is FALSE, drop "_sp" suffix candidates first.
+  candidates <- if (prefer_spatial) {
+    if (has_pft && has_c4 && has_elevation) {
+      c("full_interact_sp", "full_sp", "elevation_c4_interact_sp",
+        "elevation_c4_sp", "baseline_env_sp", "baseline_sp")
+    } else if (has_pft && has_c4) {
+      c("full_interact_sp", "full_sp", "baseline_veg_sp",
+        "c4_only_sp", "baseline_sp")
+    } else if (has_elevation && has_c4) {
+      c("elevation_c4_interact_sp", "elevation_c4_sp",
+        "elevation_only_sp", "baseline_env_sp", "baseline_sp")
+    } else if (has_elevation) {
+      c("elevation_only_sp", "baseline_env_sp", "baseline_sp")
+    } else if (has_c4) {
+      c("c4_only_sp", "baseline_sp")
+    } else {
+      c("baseline_sp")
     }
-    return(model_name)
+  } else {
+    if (has_pft && has_c4) {
+      c("full_interact", "full", "baseline_veg", "baseline")
+    } else if (has_elevation) {
+      c("baseline_env", "baseline")
+    } else {
+      c("baseline")
+    }
   }
-
-  # Fall back to simpler models
-  fallback_models <- c(
-    "b0b1_elev_c4_pft_sp",  # Full spatial model
-    "b0b1_elev_sp",         # Elevation + spatial
-    "b0b1_sp",              # Basic spatial
-    "b0b1_elev",            # Elevation only
-    "b0b1"                  # Base model
-  )
-
-  for (fallback in fallback_models) {
-    if (fallback %in% names(model_metadata)) {
-      # Check if we have the required data for this model
-      model_info <- model_metadata[[fallback]]
-
-      if (model_info$has_elevation && !has_elevation) next
-      if (model_info$has_c4 && !has_c4) next
-      if (model_info$has_pft && !has_pft) next
-
+  for (cand in candidates) {
+    if (pref(cand)) {
       if (verbose) {
-        cat("Selected model:", fallback, "\n")
-        cat("Reason: Best available fallback\n")
+        cat("Selected model:", cand, "\n")
+        cat("Reason: best match for available covariates",
+            if (prefer_spatial) "(prefer_spatial=TRUE)" else "(non-spatial)",
+            "\n")
       }
-      return(fallback)
+      return(cand)
     }
   }
 
-  # Default to base model
+  # Default to baseline_sp if available, else baseline
+  fallback <- if ("baseline_sp" %in% available) "baseline_sp" else "baseline"
   if (verbose) {
-    cat("Selected model: b0b1\n")
-    cat("Reason: Default base model\n")
+    cat("Selected model:", fallback, "\n")
+    cat("Reason: default fallback (no candidate matched)\n")
   }
-  return("b0b1")
+  return(fallback)
 }
 
 #' List available models with details
 #'
-#' Returns information about all models available in the leafwax package,
-#' including their requirements and whether data is downloaded.
+#' Returns information about the v10 models available in the leafwax
+#' package, including which covariates each model uses.
 #'
 #' @param check_data Logical, whether to check if model data is available
 #' @param verbose Logical, whether to print formatted output
 #' @return Data frame with model information
 #' @export
 #' @examples
+#' \donttest{
 #' # List all models
 #' models <- list_models()
-#'
-#' # Check which models have data available
-#' models <- list_models(check_data = TRUE)
-#'
-#' # Silent mode (no printing)
-#' models <- list_models(verbose = FALSE)
+#' head(models)
+#' }
 list_models <- function(check_data = TRUE, verbose = TRUE) {
 
-  # Load model metadata
-  data(model_metadata, envir = environment())
+  # Pull metadata directly from the v10 routing layer (model_utils.R)
+  metadata <- get_all_model_metadata()
 
   # Create summary data frame
   model_df <- data.frame(
-    model = names(model_metadata),
+    model = names(metadata),
     stringsAsFactors = FALSE
   )
 
   # Extract model properties
-  for (i in seq_along(model_metadata)) {
-    m <- model_metadata[[i]]
-    model_df$description[i] <- m$description
-    model_df$has_elevation[i] <- m$has_elevation
-    model_df$has_c4[i] <- m$has_c4
-    model_df$has_pft[i] <- m$has_pft
-    model_df$has_spatial[i] <- m$has_gp
-    model_df$n_parameters[i] <- m$n_parameters
+  for (i in seq_along(metadata)) {
+    m <- metadata[[i]]
+    model_df$description[i]  <- m$description %||% NA_character_
+    model_df$has_elevation[i] <- isTRUE(m$has_elevation)
+    model_df$has_c4[i]        <- isTRUE(m$has_c4)
+    model_df$has_pft[i]       <- isTRUE(m$has_vegetation %||% m$has_pft)
+    model_df$has_spatial[i]   <- isTRUE(m$has_spatial %||% m$has_gp)
+    model_df$size_mb[i]       <- m$size_mb %||% NA_real_
 
     # Create requirements string
     reqs <- c()
-    if (m$has_elevation) reqs <- c(reqs, "elevation")
-    if (m$has_c4) reqs <- c(reqs, "C4 fraction")
-    if (m$has_pft) reqs <- c(reqs, "PFT fractions")
+    if (isTRUE(m$has_elevation)) reqs <- c(reqs, "elevation")
+    if (isTRUE(m$has_c4)) reqs <- c(reqs, "C4 fraction")
+    if (isTRUE(m$has_vegetation %||% m$has_pft)) reqs <- c(reqs, "PFT fractions")
     model_df$requires[i] <- if (length(reqs) > 0) {
       paste(reqs, collapse = ", ")
     } else {
@@ -364,7 +351,7 @@ list_models <- function(check_data = TRUE, verbose = TRUE) {
       model_name <- model_df$model[i]
 
       # Check package data
-      if (model_name %in% list_available_models()) {
+      if (model_name %in% available_models()) {
         model_df$data_package[i] <- TRUE
         model_df$data_status[i] <- "In package"
       }
@@ -506,14 +493,15 @@ validate_inputs <- function(d2h_wax, longitude, latitude,
     stop("d2h_wax_err must be a single value or same length as d2h_wax")
   }
 
-  # Load model metadata to check requirements
-  data(model_metadata, envir = environment())
+  # Pull metadata via the v10 routing helper rather than the older
+  # data(model_metadata) lookup; the helper covers all 14 v10 names.
+  metadata <- get_all_model_metadata()
 
-  if (!model_name %in% names(model_metadata)) {
+  if (!model_name %in% names(metadata)) {
     stop("Unknown model: ", model_name)
   }
 
-  model_info <- model_metadata[[model_name]]
+  model_info <- metadata[[model_name]]
 
   # Check model-specific requirements
   if (model_info$has_elevation) {

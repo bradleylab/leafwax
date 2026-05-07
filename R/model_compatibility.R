@@ -176,7 +176,7 @@ validate_model_inputs <- function(model_name, d2h_wax, longitude, latitude,
     }
 
     if (length(errors) == 0 && length(warnings) == 0) {
-      cat("✓ All inputs valid for model:", model_name, "\n")
+      cat("[OK] All inputs valid for model:", model_name, "\n")
     }
   }
 

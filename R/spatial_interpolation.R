@@ -177,14 +177,22 @@ predict_spatial_dual_gp <- function(coords_new, knot_coords, draws, scaling) {
   )
 }
 
-#' Legacy single-GP predictor — DEPRECATED.
+#' Legacy single-GP predictor -- DEPRECATED.
 #'
 #' Retained as a stub that calls `predict_one_gp_mpp` with a corrected
 #' Matern 3/2 kernel. The original implementation used an exponential
 #' kernel, did not standardize coordinates, and was incompatible with v10
 #' fits. New code should use `predict_spatial_dual_gp()`.
 #'
-#' @inheritParams predict_one_gp_mpp
+#' @param coords_std numeric, already-standardized (lon, lat) of the
+#'   prediction site. Treated as a length-2 vector.
+#' @param knot_coords matrix(n_knots, 2) of knot (lon, lat).
+#' @param z_spatial_draws matrix(n_draws, n_knots) of standardized GP
+#'   knot effects.
+#' @param ls_gp_draws numeric(n_draws), GP length scale in caller-provided
+#'   units (assumed already standardized for the legacy code path).
+#' @param sigma_gp_draws numeric(n_draws), GP marginal SD draws.
+#' @return matrix(n_draws, 1) of predicted GP values at the site.
 #' @export
 predict_spatial_mpp <- function(coords_std, knot_coords, z_spatial_draws,
                                 ls_gp_draws, sigma_gp_draws) {

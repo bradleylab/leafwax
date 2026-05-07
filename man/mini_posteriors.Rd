@@ -3,53 +3,16 @@
 \docType{data}
 \name{mini_posteriors}
 \alias{mini_posteriors}
-\title{Minimal posterior draws for b0b1 model}
+\title{Mini posterior draws}
 \format{
-A list containing:
-\describe{
-\item{b0b1}{List with:
-\itemize{
-\item draws: Data frame with 100 rows and 3 columns (b0, b1, sigma)
-\item metadata: List of model specifications
-}
-}
-}
-}
-\source{
-Synthetic data for package examples
+A list of draws indexed by model name.
 }
 \usage{
 mini_posteriors
 }
 \description{
-Synthetic posterior draws for the simplest b0b1 model, containing
-100 draws for the three model parameters. This minimal dataset
-allows basic functionality testing without requiring large files.
+Compact subset of posterior draws used in tests and smoke checks.
+Not for analytical use; see \code{\link{load_posteriors}} for the
+full v10 posteriors shipped under \code{inst/extdata/posteriors/}.
 }
-\details{
-The synthetic posteriors have the following approximate distributions:
-\itemize{
-\item b0: Normal(20, 5) - Intercept parameter
-\item b1: Normal(0.8, 0.05) - Slope parameter
-\item sigma: |Normal(10, 2)| - Error standard deviation
-}
-}
-\examples{
-data(mini_posteriors)
-
-# View structure
-str(mini_posteriors$b0b1)
-
-# Summary statistics
-summary(mini_posteriors$b0b1$draws)
-
-# Use with load_posteriors function
-\dontrun{
-# This would normally load from file, but can use mini_posteriors for testing
-posterior_summary <- apply(mini_posteriors$b0b1$draws, 2, function(x) {
-  c(mean = mean(x), sd = sd(x), quantile(x, c(0.025, 0.975)))
-})
-print(posterior_summary)
-}
-}
-\keyword{datasets}
+\keyword{internal}

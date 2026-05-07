@@ -87,17 +87,26 @@ load_posteriors <- function(model_name, n_draws = NULL, verbose = TRUE) {
     }
   }
 
-  # Create metadata
+  # Create metadata. Capability flags are derived from the actual draws
+  # column names rather than the model name, because some model names
+  # (e.g., `full`, `full_sp`, `full_interact_sp`) include C4/PFT effects
+  # without the substrings the older regex looked for. Spatial / interaction
+  # flags still come from the name (those are unambiguous in the v10 set).
+  param_names <- names(draws)
   metadata <- list(
     model_name = model_name,
     n_draws = nrow(draws),
     n_parameters = ncol(draws),
-    parameters = names(draws),
-    has_elevation = grepl("(env|elevation|elev)", model_name),
-    has_c4 = grepl("(c4|veg)", model_name),
-    has_pft = grepl("veg", model_name),
-    has_gp = grepl("sp", model_name),
-    has_interaction = grepl("interact", model_name)
+    parameters = param_names,
+    has_elevation = any(grepl("^beta_elev", param_names)) ||
+                    grepl("(env|elevation|elev)", model_name),
+    has_c4        = any(grepl("^beta_c4", param_names)) ||
+                    any(grepl("oipc.*c4|c4.*oipc", param_names, ignore.case = TRUE)),
+    has_pft       = any(grepl("^beta_(tree|shrub|grass)", param_names)),
+    has_gp        = grepl("(^|_)sp$", model_name),
+    has_interaction = grepl("interact", model_name) ||
+                      any(grepl("oipc.*(tree|shrub|grass|c4)|(tree|shrub|grass|c4).*oipc",
+                                param_names, ignore.case = TRUE))
   )
 
   # Load spatial metadata if needed

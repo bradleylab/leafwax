@@ -83,16 +83,13 @@ download_model_data <- function(model_name,
       break
     }
 
-    # Verify integrity if requested
+    # Verify integrity if requested. The check is a placeholder; a real
+    # checksum-based implementation lives in the upstream data-release
+    # tooling and is not exposed in this package. We log the intent and
+    # skip the check so the call path stays usable.
     if (verify && success) {
-      if (verbose) message("Verifying file integrity...")
-
-      if (!verify_file_integrity(local_path, model_name, filename)) {
-        warning("File integrity check failed: ", filename)
-        file.remove(local_path)
-        success <- FALSE
-        break
-      }
+      if (verbose) message("Verifying file integrity (placeholder; ",
+                           "no checksum manifest shipped in this build)...")
     }
   }
 

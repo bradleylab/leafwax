@@ -2,7 +2,7 @@
 % Please edit documentation in R/spatial_interpolation.R
 \name{predict_spatial_mpp}
 \alias{predict_spatial_mpp}
-\title{Predict spatial random effect at new location using mPP}
+\title{Legacy single-GP predictor -- DEPRECATED.}
 \usage{
 predict_spatial_mpp(
   coords_std,
@@ -13,19 +13,25 @@ predict_spatial_mpp(
 )
 }
 \arguments{
-\item{coords_std}{Standardized coordinates (length 2 vector)}
+\item{coords_std}{numeric, already-standardized (lon, lat) of the
+prediction site. Treated as a length-2 vector.}
 
-\item{knot_coords}{Matrix of knot coordinates (n_knots x 2)}
+\item{knot_coords}{matrix(n_knots, 2) of knot (lon, lat).}
 
-\item{z_spatial_draws}{Matrix of spatial random effects at knots (n_draws x n_knots)}
+\item{z_spatial_draws}{matrix(n_draws, n_knots) of standardized GP
+knot effects.}
 
-\item{ls_gp_draws}{Vector of GP length scale parameters (n_draws)}
+\item{ls_gp_draws}{numeric(n_draws), GP length scale in caller-provided
+units (assumed already standardized for the legacy code path).}
 
-\item{sigma_gp_draws}{Vector of GP variance parameters (n_draws)}
+\item{sigma_gp_draws}{numeric(n_draws), GP marginal SD draws.}
 }
 \value{
-Vector of predicted spatial effects (n_draws)
+matrix(n_draws, 1) of predicted GP values at the site.
 }
 \description{
-Predict spatial random effect at new location using mPP
+Retained as a stub that calls \code{predict_one_gp_mpp} with a corrected
+Matern 3/2 kernel. The original implementation used an exponential
+kernel, did not standardize coordinates, and was incompatible with v10
+fits. New code should use \code{predict_spatial_dual_gp()}.
 }

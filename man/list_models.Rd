@@ -15,16 +15,13 @@ list_models(check_data = TRUE, verbose = TRUE)
 Data frame with model information
 }
 \description{
-Returns information about all models available in the leafwax package,
-including their requirements and whether data is downloaded.
+Returns information about the v10 models available in the leafwax
+package, including which covariates each model uses.
 }
 \examples{
+\donttest{
 # List all models
 models <- list_models()
-
-# Check which models have data available
-models <- list_models(check_data = TRUE)
-
-# Silent mode (no printing)
-models <- list_models(verbose = FALSE)
+head(models)
+}
 }
