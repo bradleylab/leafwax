@@ -19,7 +19,10 @@ invert_d2h(
   n_draws = NULL,
   return_full = FALSE,
   credible_level = 0.9,
-  verbose = TRUE
+  verbose = TRUE,
+  sigma_within = NULL,
+  sigma_within_sd = NULL,
+  record_id = NULL
 )
 
 invert_d2H(
@@ -35,7 +38,10 @@ invert_d2H(
   pft_shrub = NULL,
   pft_grass = NULL,
   model_name = "baseline",
-  n_posterior_draws = NULL
+  n_posterior_draws = NULL,
+  sigma_within = NULL,
+  sigma_within_sd = NULL,
+  record_id = NULL
 )
 }
 \arguments{
@@ -66,6 +72,32 @@ invert_d2H(
 \item{credible_level}{Numeric credible interval level (default 0.9)}
 
 \item{verbose}{Logical whether to print progress messages}
+
+\item{sigma_within}{Numeric, optional within-record residual standard
+deviation in per mil. When supplied, an additional
+\code{Normal(0, sigma_within)} noise term is added to the inverted
+\code{d2H_precip} per posterior draw, representing residual variance
+within a single sedimentary record (after spatial structure has
+cancelled). Use \code{estimate_sigma_within()} to obtain this from a
+stationary baseline interval of the record. Section 4.5.3 of the
+manuscript explains why the global posterior \code{sigma} overstates
+within-record uncertainty.}
+
+\item{sigma_within_sd}{Numeric, optional standard error on
+\code{sigma_within}. When non-\code{NULL}, each posterior draw resamples the
+residual SD from \code{Normal(sigma_within, sigma_within_sd)} (truncated
+at zero), so uncertainty in the within-record SD itself propagates
+into the prediction.}
+
+\item{record_id}{Character or numeric, optional record identifier.
+When supplied and constant across all input rows, all rows are
+treated as belonging to the same downcore series: the spatial
+Gaussian process is evaluated once per posterior draw at the
+shared site, so spatial draws are reused across the series rather
+than redrawn per row. The current implementation already shares
+spatial draws between identical (longitude, latitude) pairs; the
+\code{record_id} argument adds explicit validation that the caller
+intends within-record inference.}
 
 \item{d2H_wax}{Numeric vector of leaf wax d2H values (per mil)}
 

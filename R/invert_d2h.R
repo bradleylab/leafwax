@@ -186,6 +186,29 @@ use_example_data <- function(model_name) {
 #' @param return_full Logical whether to return full posterior draws or just summary
 #' @param credible_level Numeric credible interval level (default 0.9)
 #' @param verbose Logical whether to print progress messages
+#' @param sigma_within Numeric, optional within-record residual standard
+#'   deviation in per mil. When supplied, an additional
+#'   `Normal(0, sigma_within)` noise term is added to the inverted
+#'   `d2H_precip` per posterior draw, representing residual variance
+#'   within a single sedimentary record (after spatial structure has
+#'   cancelled). Use `estimate_sigma_within()` to obtain this from a
+#'   stationary baseline interval of the record. Section 4.5.3 of the
+#'   manuscript explains why the global posterior `sigma` overstates
+#'   within-record uncertainty.
+#' @param sigma_within_sd Numeric, optional standard error on
+#'   `sigma_within`. When non-`NULL`, each posterior draw resamples the
+#'   residual SD from `Normal(sigma_within, sigma_within_sd)` (truncated
+#'   at zero), so uncertainty in the within-record SD itself propagates
+#'   into the prediction.
+#' @param record_id Character or numeric, optional record identifier.
+#'   When supplied and constant across all input rows, all rows are
+#'   treated as belonging to the same downcore series: the spatial
+#'   Gaussian process is evaluated once per posterior draw at the
+#'   shared site, so spatial draws are reused across the series rather
+#'   than redrawn per row. The current implementation already shares
+#'   spatial draws between identical (longitude, latitude) pairs; the
+#'   `record_id` argument adds explicit validation that the caller
+#'   intends within-record inference.
 #' 
 #' @return If return_full is FALSE, a data frame with columns:
 #'   \item{d2h_precip_mean}{Mean predicted precipitation d2H}
@@ -228,16 +251,65 @@ invert_d2h <- function(d2h_wax, d2h_wax_err = NULL,
                        longitude, latitude, elevation = NULL,
                        c4_percent = NULL,
                        pft_tree = NULL, pft_shrub = NULL, pft_grass = NULL,
-                       model_name = "baseline", 
+                       model_name = "baseline",
                        n_draws = NULL,
                        return_full = FALSE,
                        credible_level = 0.9,
-                       verbose = TRUE) {
-  
+                       verbose = TRUE,
+                       sigma_within = NULL,
+                       sigma_within_sd = NULL,
+                       record_id = NULL) {
+
   # Input validation
   n_obs <- length(d2h_wax)
   if (length(longitude) != n_obs || length(latitude) != n_obs) {
     stop("All input vectors must have the same length")
+  }
+
+  # sigma_within validation (Phase A)
+  if (!is.null(sigma_within)) {
+    if (!is.numeric(sigma_within) || length(sigma_within) != 1L ||
+        is.na(sigma_within) || sigma_within < 0) {
+      stop("sigma_within must be a single non-negative numeric value (per mil)")
+    }
+  }
+  if (!is.null(sigma_within_sd)) {
+    if (is.null(sigma_within)) {
+      stop("sigma_within_sd supplied without sigma_within")
+    }
+    if (!is.numeric(sigma_within_sd) || length(sigma_within_sd) != 1L ||
+        is.na(sigma_within_sd) || sigma_within_sd < 0) {
+      stop("sigma_within_sd must be a single non-negative numeric value (per mil)")
+    }
+  }
+
+  # record_id validation (Phase A): when supplied, all rows must share
+  # one identifier. The spatial GP at identical (lon, lat) coordinates
+  # is already deterministic given each posterior draw, so a constant
+  # record_id triggers a verbose acknowledgement plus a coordinate
+  # consistency check rather than a separate code path.
+  if (!is.null(record_id)) {
+    if (length(record_id) == 1L) {
+      record_id_vec <- rep(record_id, n_obs)
+    } else if (length(record_id) == n_obs) {
+      record_id_vec <- record_id
+    } else {
+      stop("record_id must be length 1 or length(d2h_wax)")
+    }
+    if (length(unique(record_id_vec)) != 1L) {
+      stop("invert_d2H currently supports a single record per call; ",
+           "got ", length(unique(record_id_vec)), " unique record_id values. ",
+           "Call invert_d2H once per record.")
+    }
+    if (length(unique(longitude)) != 1L || length(unique(latitude)) != 1L) {
+      stop("record_id is constant but longitude/latitude vary across rows. ",
+           "All samples in a single record must share one site.")
+    }
+    if (verbose) {
+      cat("  record_id =", record_id_vec[1],
+          ": treating", n_obs, "rows as one downcore series ",
+          "(spatial GP shared across draws)\n", sep = "")
+    }
   }
   
   # Set default uncertainty if not provided
@@ -400,10 +472,25 @@ invert_d2h <- function(d2h_wax, d2h_wax_err = NULL,
   d2h_wax_err_std <- d2h_wax_err / scaling$d2H_sd
 
   c4_std <- (c4_percent - scaling$c4_mean) / scaling$c4_sd
-  
+
+  # Phase A: pre-compute the per-draw sigma_within draws used as
+  # additional residual noise on the inverted d2H_precip, in original
+  # per-mil units. When sigma_within_sd is supplied, sigma_w varies
+  # per draw; otherwise it is a fixed scalar. Negative draws from the
+  # tail of Normal(sigma_within, sigma_within_sd) are reflected to
+  # zero so the SD stays non-negative.
+  use_sigma_within <- !is.null(sigma_within)
+  if (use_sigma_within) {
+    if (!is.null(sigma_within_sd) && sigma_within_sd > 0) {
+      sigma_w_draws <- abs(rnorm(n_iter, sigma_within, sigma_within_sd))
+    } else {
+      sigma_w_draws <- rep(sigma_within, n_iter)
+    }
+  }
+
   # Compute predictions for each location
   if (verbose) cat("Computing predictions...\n")
-  
+
   for (iter in 1:n_iter) {
     # Build the non-OIPC part of the linear predictor.
     # The OIPC slope (with its spatially-varying perturbation) is handled
@@ -421,10 +508,28 @@ invert_d2h <- function(d2h_wax, d2h_wax_err = NULL,
     # (z_slope_spatial[*]) on top of the global beta_oipc.
     beta_oipc_eff <- beta_oipc[iter] + slope_effect[iter, ]
 
-    # CRITICAL: Implement uncertainty propagation correctly
-    # The measurement has uncertainty, but we don't add sigma here
-    # because sigma represents unexplained variance that's already
-    # accounted for through the Bayesian posterior
+    # Phase A: when sigma_within is supplied, draw a within-record
+    # residual once per posterior iteration, in per-mil units, and add
+    # it to the inverted d2H_precip. Drawing once per iter (rather than
+    # once per i) keeps within-record samples correlated through the
+    # iter axis, which matches how the posterior represents shared
+    # parameter uncertainty across the series.
+    if (use_sigma_within) {
+      sigma_w_iter <- sigma_w_draws[iter] / scaling$oipc_sd
+    }
+
+    # Uncertainty propagation. The base predictive includes:
+    # (1) the analytical uncertainty on d2H_wax (added in standardized
+    # space via d2h_wax_err_std), and (2) the regression-parameter
+    # uncertainty already carried through the posterior draws. The
+    # residual sigma is intentionally NOT added here: when used for
+    # within-record change detection, the global posterior sigma
+    # overstates the relevant noise (it bundles between-site sources
+    # of variance the record does not carry; manuscript Section 4.5.3).
+    # Users who want a within-record residual SD pass it via
+    # sigma_within above; users who want global single-point predictive
+    # variance can wrap this call and add Normal(0, model$draws$sigma)
+    # noise themselves.
     for (i in 1:n_obs) {
       # Only add measurement uncertainty
       d2h_wax_with_error <- rnorm(1, d2h_wax_std[i], d2h_wax_err_std[i])
@@ -434,6 +539,15 @@ invert_d2h <- function(d2h_wax, d2h_wax_err = NULL,
 
       # Back-transform to original scale
       d2h_precip_post[iter, i] <- d2h_precip_std * scaling$oipc_sd + scaling$oipc_mean
+
+      # Phase A: add within-record residual noise per sample, in
+      # per-mil units. Drawing per i (not per iter) so two adjacent
+      # samples within a record carry independent residuals while
+      # sharing the parameter draws above.
+      if (use_sigma_within) {
+        d2h_precip_post[iter, i] <- d2h_precip_post[iter, i] +
+          rnorm(1, 0, sigma_w_draws[iter])
+      }
     }
   }
   
@@ -511,8 +625,11 @@ invert_d2H <- function(d2H_wax,
                       pft_shrub = NULL,
                       pft_grass = NULL,
                       model_name = "baseline",
-                      n_posterior_draws = NULL) {
-  
+                      n_posterior_draws = NULL,
+                      sigma_within = NULL,
+                      sigma_within_sd = NULL,
+                      record_id = NULL) {
+
   # Map old parameter names to new ones
   invert_d2h(
     d2h_wax = d2H_wax,
@@ -528,7 +645,10 @@ invert_d2H <- function(d2H_wax,
     n_draws = n_posterior_draws,
     return_full = FALSE,
     credible_level = 0.9,
-    verbose = TRUE
+    verbose = TRUE,
+    sigma_within = sigma_within,
+    sigma_within_sd = sigma_within_sd,
+    record_id = record_id
   )
 }
 
