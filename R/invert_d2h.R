@@ -473,19 +473,29 @@ invert_d2h <- function(d2h_wax, d2h_wax_err = NULL,
 
   c4_std <- (c4_percent - scaling$c4_mean) / scaling$c4_sd
 
-  # Phase A: pre-compute the per-draw sigma_within draws used as
-  # additional residual noise on the inverted d2H_precip, in original
-  # per-mil units. When sigma_within_sd is supplied, sigma_w varies
-  # per draw; otherwise it is a fixed scalar. Negative draws from the
-  # tail of Normal(sigma_within, sigma_within_sd) are reflected to
-  # zero so the SD stays non-negative.
+  # Phase A: pre-compute the per-draw sigma_within draws. sigma_within
+  # is supplied by the caller in **leaf-wax per-mil units** (the units
+  # estimate_sigma_within() returns), so it must enter the inversion in
+  # wax space and then propagate through beta_oipc_eff like the
+  # measurement uncertainty already does. Convert to standardized wax
+  # units once here; the per-draw value is consumed inside the iter
+  # loop below as additional noise on d2h_wax_with_error.
+  #
+  # When sigma_within_sd is non-NULL, the within-record SD itself
+  # resamples per draw; the absolute value reflects the truncated tail
+  # at zero so the SD stays non-negative. Per-iter (not per-i) draws
+  # keep within-record samples sharing the same SD per draw, which
+  # matches how the posterior already shares parameter draws across
+  # the series.
   use_sigma_within <- !is.null(sigma_within)
   if (use_sigma_within) {
     if (!is.null(sigma_within_sd) && sigma_within_sd > 0) {
-      sigma_w_draws <- abs(rnorm(n_iter, sigma_within, sigma_within_sd))
+      sigma_w_draws_wax <- abs(rnorm(n_iter, sigma_within, sigma_within_sd))
     } else {
-      sigma_w_draws <- rep(sigma_within, n_iter)
+      sigma_w_draws_wax <- rep(sigma_within, n_iter)
     }
+    # Standardize to the wax scale used internally during inversion.
+    sigma_w_draws_std <- sigma_w_draws_wax / scaling$d2H_sd
   }
 
   # Compute predictions for each location
@@ -508,46 +518,40 @@ invert_d2h <- function(d2h_wax, d2h_wax_err = NULL,
     # (z_slope_spatial[*]) on top of the global beta_oipc.
     beta_oipc_eff <- beta_oipc[iter] + slope_effect[iter, ]
 
-    # Phase A: when sigma_within is supplied, draw a within-record
-    # residual once per posterior iteration, in per-mil units, and add
-    # it to the inverted d2H_precip. Drawing once per iter (rather than
-    # once per i) keeps within-record samples correlated through the
-    # iter axis, which matches how the posterior represents shared
-    # parameter uncertainty across the series.
-    if (use_sigma_within) {
-      sigma_w_iter <- sigma_w_draws[iter] / scaling$oipc_sd
-    }
-
     # Uncertainty propagation. The base predictive includes:
     # (1) the analytical uncertainty on d2H_wax (added in standardized
     # space via d2h_wax_err_std), and (2) the regression-parameter
     # uncertainty already carried through the posterior draws. The
-    # residual sigma is intentionally NOT added here: when used for
-    # within-record change detection, the global posterior sigma
+    # global residual sigma is intentionally NOT added here: when used
+    # for within-record change detection, the global posterior sigma
     # overstates the relevant noise (it bundles between-site sources
     # of variance the record does not carry; manuscript Section 4.5.3).
     # Users who want a within-record residual SD pass it via
-    # sigma_within above; users who want global single-point predictive
-    # variance can wrap this call and add Normal(0, model$draws$sigma)
-    # noise themselves.
+    # sigma_within (Phase A); the noise enters in wax space below so
+    # it propagates through beta_oipc_eff like the measurement noise.
+    # Users who want global single-point predictive variance can wrap
+    # this call and add Normal(0, model$draws$sigma) noise themselves.
     for (i in 1:n_obs) {
-      # Only add measurement uncertainty
-      d2h_wax_with_error <- rnorm(1, d2h_wax_std[i], d2h_wax_err_std[i])
+      # Combine measurement uncertainty and (Phase A) within-record
+      # residual in quadrature in standardized wax space, then draw
+      # the wax-error realization. Per-i draws keep adjacent samples
+      # within a record carrying independent residuals while sharing
+      # the iter-level posterior draw of parameters above.
+      if (use_sigma_within) {
+        wax_sd_std <- sqrt(d2h_wax_err_std[i]^2 + sigma_w_draws_std[iter]^2)
+      } else {
+        wax_sd_std <- d2h_wax_err_std[i]
+      }
+      d2h_wax_with_error <- rnorm(1, d2h_wax_std[i], wax_sd_std)
 
-      # Invert to get precipitation d2H (in standardized space)
+      # Invert to get precipitation d2H (in standardized space). The
+      # /beta_oipc_eff[i] step naturally scales any wax-space noise
+      # (measurement + within-record residual) by the local effective
+      # slope.
       d2h_precip_std <- (d2h_wax_with_error - mu_std[i]) / beta_oipc_eff[i]
 
       # Back-transform to original scale
       d2h_precip_post[iter, i] <- d2h_precip_std * scaling$oipc_sd + scaling$oipc_mean
-
-      # Phase A: add within-record residual noise per sample, in
-      # per-mil units. Drawing per i (not per iter) so two adjacent
-      # samples within a record carry independent residuals while
-      # sharing the parameter draws above.
-      if (use_sigma_within) {
-        d2h_precip_post[iter, i] <- d2h_precip_post[iter, i] +
-          rnorm(1, 0, sigma_w_draws[iter])
-      }
     }
   }
   

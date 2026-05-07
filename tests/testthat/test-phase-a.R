@@ -78,6 +78,21 @@ test_that("estimate_sigma_within: linear detrend strips a trend", {
   expect_lt(with_detrend$sigma_within, no_detrend$sigma_within)
 })
 
+test_that("estimate_sigma_within: warns when dropping non-finite rows", {
+  set.seed(46)
+  d  <- rnorm(50, -150, 4)
+  ag <- seq(0, 5000, length.out = 50)
+  d[c(3, 17, 42)] <- NA_real_
+  expect_warning(
+    est <- estimate_sigma_within(d, ag,
+                                 baseline_interval = c(0, 5000),
+                                 detrend = "none",
+                                 ar1_correction = FALSE),
+    "dropped 3 row"
+  )
+  expect_equal(est$n_baseline, 47L)
+})
+
 test_that("estimate_sigma_within: rejects bad inputs", {
   expect_error(estimate_sigma_within(c("a", "b"), c(1, 2)),
                "must be numeric")

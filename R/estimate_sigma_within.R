@@ -102,6 +102,22 @@ estimate_sigma_within <- function(d2h_wax,
   }
 
   ok <- is.finite(d2h_wax) & is.finite(age)
+  n_dropped <- sum(!ok)
+  if (n_dropped > 0L) {
+    dropped_idx <- which(!ok)
+    warning(
+      sprintf(
+        paste("estimate_sigma_within() dropped %d row(s) with non-finite",
+              "d2h_wax or age (indices: %s). Baseline n and the returned",
+              "SD reflect the kept rows only."),
+        n_dropped,
+        paste(utils::head(dropped_idx, 10),
+              if (length(dropped_idx) > 10) "..." else "",
+              collapse = ", ")
+      ),
+      call. = FALSE
+    )
+  }
   d2h_wax <- d2h_wax[ok]
   age     <- age[ok]
   if (length(d2h_wax) < 4L) {
