@@ -161,6 +161,61 @@ test_that("invert_d2H: slope override propagates correctly", {
                                 tolerance = 1e-3)))
 })
 
+test_that("load_posteriors: subsampling is deterministic across calls", {
+  # Two independent calls with the same model and n_draws must return
+  # the same posterior subset, so local_effective_slope() and
+  # invert_d2H() pair draws by position correctly.
+  m1 <- load_posteriors("baseline_sp", n_draws = 60, verbose = FALSE)
+  m2 <- load_posteriors("baseline_sp", n_draws = 60, verbose = FALSE)
+  expect_identical(m1$draws$beta_oipc, m2$draws$beta_oipc)
+  expect_identical(m1$draws[["z_intercept_spatial[1]"]],
+                   m2$draws[["z_intercept_spatial[1]"]])
+})
+
+test_that("local_effective_slope output pairs correctly with invert_d2H", {
+  # End-to-end alignment check: the slope vector built at n_draws = N
+  # must be the same posterior thinning that invert_d2H consumes when
+  # asked for n_posterior_draws = N.
+  s <- local_effective_slope(
+    longitude = -90, latitude = 38,
+    model_name = "baseline_sp",
+    n_draws = 80,
+    ceiling = Inf,
+    verbose = FALSE
+  )
+  res <- suppressWarnings(invert_d2H(
+    d2H_wax = -180, d2H_wax_sd = 3,
+    longitude = -90, latitude = 38,
+    model_name = "baseline_sp",
+    slope = s,
+    n_posterior_draws = 80
+  ))
+  expect_equal(nrow(res), 1L)
+  expect_true(is.finite(res$d2h_precip_mean))
+})
+
+test_that("invert_d2H: zero / negative slope override rejected", {
+  args <- list(
+    d2H_wax = -180, d2H_wax_sd = 3,
+    longitude = -90, latitude = 38,
+    model_name = "baseline_sp"
+  )
+
+  expect_error(
+    suppressWarnings(do.call(invert_d2H, c(args, list(slope = 0)))),
+    "at or near zero"
+  )
+  expect_error(
+    suppressWarnings(do.call(invert_d2H,
+                             c(args, list(slope = c(0.5, 0, 0.6))))),
+    "at or near zero"
+  )
+  expect_error(
+    suppressWarnings(do.call(invert_d2H, c(args, list(slope = -0.5)))),
+    "must be positive"
+  )
+})
+
 test_that("invert_d2H: slope vector length validated", {
   args <- list(
     d2H_wax = -180, d2H_wax_sd = 3,

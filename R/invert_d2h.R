@@ -517,6 +517,21 @@ invert_d2h <- function(d2h_wax, d2h_wax_err = NULL,
     if (!is.numeric(slope) || any(!is.finite(slope))) {
       stop("slope must be a finite numeric value or vector")
     }
+    # Reject zero / near-zero slopes: the inversion divides by the
+    # slope, so a zero override produces NaN/Inf reconstructions
+    # silently. Force the user to supply a positive slope (the simple
+    # two-pool fractionation model is bounded above by ~0.88; values
+    # at or below zero have no scientific interpretation in this
+    # framework).
+    if (any(abs(slope) < .Machine$double.eps^0.5)) {
+      stop("slope contains values at or near zero; the inversion divides ",
+           "by slope and would produce NaN/Inf. Supply a positive slope.")
+    }
+    if (any(slope < 0)) {
+      stop("slope must be positive; got at least one negative value. ",
+           "Negative slopes have no interpretation in the d2H_wax<-d2H_precip ",
+           "inversion.")
+    }
     if (length(slope) == 1L) {
       slope_override <- rep(slope, n_iter)
     } else if (length(slope) == n_iter) {

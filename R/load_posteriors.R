@@ -78,12 +78,18 @@ load_posteriors <- function(model_name, n_draws = NULL, verbose = TRUE) {
     cat("  Loaded", nrow(draws), "draws,", ncol(draws), "parameters\n")
   }
 
-  # Subset if requested
+  # Subset if requested. Use deterministic stratified thinning
+  # (evenly spaced indices across all chains) rather than a random
+  # sample, so two independent calls with the same model_name and
+  # n_draws return the *same* draws subset. This is what allows
+  # local_effective_slope(..., n_draws = N) and invert_d2H(...,
+  # n_posterior_draws = N, slope = ...) to be paired by position
+  # without silent draw-misalignment (Codex P2 on Phase B).
   if (!is.null(n_draws) && n_draws < nrow(draws)) {
-    idx <- sample.int(nrow(draws), n_draws)
+    idx <- round(seq.int(1, nrow(draws), length.out = n_draws))
     draws <- draws[idx, , drop = FALSE]
     if (verbose) {
-      cat("  Subsampled to", n_draws, "draws\n")
+      cat("  Subsampled to", n_draws, "draws (deterministic stratified)\n")
     }
   }
 
