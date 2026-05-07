@@ -209,6 +209,15 @@ use_example_data <- function(model_name) {
 #'   spatial draws between identical (longitude, latitude) pairs; the
 #'   `record_id` argument adds explicit validation that the caller
 #'   intends within-record inference.
+#' @param slope Optional numeric override for the d2H_wax-d2H_precip
+#'   slope. NULL (default) uses the model's site-specific slope, i.e.,
+#'   `beta_oipc` plus the spatial slope GP perturbation at the site.
+#'   A single numeric replaces the slope with a fixed point estimate
+#'   (broadcast across all posterior draws). A vector of length
+#'   `n_draws` is used per draw. Use `local_effective_slope()` to
+#'   build a defensible per-draw override that respects the manuscript's
+#'   simple-model ceiling at alpha = 0.88 (Section 4.5.5). When
+#'   supplied, the override applies uniformly to every input row.
 #' 
 #' @return If return_full is FALSE, a data frame with columns:
 #'   \item{d2h_precip_mean}{Mean predicted precipitation d2H}
@@ -258,7 +267,8 @@ invert_d2h <- function(d2h_wax, d2h_wax_err = NULL,
                        verbose = TRUE,
                        sigma_within = NULL,
                        sigma_within_sd = NULL,
-                       record_id = NULL) {
+                       record_id = NULL,
+                       slope = NULL) {
 
   # Input validation
   n_obs <- length(d2h_wax)
@@ -498,6 +508,36 @@ invert_d2h <- function(d2h_wax, d2h_wax_err = NULL,
     sigma_w_draws_std <- sigma_w_draws_wax / scaling$d2H_sd
   }
 
+  # Phase B: caller-supplied slope override. Length-1 broadcasts to all
+  # draws; length-n_iter is used per draw. The override replaces the
+  # model's beta_oipc + slope_GP path entirely and applies uniformly to
+  # every input row (no per-row spatial perturbation when overriding).
+  use_slope_override <- !is.null(slope)
+  if (use_slope_override) {
+    if (!is.numeric(slope) || any(!is.finite(slope))) {
+      stop("slope must be a finite numeric value or vector")
+    }
+    if (length(slope) == 1L) {
+      slope_override <- rep(slope, n_iter)
+    } else if (length(slope) == n_iter) {
+      slope_override <- slope
+    } else {
+      stop(sprintf(
+        "slope must be length 1 or length n_draws (%d); got %d. ",
+        n_iter, length(slope)
+      ),
+      "Use local_effective_slope(..., n_draws = n) to build a per-draw vector ",
+      "of the right size, or pass a single point estimate.")
+    }
+    if (verbose) {
+      cat(sprintf(
+        "  Using slope override (range: %.3f to %.3f) instead of the ",
+        min(slope_override), max(slope_override)
+      ),
+      "model's site-specific slope.\n", sep = "")
+    }
+  }
+
   # Compute predictions for each location
   if (verbose) cat("Computing predictions...\n")
 
@@ -515,8 +555,14 @@ invert_d2h <- function(d2h_wax, d2h_wax_err = NULL,
 
     # Site-specific effective slope: global mean plus the spatially-varying
     # perturbation at this location for this draw. v10 fitted a slope GP
-    # (z_slope_spatial[*]) on top of the global beta_oipc.
-    beta_oipc_eff <- beta_oipc[iter] + slope_effect[iter, ]
+    # (z_slope_spatial[*]) on top of the global beta_oipc. Phase B: when
+    # a slope override is supplied, replace the per-row vector with the
+    # caller's per-draw scalar (broadcast to every row).
+    if (use_slope_override) {
+      beta_oipc_eff <- rep(slope_override[iter], n_obs)
+    } else {
+      beta_oipc_eff <- beta_oipc[iter] + slope_effect[iter, ]
+    }
 
     # Uncertainty propagation. The base predictive includes:
     # (1) the analytical uncertainty on d2H_wax (added in standardized
@@ -632,7 +678,8 @@ invert_d2H <- function(d2H_wax,
                       n_posterior_draws = NULL,
                       sigma_within = NULL,
                       sigma_within_sd = NULL,
-                      record_id = NULL) {
+                      record_id = NULL,
+                      slope = NULL) {
 
   # Map old parameter names to new ones
   invert_d2h(
@@ -652,7 +699,8 @@ invert_d2H <- function(d2H_wax,
     verbose = TRUE,
     sigma_within = sigma_within,
     sigma_within_sd = sigma_within_sd,
-    record_id = record_id
+    record_id = record_id,
+    slope = slope
   )
 }
 

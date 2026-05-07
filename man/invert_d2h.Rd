@@ -22,7 +22,8 @@ invert_d2h(
   verbose = TRUE,
   sigma_within = NULL,
   sigma_within_sd = NULL,
-  record_id = NULL
+  record_id = NULL,
+  slope = NULL
 )
 
 invert_d2H(
@@ -41,7 +42,8 @@ invert_d2H(
   n_posterior_draws = NULL,
   sigma_within = NULL,
   sigma_within_sd = NULL,
-  record_id = NULL
+  record_id = NULL,
+  slope = NULL
 )
 }
 \arguments{
@@ -98,6 +100,16 @@ than redrawn per row. The current implementation already shares
 spatial draws between identical (longitude, latitude) pairs; the
 \code{record_id} argument adds explicit validation that the caller
 intends within-record inference.}
+
+\item{slope}{Optional numeric override for the d2H_wax-d2H_precip
+slope. NULL (default) uses the model's site-specific slope, i.e.,
+\code{beta_oipc} plus the spatial slope GP perturbation at the site.
+A single numeric replaces the slope with a fixed point estimate
+(broadcast across all posterior draws). A vector of length
+\code{n_draws} is used per draw. Use \code{local_effective_slope()} to
+build a defensible per-draw override that respects the manuscript's
+simple-model ceiling at alpha = 0.88 (Section 4.5.5). When
+supplied, the override applies uniformly to every input row.}
 
 \item{d2H_wax}{Numeric vector of leaf wax d2H values (per mil)}
 
