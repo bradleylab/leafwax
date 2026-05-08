@@ -6,10 +6,10 @@ framework for paleoclimate claims based on those reconstructions.
 
 `leafwax` is the operational backend for the manuscript “Spatial
 modeling improves the calibration of leaf wax hydrogen isotopes to
-precipitation” (Bradley, *Geochimica et Cosmochimica Acta*). It ships
-the v10 posterior draws for the 14 hierarchical Bayesian models reported
-there and the four-phase paleo workflow that the manuscript references
-in Sections 4.5.3, 4.5.5, and 4.5.6.
+precipitation” (Bradley, *Geochimica et Cosmochimica Acta*, submitted).
+It ships the posterior draws for the 14 hierarchical Bayesian models
+reported there and the four-phase paleo workflow that the manuscript
+references in Sections 4.5.3, 4.5.5, and 4.5.6.
 
 ## Installation
 
