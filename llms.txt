@@ -1,0 +1,379 @@
+# leafwax
+
+Bayesian inversion of leaf-wax hydrogen isotope ratios (δ²H_(wax)) to
+precipitation isotope values (δ²H_(precip)) and a defensibility
+framework for paleoclimate claims based on those reconstructions.
+
+`leafwax` is the operational backend for the manuscript “Spatial
+modeling improves the calibration of leaf wax hydrogen isotopes to
+precipitation” (Bradley, *Geochimica et Cosmochimica Acta*). It ships
+the v10 posterior draws for the 14 hierarchical Bayesian models reported
+there and the four-phase paleo workflow that the manuscript references
+in Sections 4.5.3, 4.5.5, and 4.5.6.
+
+## Installation
+
+``` r
+
+# install.packages("devtools")
+devtools::install_github("bradleylab/leafwax")
+```
+
+The package is not on CRAN. The shipped posterior draws (~10 MB) exceed
+CRAN’s data-size limits.
+
+## Quick start: single-point inversion
+
+``` r
+
+library(leafwax)
+
+result <- invert_d2H(
+  d2H_wax    = -180,
+  d2H_wax_sd = 3,
+  longitude  = -90,
+  latitude   = 38,
+  model_name = "baseline_sp"
+)
+
+result[, c("d2h_precip_mean", "d2h_precip_sd",
+           "d2h_precip_lower", "d2h_precip_upper")]
+```
+
+[`available_models()`](https://bradleylab.github.io/leafwax/reference/available_models.md)
+lists the 14 v10 model variants. Spatial models end in `_sp` and are
+recommended whenever site coordinates are known.
+
+## Paleo-record workflow
+
+For a downcore series, the workflow combines five functions:
+
+``` r
+
+library(leafwax)
+
+# 1. Within-record residual SD on a stationarity-defended interval
+sw <- estimate_sigma_within(
+  d2h_wax = record$d2h_wax,
+  age     = record$age,
+  baseline_interval = c(0, 5000),
+  detrend = "linear",
+  ar1_correction = TRUE
+)
+
+# 2. Per-draw local slope at the site, with the simple-model ceiling
+slope <- local_effective_slope(
+  longitude  = -90,
+  latitude   = 38,
+  model_name = "baseline_sp",
+  ceiling    = 0.88
+)
+
+# 3. Inversion with within-record residual + defended slope
+recon <- invert_d2H(
+  d2H_wax    = record$d2h_wax,
+  d2H_wax_sd = record$d2h_wax_err,
+  longitude  = rep(-90, nrow(record)),
+  latitude   = rep( 38, nrow(record)),
+  model_name = "baseline_sp",
+  sigma_within = sw$sigma_within,
+  slope        = slope,
+  record_id    = "your_record_id",
+  return_full  = TRUE
+)
+
+# 4. Detection threshold + posterior P(change > magnitude)
+rho_t <- estimate_temporal_autocorrelation(record$d2h_wax, record$age)
+dc <- detect_change(
+  reconstruction    = recon,
+  age               = record$age,
+  baseline_interval = c(0, 5000),
+  test_intervals    = list(post = c(5000, 10000)),
+  sigma_within      = sw$sigma_within,
+  rho_t             = rho_t,
+  beta_eff          = stats::median(slope),
+  confidence        = 0.95,
+  magnitudes        = c(10, 30, 50)
+)
+
+# 5. Four-level taxonomy verdict on a published claim
+verdict <- assess_claim(
+  record         = record,
+  claim          = list(level = 4, ...),     # see ?assess_claim
+  reconstruction = recon
+)
+verdict$highest_level
+```
+
+The full sequence on a real Iso2k record is in
+[`vignette("paleo-record-workflow", package = "leafwax")`](https://bradleylab.github.io/leafwax/articles/paleo-record-workflow.md).
+
+## Available models
+
+[`available_models()`](https://bradleylab.github.io/leafwax/reference/available_models.md)
+returns the 14 v10 variants. Capability flags are derived from the
+posterior parameter names, not the model id, so the routing layer
+correctly reflects what each fit actually contains.
+
+| Model                      | Spatial GP | Elevation | C4  | Vegetation | Interactions |
+|----------------------------|:----------:|:---------:|:---:|:----------:|:------------:|
+| `baseline`                 |            |           |     |            |              |
+| `baseline_sp`              |     ✓      |           |     |            |              |
+| `baseline_env`             |            |     ✓     |     |            |              |
+| `baseline_env_sp`          |     ✓      |     ✓     |     |            |              |
+| `baseline_veg`             |            |           |  ✓  |     ✓      |              |
+| `baseline_veg_sp`          |     ✓      |           |  ✓  |     ✓      |              |
+| `c4_only_sp`               |     ✓      |           |  ✓  |            |              |
+| `elevation_only_sp`        |     ✓      |     ✓     |     |            |              |
+| `elevation_c4_sp`          |     ✓      |     ✓     |  ✓  |            |              |
+| `elevation_c4_interact_sp` |     ✓      |     ✓     |  ✓  |            |      ✓       |
+| `full`                     |            |           |  ✓  |     ✓      |      ✓       |
+| `full_sp`                  |     ✓      |           |  ✓  |     ✓      |      ✓       |
+| `full_interact`            |            |           |  ✓  |     ✓      |      ✓       |
+| `full_interact_sp`         |     ✓      |           |  ✓  |     ✓      |      ✓       |
+
+Spatial models share a single 125-knot Fibonacci-sphere lattice.
+
+## Manuscript correspondence
+
+The paleo workflow maps directly to the manuscript:
+
+| Manuscript section | Function |
+|----|----|
+| 4.5.3 σ_(within) obligation | [`estimate_sigma_within()`](https://bradleylab.github.io/leafwax/reference/estimate_sigma_within.md) |
+| 4.5.3 detection threshold formula | [`detect_change()`](https://bradleylab.github.io/leafwax/reference/detect_change.md) |
+| 4.5.5 local slope ceiling | `local_effective_slope(..., ceiling = 0.88)` |
+| 4.5.6 four-level claim taxonomy | [`assess_claim()`](https://bradleylab.github.io/leafwax/reference/assess_claim.md) |
+| Section S4 inversion machinery | [`invert_d2H()`](https://bradleylab.github.io/leafwax/reference/invert_d2h.md) |
+
+## Citation
+
+``` bibtex
+@article{bradley_leafwax_2026,
+  author  = {Bradley, Alexander S.},
+  title   = {Spatial modeling improves the calibration of leaf wax
+             hydrogen isotopes to precipitation},
+  journal = {Geochimica et Cosmochimica Acta},
+  year    = {2026}
+}
+```
+
+## Help
+
+- Function reference:
+  [`?invert_d2H`](https://bradleylab.github.io/leafwax/reference/invert_d2h.md),
+  [`?estimate_sigma_within`](https://bradleylab.github.io/leafwax/reference/estimate_sigma_within.md),
+  [`?local_effective_slope`](https://bradleylab.github.io/leafwax/reference/local_effective_slope.md),
+  [`?detect_change`](https://bradleylab.github.io/leafwax/reference/detect_change.md),
+  [`?assess_claim`](https://bradleylab.github.io/leafwax/reference/assess_claim.md).
+- Vignette:
+  [`vignette("paleo-record-workflow", package = "leafwax")`](https://bradleylab.github.io/leafwax/articles/paleo-record-workflow.md).
+- Issues: <https://github.com/bradleylab/leafwax/issues>.
+
+## License
+
+MIT. See [LICENSE](https://bradleylab.github.io/leafwax/LICENSE).
+
+# Package index
+
+## Inversion
+
+Reconstruct d2H_precip from leaf-wax d2H_wax.
+
+- [`invert_d2h()`](https://bradleylab.github.io/leafwax/reference/invert_d2h.md)
+  [`invert_d2H()`](https://bradleylab.github.io/leafwax/reference/invert_d2h.md)
+  : Invert leaf wax d2H to precipitation d2H
+- [`invert_d2H_ensemble()`](https://bradleylab.github.io/leafwax/reference/invert_d2H_ensemble.md)
+  : Ensemble predictions across multiple models
+
+## Paleo-record workflow
+
+Within-record sigma_within, slope, change detection, claim taxonomy.
+
+- [`estimate_sigma_within()`](https://bradleylab.github.io/leafwax/reference/estimate_sigma_within.md)
+  : Estimate the within-record residual SD of a leaf-wax record
+- [`local_effective_slope()`](https://bradleylab.github.io/leafwax/reference/local_effective_slope.md)
+  : Local effective slope at a paleo-reconstruction site
+- [`estimate_temporal_autocorrelation()`](https://bradleylab.github.io/leafwax/reference/estimate_temporal_autocorrelation.md)
+  : Estimate lag-1 temporal autocorrelation
+- [`detect_change()`](https://bradleylab.github.io/leafwax/reference/detect_change.md)
+  : Within-record d2H_precip change detection
+- [`assess_claim()`](https://bradleylab.github.io/leafwax/reference/assess_claim.md)
+  : Assess a paleoclimate claim against the leaf-wax taxonomy
+
+## Models
+
+Routing and metadata for the 14 v10 model variants.
+
+- [`available_models()`](https://bradleylab.github.io/leafwax/reference/available_models.md)
+  : Get available models
+- [`get_all_model_metadata()`](https://bradleylab.github.io/leafwax/reference/get_all_model_metadata.md)
+  : Get all model metadata
+- [`get_model_info()`](https://bradleylab.github.io/leafwax/reference/get_model_info.md)
+  : Get model info
+- [`list_models()`](https://bradleylab.github.io/leafwax/reference/list_models.md)
+  : List available models with details
+- [`load_posteriors()`](https://bradleylab.github.io/leafwax/reference/load_posteriors.md)
+  : Load posterior draws for a model
+- [`load_model_posteriors()`](https://bradleylab.github.io/leafwax/reference/load_model_posteriors.md)
+  : Load model posteriors from package data
+- [`select_best_model()`](https://bradleylab.github.io/leafwax/reference/select_best_model.md)
+  : Select best model based on available data
+- [`select_best_model_from_flags()`](https://bradleylab.github.io/leafwax/reference/select_best_model_from_flags.md)
+  : Select best model based on available data
+
+## Datasets
+
+- [`example_data`](https://bradleylab.github.io/leafwax/reference/example_data.md)
+  : Example leaf wax hydrogen isotope data
+- [`model_metadata`](https://bradleylab.github.io/leafwax/reference/model_metadata.md)
+  : Model metadata for the v10 calibration models
+
+## Lower-level / legacy helpers
+
+Internal-style exports retained from v0.1.0 (data caching, lookup
+tables, batch processing, validation) and the lower-level invert_d2h()
+function. Most users will not call these directly.
+
+- [`invert_d2h()`](https://bradleylab.github.io/leafwax/reference/invert_d2h.md)
+  [`invert_d2H()`](https://bradleylab.github.io/leafwax/reference/invert_d2h.md)
+  : Invert leaf wax d2H to precipitation d2H
+- [`batch_invert_d2h()`](https://bradleylab.github.io/leafwax/reference/batch_invert_d2h.md)
+  : Batch inversion for multiple samples
+- [`batch_predict()`](https://bradleylab.github.io/leafwax/reference/batch_predict.md)
+  : Batch predict precipitation d2H for multiple sites
+- [`predict_d2h_precip()`](https://bradleylab.github.io/leafwax/reference/predict_d2h_precip.md)
+  : Predict precipitation d2H from leaf wax d2H
+- [`validate_inputs()`](https://bradleylab.github.io/leafwax/reference/validate_inputs.md)
+  : Validate input data for inversion
+- [`validate_model_inputs()`](https://bradleylab.github.io/leafwax/reference/validate_model_inputs.md)
+  : Validate inputs for a specific model
+- [`validate_lookup_table()`](https://bradleylab.github.io/leafwax/reference/validate_lookup_table.md)
+  : Validate lookup table
+- [`get_model_parameters()`](https://bradleylab.github.io/leafwax/reference/get_model_parameters.md)
+  : Get model parameters
+- [`get_model_recommendations()`](https://bradleylab.github.io/leafwax/reference/get_model_recommendations.md)
+  : Get model recommendations based on available data
+- [`detect_model_capabilities()`](https://bradleylab.github.io/leafwax/reference/detect_model_capabilities.md)
+  : Detect model capabilities from model name
+- [`list_model_names()`](https://bradleylab.github.io/leafwax/reference/list_model_names.md)
+  : List model names
+- [`leafwax_config()`](https://bradleylab.github.io/leafwax/reference/leafwax_config.md)
+  : Get leafwax configuration
+- [`leafwax_set_config()`](https://bradleylab.github.io/leafwax/reference/leafwax_set_config.md)
+  : Set leafwax configuration
+- [`monitor_memory()`](https://bradleylab.github.io/leafwax/reference/monitor_memory.md)
+  : Monitor memory usage during batch processing
+- [`benchmark_lookup()`](https://bradleylab.github.io/leafwax/reference/benchmark_lookup.md)
+  : Benchmark lookup table vs direct computation
+- [`compare_models()`](https://bradleylab.github.io/leafwax/reference/compare_models.md)
+  : Compare predictions across multiple models
+- [`create_lookup_table()`](https://bradleylab.github.io/leafwax/reference/create_lookup_table.md)
+  : Create lookup table for spatial parameters
+- [`create_regional_lookup()`](https://bradleylab.github.io/leafwax/reference/create_regional_lookup.md)
+  : Create optimized lookup table for region
+- [`cache_all_lookup_tables()`](https://bradleylab.github.io/leafwax/reference/cache_all_lookup_tables.md)
+  : Cache all lookup tables for available spatial models
+- [`use_lookup_if_available()`](https://bradleylab.github.io/leafwax/reference/use_lookup_if_available.md)
+  : Use lookup table in inversion (if available)
+- [`get_spatial_params()`](https://bradleylab.github.io/leafwax/reference/get_spatial_params.md)
+  : Get spatial parameters from lookup table
+- [`generate_fibonacci_sphere()`](https://bradleylab.github.io/leafwax/reference/generate_fibonacci_sphere.md)
+  : Generate Fibonacci sphere points
+- [`generate_global_grid()`](https://bradleylab.github.io/leafwax/reference/generate_global_grid.md)
+  : Generate global 1x1 degree grid
+- [`predict_spatial_mpp()`](https://bradleylab.github.io/leafwax/reference/predict_spatial_mpp.md)
+  : Legacy single-GP predictor – DEPRECATED.
+- [`predict_spatial_dual_gp()`](https://bradleylab.github.io/leafwax/reference/predict_spatial_dual_gp.md)
+  : Predict both spatial intercept and spatial slope at new locations
+- [`predict_one_gp_mpp()`](https://bradleylab.github.io/leafwax/reference/predict_one_gp_mpp.md)
+  : Predict an mPP Gaussian-process random effect at a new location
+- [`download_model_data()`](https://bradleylab.github.io/leafwax/reference/download_model_data.md)
+  : Download model data from GitHub releases
+- [`check_data_cache()`](https://bradleylab.github.io/leafwax/reference/check_data_cache.md)
+  : Check if model data exists in cache
+- [`clear_data_cache()`](https://bradleylab.github.io/leafwax/reference/clear_data_cache.md)
+  : Clear model data cache
+- [`clear_download_cache()`](https://bradleylab.github.io/leafwax/reference/clear_download_cache.md)
+  : Clear download cache
+- [`get_cache_dir()`](https://bradleylab.github.io/leafwax/reference/get_cache_dir.md)
+  : Get leafwax data cache directory
+- [`get_cache_info()`](https://bradleylab.github.io/leafwax/reference/get_cache_info.md)
+  : Get cache size information
+- [`get_data_path()`](https://bradleylab.github.io/leafwax/reference/get_data_path.md)
+  : Get path to data file
+- [`get_data_url()`](https://bradleylab.github.io/leafwax/reference/get_data_url.md)
+  : Get data download URLs
+- [`list_cached_models()`](https://bradleylab.github.io/leafwax/reference/list_cached_models.md)
+  : List available models in cache
+- [`setup_leafwax_data()`](https://bradleylab.github.io/leafwax/reference/setup_leafwax_data.md)
+  : Setup leafwax data management
+- [`verify_data_integrity()`](https://bradleylab.github.io/leafwax/reference/verify_data_integrity.md)
+  : Verify data integrity
+- [`check_model_data()`](https://bradleylab.github.io/leafwax/reference/check_model_data.md)
+  : Check if model data exists locally
+- [`download_with_progress()`](https://bradleylab.github.io/leafwax/reference/download_with_progress.md)
+  : Download file with progress bar
+- [`generate_model_description()`](https://bradleylab.github.io/leafwax/reference/generate_model_description.md)
+  : Generate human-readable model description
+- [`get_cache_files()`](https://bradleylab.github.io/leafwax/reference/get_cache_files.md)
+  : Get cache files for a model
+- [`get_data_manifest()`](https://bradleylab.github.io/leafwax/reference/get_data_manifest.md)
+  : Get data manifest
+- [`get_download_files()`](https://bradleylab.github.io/leafwax/reference/get_download_files.md)
+  : Get list of files to download for a model
+- [`get_model_size_estimate()`](https://bradleylab.github.io/leafwax/reference/get_model_size_estimate.md)
+  : Get estimated download size for a model
+- [`get_url_config()`](https://bradleylab.github.io/leafwax/reference/get_url_config.md)
+  : Get URL configuration
+- [`process_parallel()`](https://bradleylab.github.io/leafwax/reference/process_parallel.md)
+  : Process chunks in parallel
+- [`process_sequential()`](https://bradleylab.github.io/leafwax/reference/process_sequential.md)
+  : Process chunks sequentially with progress bar
+- [`use_example_data()`](https://bradleylab.github.io/leafwax/reference/use_example_data.md)
+  : Use lightweight example data
+
+## Math / GP internals
+
+Numerical kernels and helper functions used by the spatial GP layer.
+Documented for completeness; not part of the user-facing API.
+
+- [`matern32()`](https://bradleylab.github.io/leafwax/reference/matern32.md)
+  : Matern 3/2 covariance: k(d) = sigma^2 \* (1 + sqrt(3)\*d/rho) \*
+  exp(-sqrt(3)\*d/rho)
+
+- [`pair_distances()`](https://bradleylab.github.io/leafwax/reference/pair_distances.md)
+  : Pairwise Euclidean distances between two coordinate matrices.
+
+- [`ls_km_to_std()`](https://bradleylab.github.io/leafwax/reference/ls_km_to_std.md)
+  :
+
+  Convert ls in km to standardized-coordinate units, matching the v10
+  Stan model's `coord_scale_km = mean(coord_scaling) * 111.0` formula.
+
+- [`standardize_coords()`](https://bradleylab.github.io/leafwax/reference/standardize_coords.md)
+  : Standardize a coord matrix using the scaling parameters.
+
+- [`print(`*`<leafwax_posterior>`*`)`](https://bradleylab.github.io/leafwax/reference/print.leafwax_posterior.md)
+  : Print method for leafwax_posterior
+
+- [`print(`*`<leafwax_lookup_table>`*`)`](https://bradleylab.github.io/leafwax/reference/print.leafwax_lookup_table.md)
+  : Print method for lookup tables
+
+## Package
+
+- [`leafwax`](https://bradleylab.github.io/leafwax/reference/leafwax-package.md)
+  [`leafwax-package`](https://bradleylab.github.io/leafwax/reference/leafwax-package.md)
+  : leafwax: Bayesian Calibration of Leaf Wax Hydrogen Isotope
+  Reconstructions
+- [`mini_lookup_table`](https://bradleylab.github.io/leafwax/reference/mini_lookup_table.md)
+  : Mini lookup table
+- [`mini_posteriors`](https://bradleylab.github.io/leafwax/reference/mini_posteriors.md)
+  : Mini posterior draws
+
+# Articles
+
+### Workflow
+
+- [Paleo-record workflow: from a downcore series to a defensible
+  claim](https://bradleylab.github.io/leafwax/articles/paleo-record-workflow.md):
