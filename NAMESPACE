@@ -2,6 +2,7 @@
 
 S3method(print,leafwax_lookup_table)
 S3method(print,leafwax_posterior)
+export(assess_claim)
 export(available_models)
 export(batch_invert_d2h)
 export(batch_predict)
