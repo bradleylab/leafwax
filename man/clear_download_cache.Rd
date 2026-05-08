@@ -26,7 +26,7 @@ Removes downloaded model data from the local cache.
 \examples{
 \dontrun{
 # Clear cache for specific model
-clear_download_cache("b0b1_sp")
+clear_download_cache("baseline_sp")
 
 # Clear all cached data
 clear_download_cache(confirm = FALSE)

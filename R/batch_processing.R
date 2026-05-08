@@ -28,7 +28,7 @@
 #' results <- batch_predict(large_data, parallel = TRUE, n_cores = 4)
 #'
 #' # Process with specific model
-#' results <- batch_predict(large_data, model = "b0b1_elev_sp")
+#' results <- batch_predict(large_data, model = "baseline_env_sp")
 #' }
 batch_predict <- function(data,
                          model = "auto",
@@ -264,13 +264,13 @@ process_parallel <- function(data, chunks, model, n_cores, progress, ...) {
 #' # Compare multiple models
 #' comparison <- compare_models(
 #'   example_data,
-#'   models = c("b0b1", "b0b1_elev", "b0b1_sp")
+#'   models = c("baseline", "baseline_env", "baseline_sp")
 #' )
 #'
 #' # Get all individual model results
 #' all_results <- compare_models(
 #'   example_data,
-#'   models = c("b0b1", "b0b1_elev"),
+#'   models = c("baseline", "baseline_env"),
 #'   return_all = TRUE
 #' )
 #' }

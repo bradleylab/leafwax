@@ -290,7 +290,7 @@ invert_d2h <- function(d2h_wax, d2h_wax_err = NULL,
     stop("All input vectors must have the same length")
   }
 
-  # sigma_within validation (Phase A)
+  # sigma_within validation
   if (!is.null(sigma_within)) {
     if (!is.numeric(sigma_within) || length(sigma_within) != 1L ||
         is.na(sigma_within) || sigma_within < 0) {
@@ -307,7 +307,7 @@ invert_d2h <- function(d2h_wax, d2h_wax_err = NULL,
     }
   }
 
-  # record_id validation (Phase A): when supplied, all rows must share
+  # record_id validation: when supplied, all rows must share
   # one identifier. The spatial GP at identical (lon, lat) coordinates
   # is already deterministic given each posterior draw, so a constant
   # record_id triggers a verbose acknowledgement plus a coordinate
@@ -338,7 +338,7 @@ invert_d2h <- function(d2h_wax, d2h_wax_err = NULL,
   
   # Set default uncertainty if not provided
   if (is.null(d2h_wax_err)) {
-    d2h_wax_err <- rep(3.0, n_obs)  # Default 3 per mil uncertainty
+    d2h_wax_err <- rep(3.0, n_obs)
     if (verbose) cat("Using default measurement uncertainty of 3 per mil\n")
   }
   
@@ -375,7 +375,7 @@ invert_d2h <- function(d2h_wax, d2h_wax_err = NULL,
   
   # Set defaults for missing predictors
   if (is.null(elevation)) elevation <- rep(0, n_obs)
-  if (is.null(c4_percent)) c4_percent <- rep(25, n_obs)  # Global average
+  if (is.null(c4_percent)) c4_percent <- rep(25, n_obs)
   if (is.null(pft_tree)) pft_tree <- rep(0.33, n_obs)
   if (is.null(pft_shrub)) pft_shrub <- rep(0.33, n_obs)
   if (is.null(pft_grass)) pft_grass <- rep(0.34, n_obs)
@@ -497,17 +497,14 @@ invert_d2h <- function(d2h_wax, d2h_wax_err = NULL,
     slope_effect     <- dual$slope
   }
   
-  # scaling was initialized at the top of the function (above) so the
-  # elevation and spatial blocks can use it. No re-initialization here.
-
   # Standardize predictors using available scaling
   d2h_wax_std <- (d2h_wax - scaling$d2H_mean) / scaling$d2H_sd
   d2h_wax_err_std <- d2h_wax_err / scaling$d2H_sd
 
   c4_std <- (c4_percent - scaling$c4_mean) / scaling$c4_sd
 
-  # Phase A: pre-compute the per-draw sigma_within draws. sigma_within
-  # is supplied by the caller in **leaf-wax per-mil units** (the units
+  # Pre-compute the per-draw sigma_within draws. sigma_within is
+  # supplied by the caller in **leaf-wax per-mil units** (the units
   # estimate_sigma_within() returns), so it must enter the inversion in
   # wax space and then propagate through beta_oipc_eff like the
   # measurement uncertainty already does. Convert to standardized wax
@@ -531,8 +528,8 @@ invert_d2h <- function(d2h_wax, d2h_wax_err = NULL,
     sigma_w_draws_std <- sigma_w_draws_wax / scaling$d2H_sd
   }
 
-  # Phase B: caller-supplied slope override. Length-1 broadcasts to all
-  # draws; length-n_iter is used per draw. The override replaces the
+  # Caller-supplied slope override. Length-1 broadcasts to all draws;
+  # length-n_iter is used per draw. The override replaces the
   # model's beta_oipc + slope_GP path entirely and applies uniformly to
   # every input row (no per-row spatial perturbation when overriding).
   use_slope_override <- !is.null(slope)
@@ -593,8 +590,8 @@ invert_d2h <- function(d2h_wax, d2h_wax_err = NULL,
 
     # Site-specific effective slope: global mean plus the spatially-varying
     # perturbation at this location for this draw. v10 fitted a slope GP
-    # (z_slope_spatial[*]) on top of the global beta_oipc. Phase B: when
-    # a slope override is supplied, replace the per-row vector with the
+    # (z_slope_spatial[*]) on top of the global beta_oipc. When a slope
+    # override is supplied, replace the per-row vector with the
     # caller's per-draw scalar (broadcast to every row).
     if (use_slope_override) {
       beta_oipc_eff <- rep(slope_override[iter], n_obs)
@@ -611,13 +608,13 @@ invert_d2h <- function(d2h_wax, d2h_wax_err = NULL,
     # overstates the relevant noise (it bundles between-site sources
     # of variance the record does not carry; manuscript Section 4.5.3).
     # Users who want a within-record residual SD pass it via
-    # sigma_within (Phase A); the noise enters in wax space below so
-    # it propagates through beta_oipc_eff like the measurement noise.
+    # sigma_within; the noise enters in wax space below so it
+    # propagates through beta_oipc_eff like the measurement noise.
     # Users who want global single-point predictive variance can wrap
     # this call and add Normal(0, model$draws$sigma) noise themselves.
     for (i in 1:n_obs) {
-      # Combine measurement uncertainty and (Phase A) within-record
-      # residual in quadrature in standardized wax space, then draw
+      # Combine measurement uncertainty and within-record residual in
+      # quadrature in standardized wax space, then draw
       # the wax-error realization. Per-i draws keep adjacent samples
       # within a record carrying independent residuals while sharing
       # the iter-level posterior draw of parameters above.

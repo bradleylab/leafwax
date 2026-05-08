@@ -26,9 +26,9 @@ Constructs download URLs for model data from GitHub releases.
 \examples{
 \dontrun{
 # Get URLs for latest version
-urls <- get_data_url("b0b1_sp", "latest")
+urls <- get_data_url("baseline_sp", "latest")
 
 # Get URLs for specific version
-urls <- get_data_url("b0b1_sp", "v1.0.0")
+urls <- get_data_url("baseline_sp", "v1.0.1")
 }
 }

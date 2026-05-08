@@ -22,7 +22,7 @@ Removes cached model data files to free up disk space.
 \examples{
 \dontrun{
 # Clear cache for specific model
-clear_data_cache("b0b1_sp")
+clear_data_cache("baseline_sp")
 
 # Clear all full datasets
 clear_data_cache(data_type = "full")

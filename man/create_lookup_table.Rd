@@ -32,7 +32,7 @@ spatial parameters (GP knots, length scale, variance).
 }
 \examples{
 \dontrun{
-lookup <- create_lookup_table("b0b1_sp")
+lookup <- create_lookup_table("baseline_sp")
 str(lookup)
 }
 }

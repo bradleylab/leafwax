@@ -1,10 +1,8 @@
-# R/estimate_sigma_within.R - Estimate within-record residual SD from a
-# stationary baseline interval of a sedimentary leaf-wax record.
-#
-# Phase A of the v0.2.0 paleo-record workflow. Implements the sigma_within
-# obligation from manuscript Section 4.5.3: a defensible within-record
-# residual standard deviation must come from the record itself, not from
-# the global posterior sigma.
+# Estimate within-record residual SD from a stationary baseline
+# interval of a sedimentary leaf-wax record. Implements the
+# sigma_within obligation from manuscript Section 4.5.3: a defensible
+# within-record residual standard deviation must come from the record
+# itself, not from the global posterior sigma.
 
 #' Estimate the within-record residual SD of a leaf-wax record
 #'

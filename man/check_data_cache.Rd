@@ -26,6 +26,6 @@ Checks whether the specified model data files exist in the local cache.
 \examples{
 \dontrun{
 # Check if standard data exists for a model
-exists <- check_data_cache("b0b1_sp", "standard")
+exists <- check_data_cache("baseline_sp", "standard")
 }
 }

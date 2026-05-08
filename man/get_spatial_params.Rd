@@ -32,7 +32,7 @@ using nearest neighbor or bilinear interpolation.
 }
 \examples{
 \dontrun{
-lookup <- create_lookup_table("b0b1_sp")
+lookup <- create_lookup_table("baseline_sp")
 effects <- get_spatial_params(c(-120, -100), c(40, 35), lookup)
 }
 }

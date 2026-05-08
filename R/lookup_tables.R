@@ -59,7 +59,7 @@ generate_global_grid <- function(lon_min = -180, lon_max = 180,
 #' @export
 #' @examples
 #' \dontrun{
-#' lookup <- create_lookup_table("b0b1_sp")
+#' lookup <- create_lookup_table("baseline_sp")
 #' str(lookup)
 #' }
 create_lookup_table <- function(model_name,
@@ -215,7 +215,7 @@ create_lookup_table <- function(model_name,
 #' @export
 #' @examples
 #' \dontrun{
-#' lookup <- create_lookup_table("b0b1_sp")
+#' lookup <- create_lookup_table("baseline_sp")
 #' effects <- get_spatial_params(c(-120, -100), c(40, 35), lookup)
 #' }
 get_spatial_params <- function(longitude, latitude, lookup_table,

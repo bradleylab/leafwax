@@ -40,7 +40,7 @@ This is useful when you need higher accuracy for a specific area.
 \dontrun{
 # Create high-res lookup for Western US
 lookup_west <- create_regional_lookup(
-  "b0b1_sp",
+  "baseline_sp",
   lon_range = c(-130, -100),
   lat_range = c(30, 50),
   resolution = 0.5

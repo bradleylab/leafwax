@@ -12,9 +12,9 @@ paleoclimate claims based on those reconstructions.
 `leafwax` is the operational backend for the manuscript "Spatial
 modeling improves the calibration of leaf wax hydrogen isotopes to
 precipitation" (Bradley, *Geochimica et Cosmochimica Acta*, submitted). It
-ships the posterior draws for the 14 hierarchical Bayesian
-models reported there and the four-phase paleo workflow that the
-manuscript references in Sections 4.5.3, 4.5.5, and 4.5.6.
+exposes the 14 hierarchical Bayesian models reported there and the
+four-phase paleo workflow that the manuscript references in
+Sections 4.5.3, 4.5.5, and 4.5.6.
 
 ## Installation
 
@@ -23,8 +23,25 @@ manuscript references in Sections 4.5.3, 4.5.5, and 4.5.6.
 devtools::install_github("bradleylab/leafwax")
 ```
 
-The package is not on CRAN. The shipped posterior draws (~10 MB)
-exceed CRAN's data-size limits.
+The installed tarball ships a 100-draw "preview" fixture under
+`inst/extdata/posteriors_light/` so the package builds and tests
+without network access. Full 1000-draw posteriors are downloaded
+on first use from
+[`bradleylab/leafwax-data`](https://github.com/bradleylab/leafwax-data)
+v1.0.1 (Zenodo concept DOI
+[10.5281/zenodo.20085465](https://doi.org/10.5281/zenodo.20085465))
+and cached under `tools::R_user_dir("leafwax", "data")`. Inversions
+done against the preview tier emit a loud warning naming the
+function context and the actual draw count; set
+`options(leafwax.suppress_preview_warning = TRUE)` to silence it
+in batch jobs that have already acknowledged the limitation.
+
+```r
+# Pre-fetch full posteriors (optional; download_model_data() is
+# called automatically the first time load_posteriors() is asked
+# for a model whose heavy posteriors are not cached locally)
+leafwax::download_model_data("baseline_sp")
+```
 
 ## Quick start: single-point inversion
 

@@ -92,7 +92,7 @@ results <- predict_d2h_precip(
 # Specify model explicitly
 results <- predict_d2h_precip(
   example_data,
-  model = "b0b1_elev_sp"
+  model = "baseline_env_sp"
 )
 
 # Get full posterior draws

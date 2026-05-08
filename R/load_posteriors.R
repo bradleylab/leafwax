@@ -1,5 +1,3 @@
-# R/load_posteriors_simple.R - Simplified loading of model posteriors from package
-
 #' Generate Fibonacci sphere points
 #'
 #' Generates evenly distributed points on a sphere using the Fibonacci spiral method.
@@ -138,7 +136,7 @@ load_posteriors <- function(model_name, n_draws = NULL, verbose = TRUE) {
   # n_draws return the *same* draws subset. This is what allows
   # local_effective_slope(..., n_draws = N) and invert_d2H(...,
   # n_posterior_draws = N, slope = ...) to be paired by position
-  # without silent draw-misalignment (Codex P2 on Phase B).
+  # without silent draw-misalignment.
   if (!is.null(n_draws) && n_draws < nrow(draws)) {
     idx <- round(seq.int(1, nrow(draws), length.out = n_draws))
     draws <- draws[idx, , drop = FALSE]

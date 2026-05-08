@@ -1,3 +1,31 @@
+# leafwax 0.2.2
+
+## Documentation and naming-drift cleanup
+
+* All exported `\dontrun{}` and runnable examples now reference v10
+  model names (`baseline`, `baseline_sp`, `baseline_env`, ...) instead
+  of the v0.1 `b0b1_*` names. The v0.1 names are not available in the
+  v10 model registry; the prior examples would have produced
+  "model not found" errors if a user tried to run them.
+* `R/leafwax-package.R` runnable example now passes `model_name =`
+  rather than relying on R's partial-argument matching of `model =`.
+* `utils::curlGetHeaders` is fully qualified at the call site to be
+  defensive against `warnPartialMatchArgs = TRUE`.
+* `get_url_config()` fallback substitutes the real `bradleylab`
+  GitHub organization instead of a `[YOUR-USERNAME]` placeholder. The
+  fallback only fires for broken installs where `data_urls.json` is
+  missing from `inst/extdata/`.
+* Drafting-history breadcrumbs ("Phase A", "Phase B", "Codex P2 on
+  Phase B") are removed from in-source comments. Substantive content
+  is preserved.
+* `README.md` rewritten to describe the lazy-load architecture:
+  `inst/extdata/posteriors_light/` ships in the tarball and full
+  posteriors are downloaded from `bradleylab/leafwax-data` v1.0.1
+  (Zenodo) on first use, instead of the prior text claiming the
+  package shipped ~10 MB of posteriors directly.
+* `.Rbuildignore` widened from `^PLAN_v0\.2\.0\.md$` to
+  `^PLAN_v.*\.md$` so future PLAN files are auto-excluded.
+
 # leafwax 0.2.1
 
 ## CRAN preparation

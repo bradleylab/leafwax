@@ -52,7 +52,7 @@
 #' # Specify model explicitly
 #' results <- predict_d2h_precip(
 #'   example_data,
-#'   model = "b0b1_elev_sp"
+#'   model = "baseline_env_sp"
 #' )
 #'
 #' # Get full posterior draws
@@ -441,7 +441,7 @@ validate_inputs <- function(d2h_wax, longitude, latitude,
                           pft_tree = NULL,
                           pft_shrub = NULL,
                           pft_grass = NULL,
-                          model_name = "b0b1") {
+                          model_name = "baseline") {
 
   # Check required inputs
   if (is.null(d2h_wax) || length(d2h_wax) == 0) {

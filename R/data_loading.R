@@ -75,7 +75,7 @@ get_data_path <- function(filename, data_source = "auto") {
 #' @examples
 #' \dontrun{
 #' # Check if standard data exists for a model
-#' exists <- check_data_cache("b0b1_sp", "standard")
+#' exists <- check_data_cache("baseline_sp", "standard")
 #' }
 check_data_cache <- function(model_name,
                              data_type = c("minimal", "standard", "full"),
@@ -356,7 +356,7 @@ list_cached_models <- function(data_type = NULL, verbose = TRUE) {
 #' @examples
 #' \dontrun{
 #' # Clear cache for specific model
-#' clear_data_cache("b0b1_sp")
+#' clear_data_cache("baseline_sp")
 #'
 #' # Clear all full datasets
 #' clear_data_cache(data_type = "full")

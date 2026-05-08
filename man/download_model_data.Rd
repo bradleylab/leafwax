@@ -39,9 +39,9 @@ with progress tracking and integrity verification.
 \examples{
 \dontrun{
 # Download latest data for a model
-download_model_data("b0b1_sp", version = "latest")
+download_model_data("baseline_sp", version = "latest")
 
 # Download specific version
-download_model_data("b0b1_elev", version = "v1.0.0")
+download_model_data("baseline_env", version = "v1.0.1")
 }
 }

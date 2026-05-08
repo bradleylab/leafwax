@@ -46,7 +46,7 @@
 #'   \item Support for single and multi-location inversions
 #'   \item Spatial correlation via Gaussian processes
 #'   \item Automatic handling of missing covariates
-#'   \item Comprehensive model validation and recommendations
+#'   \item Lookup-table acceleration for spatial models
 #' }
 #'
 #' @references
@@ -73,7 +73,7 @@
 #'   d2h_wax = -150,
 #'   longitude = -120,
 #'   latitude = 40,
-#'   model = "baseline"
+#'   model_name = "baseline"
 #' )
 #'
 #' # Get model recommendations based on available data

@@ -18,10 +18,10 @@
 #' @examples
 #' \dontrun{
 #' # Download latest data for a model
-#' download_model_data("b0b1_sp", version = "latest")
+#' download_model_data("baseline_sp", version = "latest")
 #'
 #' # Download specific version
-#' download_model_data("b0b1_elev", version = "v1.0.0")
+#' download_model_data("baseline_env", version = "v1.0.1")
 #' }
 download_model_data <- function(model_name,
                                version = "latest",
@@ -113,10 +113,10 @@ download_model_data <- function(model_name,
 #' @examples
 #' \dontrun{
 #' # Get URLs for latest version
-#' urls <- get_data_url("b0b1_sp", "latest")
+#' urls <- get_data_url("baseline_sp", "latest")
 #'
 #' # Get URLs for specific version
-#' urls <- get_data_url("b0b1_sp", "v1.0.0")
+#' urls <- get_data_url("baseline_sp", "v1.0.1")
 #' }
 get_data_url <- function(model_name, version = "latest",
                         data_type = c("posteriors", "both", "lookup")) {
@@ -230,7 +230,7 @@ download_with_progress <- function(url, destfile, verbose = TRUE) {
 
   # Try to get file size first
   h <- tryCatch({
-    curlGetHeaders(url)
+    base::curlGetHeaders(url)
   }, error = function(e) NULL)
 
   file_size <- NULL
@@ -312,11 +312,11 @@ get_url_config <- function() {
   if (file.exists(config_file)) {
     config <- jsonlite::fromJSON(config_file)
   } else {
-    # Use default configuration
+    # Fallback for broken installs where data_urls.json is missing from extdata.
     config <- list(
-      base_url_latest = "https://github.com/[YOUR-USERNAME]/leafwax-data/releases/latest/download",
-      base_url_version = "https://github.com/[YOUR-USERNAME]/leafwax-data/releases/download/{version}",
-      manifest_url = "https://github.com/[YOUR-USERNAME]/leafwax-data/releases/latest/download/manifest.json"
+      base_url_latest = "https://github.com/bradleylab/leafwax-data/releases/latest/download",
+      base_url_version = "https://github.com/bradleylab/leafwax-data/releases/download/{version}",
+      manifest_url = "https://github.com/bradleylab/leafwax-data/releases/latest/download/manifest.json"
     )
   }
 
@@ -376,7 +376,7 @@ get_data_manifest <- function() {
 #' @examples
 #' \dontrun{
 #' # Clear cache for specific model
-#' clear_download_cache("b0b1_sp")
+#' clear_download_cache("baseline_sp")
 #'
 #' # Clear all cached data
 #' clear_download_cache(confirm = FALSE)

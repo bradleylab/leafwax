@@ -6,7 +6,7 @@
 ^test_direct\.R$
 ^test_inversion\.R$
 ^README_EXAMPLES\.md$
-^PLAN_v0\.2\.0\.md$
+^PLAN_v.*\.md$
 ^tests/_archive_v0\.1\.0$
 ^.*\.Rcheck$
 ^.*\.tar\.gz$
