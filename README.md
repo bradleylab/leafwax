@@ -2,174 +2,169 @@
 
 <!-- badges: start -->
 [![R-CMD-check](https://github.com/bradleylab/leafwax/actions/workflows/R-CMD-check.yaml/badge.svg?branch=master)](https://github.com/bradleylab/leafwax/actions/workflows/R-CMD-check.yaml)
-[![CRAN status](https://www.r-pkg.org/badges/version/leafwax)](https://CRAN.R-project.org/package=leafwax)
 <!-- badges: end -->
 
-## Overview
+Bayesian inversion of leaf-wax hydrogen isotope ratios
+(δ²H<sub>wax</sub>) to precipitation isotope values
+(δ²H<sub>precip</sub>) and a defensibility framework for
+paleoclimate claims based on those reconstructions.
 
-The **leafwax** package provides tools for Bayesian calibration and inversion of leaf wax hydrogen isotope measurements (δ²H) to reconstruct precipitation isotope values. It implements hierarchical Bayesian models that properly account for multiple sources of uncertainty including measurement error, biological fractionation, and spatial correlation.
-
-## Key Features
-
-- 🌍 **14 calibration models** with varying complexity and data requirements
-- 📊 **Hierarchical Bayesian framework** for proper uncertainty propagation
-- 🗺️ **Spatial Gaussian processes** using 125 Fibonacci sphere knots
-- 📈 **Support for multiple covariates**: elevation, vegetation type, C4 percentage
-- 🔧 **Automated model selection** based on available data
-- 📦 **Efficient data management** with optional download of full posteriors
+`leafwax` is the operational backend for the manuscript "Spatial
+modeling improves the calibration of leaf wax hydrogen isotopes to
+precipitation" (Bradley, *Geochimica et Cosmochimica Acta*). It
+ships the v10 posterior draws for the 14 hierarchical Bayesian
+models reported there and the four-phase paleo workflow that the
+manuscript references in Sections 4.5.3, 4.5.5, and 4.5.6.
 
 ## Installation
-
-You can install the development version of leafwax from GitHub:
 
 ```r
 # install.packages("devtools")
 devtools::install_github("bradleylab/leafwax")
 ```
 
-The package will be submitted to CRAN soon. Once available, you can install it with:
+The package is not on CRAN. The shipped posterior draws (~10 MB)
+exceed CRAN's data-size limits.
 
-```r
-install.packages("leafwax")
-```
-
-## Quick Start
+## Quick start: single-point inversion
 
 ```r
 library(leafwax)
 
-# Simple single-location inversion
-result <- invert_d2h(
-  d2h_wax = -150,           # Leaf wax δ²H value (‰)
-  d2h_wax_err = 3,          # Measurement uncertainty (‰)
-  longitude = -120,         # Longitude (decimal degrees)
-  latitude = 40,            # Latitude (decimal degrees)
-  model = "baseline"        # Model selection
+result <- invert_d2H(
+  d2H_wax    = -180,
+  d2H_wax_sd = 3,
+  longitude  = -90,
+  latitude   = 38,
+  model_name = "baseline_sp"
 )
 
-# View results
-print(result)
-#>   d2h_precip_mean d2h_precip_sd d2h_precip_lower d2h_precip_upper
-#> 1            10.4           4.1               3.7              17.1
-
-# Multi-location inversion with spatial model
-locations <- data.frame(
-  d2h_wax = c(-150, -180, -120),
-  longitude = c(-120, -100, -90),
-  latitude = c(40, 35, 45)
-)
-
-result_spatial <- invert_d2h(
-  d2h_wax = locations$d2h_wax,
-  longitude = locations$longitude,
-  latitude = locations$latitude,
-  model = "baseline_sp"    # Spatial model
-)
+result[, c("d2h_precip_mean", "d2h_precip_sd",
+           "d2h_precip_lower", "d2h_precip_upper")]
 ```
 
-## Available Models
+`available_models()` lists the 14 v10 model variants. Spatial models
+end in `_sp` and are recommended whenever site coordinates are known.
 
-The package includes 14 calibration models with different capabilities:
+## Paleo-record workflow
 
-| Model | Description | Spatial | Elevation | Vegetation |
-|-------|-------------|---------|-----------|------------|
-| `baseline` | Basic OIPC model | ❌ | ❌ | ❌ |
-| `baseline_sp` | Basic with spatial GP | ✅ | ❌ | ❌ |
-| `baseline_env` | With elevation effects | ❌ | ✅ | ❌ |
-| `baseline_env_sp` | Elevation + spatial | ✅ | ✅ | ❌ |
-| `baseline_veg` | With vegetation (PFT) | ❌ | ❌ | ✅ |
-| `baseline_veg_sp` | Vegetation + spatial | ✅ | ❌ | ✅ |
-| `c4_only_sp` | C4 effects only | ✅ | ❌ | C4 |
-| `elevation_only_sp` | Elevation only | ✅ | ✅ | ❌ |
-| `elevation_c4_sp` | Elevation + C4 | ✅ | ✅ | C4 |
-| `elevation_c4_interact_sp` | With interactions | ✅ | ✅ | C4 |
-| `full` | All effects | ❌ | ✅ | ✅ |
-| `full_sp` | All + spatial | ✅ | ✅ | ✅ |
-| `full_interact` | All + interactions | ❌ | ✅ | ✅ |
-| `full_interact_sp` | Full model | ✅ | ✅ | ✅ |
-
-Models with `_sp` suffix use spatial Gaussian processes for improved uncertainty quantification.
-
-## Model Selection
-
-Use the automated model selection to find the best model for your data:
+For a downcore series, the workflow combines five functions:
 
 ```r
-# Get model recommendations
-recommendations <- get_model_recommendations(
-  has_elevation = TRUE,     # You have elevation data
-  has_c4 = FALSE,          # No C4 vegetation data
-  prefer_spatial = TRUE    # Prefer spatial models
+library(leafwax)
+
+# 1. Within-record residual SD on a stationarity-defended interval
+sw <- estimate_sigma_within(
+  d2h_wax = record$d2h_wax,
+  age     = record$age,
+  baseline_interval = c(0, 5000),
+  detrend = "linear",
+  ar1_correction = TRUE
 )
 
-# Use the top recommended model
-best_model <- names(recommendations)[1]
-print(best_model)
-#> [1] "baseline_env_sp"
-
-# Validate your inputs for a specific model
-validation <- validate_model_inputs(
-  model_name = "baseline_env_sp",
-  d2h_wax = -150,
-  longitude = -120,
-  latitude = 40,
-  elevation = 1200
+# 2. Per-draw local slope at the site, with the simple-model ceiling
+slope <- local_effective_slope(
+  longitude  = -90,
+  latitude   = 38,
+  model_name = "baseline_sp",
+  ceiling    = 0.88
 )
-#> ✓ All inputs valid for model: baseline_env_sp
+
+# 3. Inversion with within-record residual + defended slope
+recon <- invert_d2H(
+  d2H_wax    = record$d2h_wax,
+  d2H_wax_sd = record$d2h_wax_err,
+  longitude  = rep(-90, nrow(record)),
+  latitude   = rep( 38, nrow(record)),
+  model_name = "baseline_sp",
+  sigma_within = sw$sigma_within,
+  slope        = slope,
+  record_id    = "your_record_id",
+  return_full  = TRUE
+)
+
+# 4. Detection threshold + posterior P(change > magnitude)
+rho_t <- estimate_temporal_autocorrelation(record$d2h_wax, record$age)
+dc <- detect_change(
+  reconstruction    = recon,
+  age               = record$age,
+  baseline_interval = c(0, 5000),
+  test_intervals    = list(post = c(5000, 10000)),
+  sigma_within      = sw$sigma_within,
+  rho_t             = rho_t,
+  beta_eff          = stats::median(slope),
+  confidence        = 0.95,
+  magnitudes        = c(10, 30, 50)
+)
+
+# 5. Four-level taxonomy verdict on a published claim
+verdict <- assess_claim(
+  record         = record,
+  claim          = list(level = 4, ...),     # see ?assess_claim
+  reconstruction = recon
+)
+verdict$highest_level
 ```
 
-## Example with Uncertainty Visualization
+The full sequence on a real Iso2k record is in
+`vignette("paleo-record-workflow", package = "leafwax")`.
 
-```r
-library(ggplot2)
+## Available models
 
-# Perform inversion with full posterior
-result <- invert_d2h(
-  d2h_wax = seq(-200, -100, by = 20),
-  longitude = rep(-120, 6),
-  latitude = seq(30, 50, by = 4),
-  model = "baseline_sp",
-  return_full = FALSE
-)
+`available_models()` returns the 14 v10 variants. Capability flags
+are derived from the posterior parameter names, not the model id, so
+the routing layer correctly reflects what each fit actually contains.
 
-# Visualize results with uncertainty
-ggplot(result, aes(x = d2h_wax, y = d2h_precip_mean)) +
-  geom_ribbon(aes(ymin = d2h_precip_lower,
-                  ymax = d2h_precip_upper),
-              alpha = 0.3, fill = "blue") +
-  geom_point(size = 3) +
-  geom_errorbar(aes(ymin = d2h_precip_mean - d2h_precip_sd,
-                    ymax = d2h_precip_mean + d2h_precip_sd),
-                width = 2) +
-  labs(x = "Leaf wax δ²H (‰)",
-       y = "Precipitation δ²H (‰)",
-       title = "Leaf Wax Isotope Inversion",
-       subtitle = "Shaded area shows 90% credible interval") +
-  theme_minimal()
-```
+| Model | Spatial GP | Elevation | C4 | Vegetation | Interactions |
+|-------|:----------:|:---------:|:--:|:----------:|:------------:|
+| `baseline`                  |   |   |   |   |   |
+| `baseline_sp`               | ✓ |   |   |   |   |
+| `baseline_env`              |   | ✓ |   |   |   |
+| `baseline_env_sp`           | ✓ | ✓ |   |   |   |
+| `baseline_veg`              |   |   | ✓ | ✓ |   |
+| `baseline_veg_sp`           | ✓ |   | ✓ | ✓ |   |
+| `c4_only_sp`                | ✓ |   | ✓ |   |   |
+| `elevation_only_sp`         | ✓ | ✓ |   |   |   |
+| `elevation_c4_sp`           | ✓ | ✓ | ✓ |   |   |
+| `elevation_c4_interact_sp`  | ✓ | ✓ | ✓ |   | ✓ |
+| `full`                      |   |   | ✓ | ✓ | ✓ |
+| `full_sp`                   | ✓ |   | ✓ | ✓ | ✓ |
+| `full_interact`             |   |   | ✓ | ✓ | ✓ |
+| `full_interact_sp`          | ✓ |   | ✓ | ✓ | ✓ |
+
+Spatial models share a single 125-knot Fibonacci-sphere lattice.
+
+## Manuscript correspondence
+
+The paleo workflow maps directly to the manuscript:
+
+| Manuscript section | Function |
+|--------------------|----------|
+| 4.5.3 σ<sub>within</sub> obligation | `estimate_sigma_within()` |
+| 4.5.3 detection threshold formula   | `detect_change()` |
+| 4.5.5 local slope ceiling           | `local_effective_slope(..., ceiling = 0.88)` |
+| 4.5.6 four-level claim taxonomy     | `assess_claim()` |
+| Section S4 inversion machinery      | `invert_d2H()` |
 
 ## Citation
 
-If you use this package in your research, please cite:
-
-```
-@misc{leafwax,
-  author       = {Bradley, Alexander S.},
-  title        = {leafwax: Bayesian Calibration and Inversion of Leaf Wax δ²H},
-  year         = {2025},
-  howpublished = {\url{https://github.com/bradleylab/leafwax}},
-  note         = {Unpublished R package}
+```bibtex
+@article{bradley_leafwax_2026,
+  author  = {Bradley, Alexander S.},
+  title   = {Spatial modeling improves the calibration of leaf wax
+             hydrogen isotopes to precipitation},
+  journal = {Geochimica et Cosmochimica Acta},
+  year    = {2026}
 }
 ```
 
+## Help
 
-## Getting Help
-
-- **Documentation**: Full documentation is available at [https://github.com/bradleylab/leafwax/](https://github.com/bradleylab/leafwax/)
-- **Vignettes**: See `vignette("getting-started", package = "leafwax")`
-- **Issues**: Report bugs at [GitHub Issues](https://github.com/bradleylab/leafwax/issues)
-
+* Function reference: `?invert_d2H`, `?estimate_sigma_within`,
+  `?local_effective_slope`, `?detect_change`, `?assess_claim`.
+* Vignette: `vignette("paleo-record-workflow", package = "leafwax")`.
+* Issues: <https://github.com/bradleylab/leafwax/issues>.
 
 ## License
 
-This package is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+MIT. See [LICENSE](LICENSE).
