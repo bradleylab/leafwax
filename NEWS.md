@@ -1,5 +1,58 @@
 # leafwax 0.2.2
 
+## Bug fixes (runtime correctness)
+
+* `invert_d2H_ensemble()`: three bugs fixed. (i) Default `models =`
+  argument referenced v0.1 names (`b0b1_*`) that are not in the v10
+  registry; replaced with `c("full_sp", "full_interact_sp",
+  "elevation_c4_interact_sp")`. (ii) The validation step accessed
+  `available_models()$model`, but `available_models()` returns a
+  character vector — that subset was always `NULL` and the validation
+  silently skipped. Now reads the vector directly. (iii) The inner
+  `invert_d2H()` call did not pass `return_full = TRUE`, so the
+  pooling step downstream read `$posterior_draws` from a summary data
+  frame and got `NULL`. Now forces `return_full = TRUE`.
+* `compare_models()`: default `models =` argument referenced v0.1
+  names; replaced with `c("baseline", "baseline_sp", "full_sp")`.
+  Also fixed two latent failures unrelated to v0.1 cleanup but blocking
+  the default invocation: a `verbose` partial-match conflict when
+  forwarding `...` to `predict_d2h_precip()`, and a missing matrix
+  coercion when single-row input made the per-model means a length-N
+  vector with `NULL` `dim()`. The per-model column rename for
+  `return_all = TRUE` is now applied only on that path; the ensemble
+  summary path keeps the original column names so the per-model
+  series can be extracted uniformly.
+* `predict_d2h_precip()` and `invert_d2H()`: the `c4_fraction * 100`
+  conversion was unconditional, so a `NULL` input became `numeric(0)`
+  and tripped a spurious capability-mismatch warning inside the core
+  inversion. Both wrappers now keep `NULL` as `NULL` and validate that
+  user inputs lie in `[0, 1]`.
+* `get_data_manifest()`: previously returned `list(files = list())`
+  on download failure, which downstream `verify_data_integrity()`
+  read as "no checksums available, allow the file." Now returns
+  `NULL` with a `warning()`; `verify_data_integrity()` treats `NULL`
+  as "verification skipped" and warns explicitly.
+
+## Breaking changes
+
+* The exported data objects `model_metadata`, `mini_posteriors`, and
+  `mini_lookup_table` are removed. They held v0.1 model names and
+  were not used by any v10 code path; metadata is now exposed via
+  `get_all_model_metadata()` and posteriors via `load_posteriors()`
+  (with the lazy-load resolver). Users still calling
+  `data(model_metadata)` will see "data set not found" and should
+  switch to `get_all_model_metadata()`.
+* The legacy v0.1 helpers `load_model_posteriors()`,
+  `check_model_data()`, `use_example_data()`, and
+  `get_model_size_estimate()` are removed. New code should call
+  `load_posteriors()`, `check_data_cache()`, and the lazy-load
+  download path. The synthetic-data fallback inside
+  `use_example_data()` is also gone; missing posteriors now produce
+  an explicit error instead of fabricated draws.
+* The internal `.download_model_data_v0_1()` and its private helper
+  `get_download_files()` are removed (the exported
+  `download_model_data()` in `R/download_data.R` is unchanged).
+
 ## Documentation and naming-drift cleanup
 
 * All exported `\dontrun{}` and runnable examples now reference v10
@@ -9,22 +62,50 @@
   "model not found" errors if a user tried to run them.
 * `R/leafwax-package.R` runnable example now passes `model_name =`
   rather than relying on R's partial-argument matching of `model =`.
-* `utils::curlGetHeaders` is fully qualified at the call site to be
-  defensive against `warnPartialMatchArgs = TRUE`.
+* `curlGetHeaders` qualified as `base::curlGetHeaders` at the call
+  site (it is a base function, not a `utils` export).
 * `get_url_config()` fallback substitutes the real `bradleylab`
   GitHub organization instead of a `[YOUR-USERNAME]` placeholder. The
   fallback only fires for broken installs where `data_urls.json` is
   missing from `inst/extdata/`.
+* `inst/extdata/model_info.json` description for `c4_fraction`
+  rewritten to match the actual contract (fraction `[0, 1]` on the
+  public API, converted to percent internally).
 * Drafting-history breadcrumbs ("Phase A", "Phase B", "Codex P2 on
   Phase B") are removed from in-source comments. Substantive content
   is preserved.
+* `inst/examples/` (four v0.1 example scripts) and
+  `data-raw/{copy_posteriors,prepare_external_data,prepare_external_data_quick,prepare_package_data,_legacy_extract_spatial_metadata_120knot}.R`
+  + `data-raw/upload_instructions.md` + `data-raw/README.md` removed.
+  The v10 vignette `paleo-record-workflow.Rmd` is now the canonical
+  end-to-end example.
 * `README.md` rewritten to describe the lazy-load architecture:
   `inst/extdata/posteriors_light/` ships in the tarball and full
   posteriors are downloaded from `bradleylab/leafwax-data` v1.0.1
   (Zenodo) on first use, instead of the prior text claiming the
   package shipped ~10 MB of posteriors directly.
 * `.Rbuildignore` widened from `^PLAN_v0\.2\.0\.md$` to
-  `^PLAN_v.*\.md$` so future PLAN files are auto-excluded.
+  `^PLAN_v.*\.md$` so future PLAN files are auto-excluded; the
+  now-obsolete `^inst/examples$` line is removed.
+* `_pkgdown.yml` reference index pruned: the deleted v0.1 helpers,
+  the three deleted data exports, and the "legacy" framing on the
+  lower-level helpers section are removed.
+* `tests/testthat/helper-data.R` pruned to just the
+  `leafwax.suppress_preview_warning` option setter; the `b0b1`-default
+  mock helpers (`create_mock_metadata`, `create_mock_posteriors`,
+  `create_mock_lookup_table`, `create_test_data`,
+  `skip_on_cran_and_ci`, `model_available`) were dead code, not called
+  by any test file.
+
+## Tests
+
+* New regression test file `tests/testthat/test-cleanup-v022.R`
+  locks in: ensemble runs on default args; `compare_models()` runs on
+  default args (single site, multiple sites, `return_all = TRUE`);
+  `c4_fraction` round-trip from `invert_d2H()` to `invert_d2h()`
+  produces consistent reconstructions; out-of-range `c4_fraction`
+  is rejected at both wrapper entry points; `get_data_manifest()`
+  returns `NULL` on download failure rather than a silently-empty list.
 
 # leafwax 0.2.1
 

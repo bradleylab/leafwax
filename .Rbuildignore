@@ -13,6 +13,5 @@
 ^vignettes/_archive_v0\.1\.0$
 ^data-raw$
 ^LICENSE\.md$
-^inst/examples$
 ^inst/extdata/posteriors$
 ^cran-comments\.md$

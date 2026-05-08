@@ -54,17 +54,15 @@ reference:
       - get_model_info
       - list_models
       - load_posteriors
-      - load_model_posteriors
       - select_best_model
       - select_best_model_from_flags
 
   - title: "Datasets"
     contents:
       - example_data
-      - model_metadata
 
-  - title: "Lower-level / legacy helpers"
-    desc: "Internal-style exports retained from v0.1.0 (data caching, lookup tables, batch processing, validation) and the lower-level invert_d2h() function. Most users will not call these directly."
+  - title: "Lower-level helpers"
+    desc: "Internal-style exports (data caching, lookup tables, batch processing, validation) and the lower-level invert_d2h() function. Most users will not call these directly."
     contents:
       - invert_d2h
       - batch_invert_d2h
@@ -103,17 +101,13 @@ reference:
       - list_cached_models
       - setup_leafwax_data
       - verify_data_integrity
-      - check_model_data
       - download_with_progress
       - generate_model_description
       - get_cache_files
       - get_data_manifest
-      - get_download_files
-      - get_model_size_estimate
       - get_url_config
       - process_parallel
       - process_sequential
-      - use_example_data
 
   - title: "Math / GP internals"
     desc: "Numerical kernels and helper functions used by the spatial GP layer. Documented for completeness; not part of the user-facing API."
@@ -128,8 +122,6 @@ reference:
   - title: "Package"
     contents:
       - leafwax-package
-      - mini_lookup_table
-      - mini_posteriors
 
 articles:
   - title: "Workflow"

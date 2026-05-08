@@ -182,8 +182,16 @@ verify_data_integrity <- function(filepath, model_name = NULL, filename = NULL) 
   # Calculate file checksum
   file_checksum <- tools::md5sum(filepath)
 
-  # Load expected checksums
+  # Load expected checksums. A NULL manifest means get_data_manifest()
+  # could not reach the manifest and there is no cached copy on disk;
+  # treat that as "checksum verification skipped" with a warning, not
+  # "no checksum required".
   manifest <- get_data_manifest()
+  if (is.null(manifest)) {
+    warning("Skipping checksum verification: no manifest available.",
+            call. = FALSE)
+    return(TRUE)
+  }
 
   # Find expected checksum
   if (!is.null(filename)) {
@@ -325,22 +333,29 @@ get_url_config <- function() {
 
 #' Get data manifest
 #'
-#' Loads or downloads the data manifest with file checksums.
+#' Loads or downloads the data manifest with file checksums. Returns
+#' `NULL` (with a `warning()`) when the manifest is unreachable and
+#' there is no cached copy on disk; callers must treat that as
+#' "checksum verification skipped" rather than "no checksums found".
 #'
-#' @return List with manifest data
+#' @return Parsed manifest list, or `NULL` if no manifest is
+#'   available locally and the download failed.
 #' @keywords internal
 get_data_manifest <- function() {
 
-  # Check for cached manifest
   cache_dir <- get_cache_dir()
   manifest_file <- file.path(cache_dir, "manifest.json")
 
-  # Download if not present or older than 1 day
+  # Download if not present or older than 1 day. If the download
+  # fails, surface the error to the caller via warning() rather than
+  # silently masquerading as "manifest with zero files" (which earlier
+  # callers misread as "no checksums available -> trust the file").
   if (!file.exists(manifest_file) ||
       difftime(Sys.time(), file.info(manifest_file)$mtime, units = "days") > 1) {
 
     url_config <- get_url_config()
 
+    download_err <- NULL
     tryCatch({
       utils::download.file(
         url_config$manifest_url,
@@ -349,18 +364,23 @@ get_data_manifest <- function() {
         quiet = TRUE
       )
     }, error = function(e) {
-      # Return empty manifest if download fails
-      return(list(files = list()))
+      download_err <<- conditionMessage(e)
     })
+
+    if (!is.null(download_err) && !file.exists(manifest_file)) {
+      warning("Could not fetch data manifest: ", download_err,
+              call. = FALSE)
+      return(NULL)
+    }
   }
 
-  if (file.exists(manifest_file)) {
-    manifest <- jsonlite::fromJSON(manifest_file)
-  } else {
-    manifest <- list(files = list())
+  if (!file.exists(manifest_file)) {
+    warning("Data manifest not found and could not be downloaded.",
+            call. = FALSE)
+    return(NULL)
   }
 
-  return(manifest)
+  jsonlite::fromJSON(manifest_file)
 }
 
 #' Clear download cache

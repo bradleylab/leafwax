@@ -3,179 +3,6 @@
 #' @importFrom stats rnorm median sd quantile dist
 NULL
 
-#' Load model posteriors from package data (legacy v0.1 wrapper)
-#'
-#' Retained for backwards compatibility with v0.1 callers. New code
-#' should use [load_posteriors()], which returns a structured
-#' `leafwax_posterior` object and supports the v0.2 three-tier
-#' resolver.
-#'
-#' @param model_name Name of the model
-#' @param auto_download Logical whether to auto-download if missing
-#' @return Posterior draws as a data frame
-#' @keywords internal
-#' @export
-load_model_posteriors <- function(model_name, auto_download = NULL) {
-
-  # Check if data exists locally
-  has_data <- check_model_data(model_name, verbose = FALSE)
-
-  if (!has_data) {
-    if (is.null(auto_download)) {
-      auto_download <- getOption("leafwax.auto_download", FALSE)
-    }
-
-    if (!auto_download && interactive()) {
-      message("Model data for '", model_name, "' not found locally.")
-      message("Would you like to download it now? (~",
-              get_model_size_estimate(model_name), " MB)")
-      response <- readline("Download? (y/n): ")
-
-      if (tolower(response) == "y") {
-        success <- download_model_data(model_name, verbose = TRUE)
-        if (!success) {
-          stop("Failed to download model data")
-        }
-      } else {
-        # Try to use lightweight package data if available
-        message("Using lightweight example data (results may be less accurate)")
-        return(use_example_data(model_name))
-      }
-    } else if (auto_download) {
-      message("Downloading model data for '", model_name, "'...")
-      success <- download_model_data(model_name, verbose = TRUE)
-      if (!success) {
-        warning("Download failed, using lightweight example data")
-        return(use_example_data(model_name))
-      }
-    } else {
-      # Use lightweight data without prompting
-      return(use_example_data(model_name))
-    }
-  }
-
-  # Load the model using existing function
-  model <- load_posteriors(model_name)
-  return(model$draws)
-}
-
-#' Check if model data exists locally
-#'
-#' @param model_name Name of the model
-#' @param verbose Whether to print messages
-#' @return Logical indicating if data exists
-#' @keywords internal
-check_model_data <- function(model_name, verbose = TRUE) {
-
-  # Check package data
-  pkg_file <- system.file(
-    "extdata", "posterior_draws",
-    paste0(model_name, ".rds"),
-    package = "leafwax"
-  )
-
-  if (file.exists(pkg_file) && pkg_file != "") {
-    return(TRUE)
-  }
-
-  # Check cache
-  cache_dir <- get_cache_dir(create = FALSE)
-  cache_file <- file.path(cache_dir, "posteriors",
-                          paste0(model_name, "_posteriors.rds"))
-
-  if (file.exists(cache_file)) {
-    return(TRUE)
-  }
-
-  if (verbose) {
-    message("Model data for '", model_name, "' not found")
-  }
-
-  return(FALSE)
-}
-
-#' Get estimated download size for a model
-#'
-#' @param model_name Name of the model
-#' @return Estimated size in MB
-#' @keywords internal
-get_model_size_estimate <- function(model_name) {
-
-  # The v0.2 data_urls.json schema dropped the per-model `files` /
-  # `size_mb` keys (the leafwax-data archive ships one .rds per model
-  # at the repo root). When that key is absent, fall through to the
-  # heuristic estimate rather than calling sum() on a NULL list.
-  config_file <- system.file("extdata", "data_urls.json", package = "leafwax")
-
-  if (file.exists(config_file)) {
-    config <- jsonlite::fromJSON(config_file)
-
-    if (model_name %in% names(config$models)) {
-      model_info <- config$models[[model_name]]
-      if (!is.null(model_info$files) && length(model_info$files) > 0L) {
-        total_size <- sum(sapply(model_info$files,
-                                  function(x) x$size_mb %||% 0))
-        return(round(total_size, 1))
-      }
-    }
-  }
-
-  # Heuristic estimate: spatial models (~1 MB) are larger than
-  # non-spatial (~100 KB) at v10 / 1000 draws.
-  if (grepl("(^|_)sp$", model_name)) {
-    return(1.2)
-  } else {
-    return(0.15)
-  }
-}
-
-#' Use lightweight example data
-#'
-#' Falls back to minimal example data when full data is not available
-#'
-#' @param model_name Name of the model
-#' @return Minimal posterior draws
-#' @keywords internal
-use_example_data <- function(model_name) {
-
-  # Try to load mini posteriors from package
-  mini_file <- system.file(
-    "extdata", "mini_posteriors",
-    paste0(model_name, "_mini.rds"),
-    package = "leafwax"
-  )
-
-  if (file.exists(mini_file) && mini_file != "") {
-    return(readRDS(mini_file))
-  }
-
-  # Generate synthetic data as last resort
-  message("Generating synthetic example data (for demonstration only)")
-
-  n_draws <- 100
-  synthetic <- data.frame(
-    b0 = rnorm(n_draws, mean = 20, sd = 5),
-    b1 = rnorm(n_draws, mean = 0.8, sd = 0.05),
-    sigma = abs(rnorm(n_draws, mean = 10, sd = 2))
-  )
-
-  if (grepl("elev", model_name)) {
-    synthetic$b_elev <- rnorm(n_draws, mean = -0.005, sd = 0.001)
-  }
-
-  if (grepl("c4", model_name)) {
-    synthetic$b_c4 <- rnorm(n_draws, mean = -0.3, sd = 0.05)
-  }
-
-  if (grepl("pft", model_name)) {
-    synthetic$b_pft_tree <- rnorm(n_draws, mean = 0.1, sd = 0.02)
-    synthetic$b_pft_shrub <- rnorm(n_draws, mean = -0.05, sd = 0.02)
-    synthetic$b_pft_grass <- rnorm(n_draws, mean = -0.1, sd = 0.02)
-  }
-
-  return(synthetic)
-}
-
 #' Invert leaf wax d2H to precipitation d2H
 #' 
 #' Uses Bayesian posterior draws to invert leaf wax hydrogen isotope values
@@ -705,7 +532,9 @@ invert_d2h <- function(d2h_wax, d2h_wax_err = NULL,
 #' @param d2H_wax Numeric vector of leaf wax d2H values (per mil)
 #' @param d2H_wax_sd Numeric vector of measurement uncertainties (per mil)
 #' @param elevation_sd Elevation uncertainty (not used, kept for compatibility)
-#' @param c4_fraction Numeric vector of C4 vegetation percentage (0-100)
+#' @param c4_fraction Numeric vector of C4 vegetation cover as a
+#'   fraction in `[0, 1]`. The wrapper converts to the percent (0-100)
+#'   scale used internally before standardisation.
 #' @param c4_fraction_sd C4 fraction uncertainty (not used, kept for compatibility)
 #' @param model_name Character string specifying which model to use
 #' @param n_posterior_draws Integer number of posterior draws to use
@@ -731,16 +560,26 @@ invert_d2H <- function(d2H_wax,
                       record_id = NULL,
                       slope = NULL) {
 
-  # Map old parameter names to new ones. Pass through return_full,
-  # credible_level, and verbose so callers (e.g., detect_change()) can
-  # request the full posterior_draws matrix from the wrapper.
+  # The internal invert_d2h() core takes c4_percent (0-100), matching
+  # the scale at which scaling_params$c4_mean / c4_sd were estimated.
+  # The public wrapper takes c4_fraction (0-1) for consistency with
+  # validate_inputs(), example_data, and the rest of the user-facing
+  # API; convert here at the boundary.
+  if (!is.null(c4_fraction)) {
+    if (any(c4_fraction < 0, na.rm = TRUE) ||
+        any(c4_fraction > 1, na.rm = TRUE)) {
+      stop("c4_fraction must be in [0, 1]; got values outside that range.")
+    }
+  }
+  c4_percent_internal <- if (is.null(c4_fraction)) NULL else c4_fraction * 100
+
   invert_d2h(
     d2h_wax = d2H_wax,
     d2h_wax_err = d2H_wax_sd,
     longitude = longitude,
     latitude = latitude,
     elevation = elevation,
-    c4_percent = c4_fraction,
+    c4_percent = c4_percent_internal,
     pft_tree = pft_tree,
     pft_shrub = pft_shrub,
     pft_grass = pft_grass,

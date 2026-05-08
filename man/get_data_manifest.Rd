@@ -7,9 +7,13 @@
 get_data_manifest()
 }
 \value{
-List with manifest data
+Parsed manifest list, or \code{NULL} if no manifest is
+available locally and the download failed.
 }
 \description{
-Loads or downloads the data manifest with file checksums.
+Loads or downloads the data manifest with file checksums. Returns
+\code{NULL} (with a \code{warning()}) when the manifest is unreachable and
+there is no cached copy on disk; callers must treat that as
+"checksum verification skipped" rather than "no checksums found".
 }
 \keyword{internal}

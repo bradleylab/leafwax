@@ -6,20 +6,37 @@
 \usage{
 invert_d2H_ensemble(
   ...,
-  models = c("b0b1_elev_c4_pft_sp", "b0b1_elev_c4_sp", "b0b1_elev_pft_sp"),
+  models = c("full_sp", "full_interact_sp", "elevation_c4_interact_sp"),
   ensemble_method = c("equal", "all")
 )
 }
 \arguments{
-\item{...}{Arguments passed to \code{\link{invert_d2H}}}
+\item{...}{Arguments passed to \code{\link{invert_d2H}}.}
 
-\item{models}{Character vector of model names to include in ensemble}
+\item{models}{Character vector of v10 model names to include in the
+ensemble. Defaults to three structurally distinct variants:
+\code{full_sp} (all covariates + spatial GP), \code{full_interact_sp}
+(full + elevation x C4 interaction + spatial GP), and
+\code{elevation_c4_interact_sp} (elevation x C4 interaction with
+spatial GP, no PFT).}
 
-\item{ensemble_method}{Method for combining models: "equal" or "all"}
+\item{ensemble_method}{\code{"equal"} (default) pools per-draw
+reconstructions across models with equal weighting and returns a
+single resampled posterior. \code{"all"} returns the per-model results
+without pooling.}
 }
 \value{
-List with ensemble predictions and individual model results
+If \code{ensemble_method = "equal"}, a list with \code{posterior_draws}
+(pooled per-draw reconstructions), \code{ensemble_summary} (point-estimate
+summary statistics), \code{model_results} (the per-model output from
+\code{invert_d2H()} with \code{return_full = TRUE}), and \code{ensemble_method}.
+If \code{ensemble_method = "all"}, only \code{model_results} and
+\code{ensemble_method} are returned.
 }
 \description{
-Ensemble predictions across multiple models
+Runs \code{\link{invert_d2H}} against each model in \code{models} and
+combines the per-draw reconstructions into a single pooled
+posterior. Useful for downstream uncertainty estimates that should
+span structural model uncertainty rather than condition on one
+calibration variant.
 }

@@ -120,7 +120,9 @@ supplied, the override applies uniformly to every input row.}
 
 \item{elevation_sd}{Elevation uncertainty (not used, kept for compatibility)}
 
-\item{c4_fraction}{Numeric vector of C4 vegetation percentage (0-100)}
+\item{c4_fraction}{Numeric vector of C4 vegetation cover as a
+fraction in \verb{[0, 1]}. The wrapper converts to the percent (0-100)
+scale used internally before standardisation.}
 
 \item{c4_fraction_sd}{C4 fraction uncertainty (not used, kept for compatibility)}
 

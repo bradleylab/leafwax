@@ -281,9 +281,11 @@ compare_models <- function(data,
                           progress = TRUE,
                           ...) {
 
-  # Default to comparing base, elevation, and spatial models
+  # Default to a small structurally diverse comparison set rather than
+  # all 14 v10 models. Users wanting an exhaustive sweep should pass
+  # available_models() explicitly.
   if (is.null(models)) {
-    models <- c("b0b1", "b0b1_elev", "b0b1_sp", "b0b1_elev_sp")
+    models <- c("baseline", "baseline_sp", "full_sp")
   }
 
   # Check which models have data available
@@ -320,20 +322,21 @@ compare_models <- function(data,
     }
 
     tryCatch({
-      results <- predict_d2h_precip(
-        data,
-        model = model_name,
-        progress = FALSE,
-        verbose = FALSE,
-        ...
-      )
+      # Filter `...` to drop progress/verbose so the explicit values
+      # below win (and so a caller passing them does not collide with
+      # the formal arguments by partial match).
+      extra_args <- list(...)
+      extra_args[c("progress", "verbose", "model")] <- NULL
+      results <- do.call(predict_d2h_precip, c(
+        list(data = data, model = model_name,
+             progress = FALSE, verbose = FALSE),
+        extra_args
+      ))
 
-      # Rename columns to include model name
-      names(results)[names(results) != ".row_id"] <- paste0(
-        names(results)[names(results) != ".row_id"],
-        "_", model_name
-      )
-
+      # Store raw per-model results. The per-model column rename is
+      # applied below in the return_all = TRUE path; the ensemble
+      # summary path needs the original column names to extract the
+      # `d2h_precip_mean` / `d2h_precip_median` series uniformly.
       model_results[[model_name]] <- results
 
     }, error = function(e) {
@@ -355,11 +358,21 @@ compare_models <- function(data,
 
   # Combine results
   if (return_all) {
-    # Return all individual model results
-    combined <- model_results[[1]]
+    # Return all individual model results. Apply the per-model column
+    # rename here so the cbind product carries unambiguous,
+    # model-tagged column names.
+    rename_cols <- function(df, mname) {
+      keep <- names(df) == ".row_id"
+      names(df)[!keep] <- paste0(names(df)[!keep], "_", mname)
+      df
+    }
+    combined <- rename_cols(model_results[[1]], names(model_results)[1])
     if (length(model_results) > 1) {
       for (i in 2:length(model_results)) {
-        combined <- cbind(combined, model_results[[i]])
+        combined <- cbind(
+          combined,
+          rename_cols(model_results[[i]], names(model_results)[i])
+        )
       }
     }
     return(combined)
@@ -368,9 +381,14 @@ compare_models <- function(data,
     mean_cols <- grep("mean", names(model_results[[1]]), value = TRUE)
     median_cols <- grep("median", names(model_results[[1]]), value = TRUE)
 
-    # Extract predictions from each model
+    # Extract predictions from each model. sapply() returns a vector
+    # (no dim) when each model contributes a length-1 prediction; coerce
+    # to a 1 x n_models matrix so the row-wise apply() below works for
+    # both single-site and multi-site inputs.
     means <- sapply(model_results, function(x) x[[mean_cols[1]]])
     medians <- sapply(model_results, function(x) x[[median_cols[1]]])
+    if (is.null(dim(means)))   means   <- matrix(means,   nrow = 1)
+    if (is.null(dim(medians))) medians <- matrix(medians, nrow = 1)
 
     # Compute ensemble statistics
     ensemble_results <- data.frame(

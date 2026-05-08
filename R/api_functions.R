@@ -171,6 +171,17 @@ predict_d2h_precip <- function(data = NULL,
     pb <- NULL
   }
 
+  # Convert c4 from public-API fraction (0-1) to internal percent
+  # (0-100). NULL must stay NULL so the model-capability check inside
+  # invert_d2h() does not see a length-0 vector and warn spuriously.
+  if (!is.null(c4_fraction)) {
+    if (any(c4_fraction < 0, na.rm = TRUE) ||
+        any(c4_fraction > 1, na.rm = TRUE)) {
+      stop("c4_fraction must be in [0, 1]; got values outside that range.")
+    }
+  }
+  c4_percent_internal <- if (is.null(c4_fraction)) NULL else c4_fraction * 100
+
   # Call the core inversion function
   tryCatch({
     results <- invert_d2h(
@@ -179,7 +190,7 @@ predict_d2h_precip <- function(data = NULL,
       longitude = longitude,
       latitude = latitude,
       elevation = elevation,
-      c4_percent = c4_fraction * 100,  # Convert to percentage if needed
+      c4_percent = c4_percent_internal,
       pft_tree = pft_tree,
       pft_shrub = pft_shrub,
       pft_grass = pft_grass,
@@ -493,8 +504,6 @@ validate_inputs <- function(d2h_wax, longitude, latitude,
     stop("d2h_wax_err must be a single value or same length as d2h_wax")
   }
 
-  # Pull metadata via the v10 routing helper rather than the older
-  # data(model_metadata) lookup; the helper covers all 14 v10 names.
   metadata <- get_all_model_metadata()
 
   if (!model_name %in% names(metadata)) {
