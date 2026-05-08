@@ -96,7 +96,7 @@ slope_post <- suppressWarnings(local_effective_slope(
   longitude   = malawi_lon,
   latitude    = malawi_lat,
   model_name  = "baseline_sp",
-  n_draws     = 200,
+  n_draws     = 100,
   ceiling     = 0.88,
   verbose     = FALSE
 ))
@@ -122,7 +122,7 @@ recon <- suppressWarnings(invert_d2H(
   longitude  = rep(malawi_lon, nrow(malawi)),
   latitude   = rep(malawi_lat, nrow(malawi)),
   model_name = "baseline_sp",
-  n_posterior_draws = 200,
+  n_posterior_draws = 100,
   sigma_within = sw$sigma_within,
   slope        = slope_post,
   record_id    = "LS11KOMA",

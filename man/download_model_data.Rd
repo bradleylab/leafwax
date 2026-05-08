@@ -7,7 +7,7 @@
 download_model_data(
   model_name,
   version = "latest",
-  data_type = c("both", "posteriors", "lookup"),
+  data_type = c("posteriors", "both", "lookup"),
   cache_dir = NULL,
   overwrite = FALSE,
   verify = TRUE,

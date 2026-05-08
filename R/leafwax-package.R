@@ -80,6 +80,7 @@
 #' )
 #'
 #' @keywords internal
+#' @importFrom jsonlite fromJSON
 #' @importFrom stats rnorm quantile sd median runif cor aggregate
 #' @importFrom utils read.csv write.csv data setTxtProgressBar txtProgressBar
 "_PACKAGE"

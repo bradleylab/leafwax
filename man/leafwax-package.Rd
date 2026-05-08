@@ -97,6 +97,7 @@ Annual Review of Earth and Planetary Sciences, 40, 221-249.
 Useful links:
 \itemize{
   \item \url{https://github.com/bradleylab/leafwax}
+  \item \url{https://bradleylab.github.io/leafwax}
   \item Report bugs at \url{https://github.com/bradleylab/leafwax/issues}
 }
 

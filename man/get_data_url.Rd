@@ -7,7 +7,7 @@
 get_data_url(
   model_name,
   version = "latest",
-  data_type = c("both", "posteriors", "lookup")
+  data_type = c("posteriors", "both", "lookup")
 )
 }
 \arguments{

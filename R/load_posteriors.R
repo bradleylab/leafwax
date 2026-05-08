@@ -26,56 +26,107 @@ generate_fibonacci_sphere <- function(n_points = 125) {
   return(knot_coords)
 }
 
+#' Locate a posterior .rds file across the three tiers
+#'
+#' Tries (1) heavy posteriors shipped with the development install,
+#' (2) the user cache populated by `download_model_data()`, and
+#' (3) the lightweight posteriors that always ship with the package.
+#' Returns `NULL` if no file is found.
+#'
+#' @param model_name Character, model name (e.g. "baseline_sp").
+#' @return List with `path` (character) and `tier` ("heavy"/"cache"/"light"),
+#'   or `NULL`.
+#' @keywords internal
+#' @noRd
+resolve_posterior_file <- function(model_name) {
+  fname <- paste0(model_name, "_posterior.rds")
+
+  # Tier 1: heavy posteriors. Excluded from the CRAN tarball via
+  # .Rbuildignore but present on a development install.
+  heavy <- system.file("extdata", "posteriors", fname, package = "leafwax")
+  if (heavy != "" && file.exists(heavy)) {
+    return(list(path = heavy, tier = "heavy"))
+  }
+  heavy_dev <- file.path("inst", "extdata", "posteriors", fname)
+  if (file.exists(heavy_dev)) {
+    return(list(path = heavy_dev, tier = "heavy"))
+  }
+
+  # Tier 2: user cache populated by `download_model_data()`. The
+  # downloader writes to <cache>/posteriors/<model>_posterior.rds.
+  cache_path <- file.path(get_cache_dir(create = FALSE),
+                          "posteriors", fname)
+  if (file.exists(cache_path)) {
+    return(list(path = cache_path, tier = "cache"))
+  }
+
+  # Tier 3: lightweight posteriors. Always shipped (~6 KB/model, 100
+  # draws). Sufficient for examples, tests, and quick exploration.
+  light <- system.file("extdata", "posteriors_light", fname,
+                       package = "leafwax")
+  if (light != "" && file.exists(light)) {
+    return(list(path = light, tier = "light"))
+  }
+  light_dev <- file.path("inst", "extdata", "posteriors_light", fname)
+  if (file.exists(light_dev)) {
+    return(list(path = light_dev, tier = "light"))
+  }
+
+  return(NULL)
+}
+
 #' Load posterior draws for a model
 #'
-#' Loads posterior draws directly from package data - no downloads needed!
+#' Loads posterior draws for one of the 14 leafwax v10 models. The
+#' function looks for the requested model in three places, in order:
+#' the heavy posteriors that ship with a development install (1000
+#' draws/model), the user cache populated by `download_model_data()`,
+#' and the lightweight posteriors that always ship with the package
+#' (100 draws/model). Heavy posteriors are excluded from the CRAN
+#' tarball; on a CRAN install the lightweight tier is the default and
+#' the user can call `download_model_data()` to obtain full draws.
 #'
-#' @param model_name Character string specifying the model name
-#' @param n_draws Integer number of posterior draws to use (NULL for all)
-#' @param verbose Logical indicating whether to print loading information
+#' @param model_name Character string specifying the model name.
+#' @param n_draws Integer number of posterior draws to use, or NULL for
+#'   all available. When the lightweight tier is in use, requesting
+#'   more draws than are present silently returns the full 100.
+#' @param verbose Logical indicating whether to print loading info.
 #'
-#' @return A list containing model draws and metadata
+#' @return A `leafwax_posterior` object: a list with model draws,
+#'   metadata, optional spatial knots, and accessor closures.
 #' @export
 #' @examples
-#' # Load a model
+#' # Load a model (light tier, 100 draws on a fresh install)
 #' model <- load_posteriors("baseline")
 #'
-#' # Load with limited draws
-#' model_fast <- load_posteriors("baseline_sp", n_draws = 1000)
+#' # Spatial model with limited draws
+#' model_fast <- load_posteriors("baseline_sp", n_draws = 50)
 load_posteriors <- function(model_name, n_draws = NULL, verbose = TRUE) {
 
   if (verbose) {
-    cat("Loading model:", model_name, "\n")
+    message("Loading model: ", model_name)
   }
 
-  # Load from package data (with fallback to local directory)
-  posterior_file <- system.file(
-    "extdata", "posteriors",
-    paste0(model_name, "_posterior.rds"),
-    package = "leafwax"
-  )
-
-  # If package not installed, look in local directory
-  if (!file.exists(posterior_file) || posterior_file == "") {
-    local_file <- file.path("inst", "extdata", "posteriors", paste0(model_name, "_posterior.rds"))
-    if (file.exists(local_file)) {
-      posterior_file <- local_file
-    }
-  }
-
-  if (!file.exists(posterior_file) || posterior_file == "") {
-    # List available models using the model_utils function
+  loc <- resolve_posterior_file(model_name)
+  if (is.null(loc)) {
     available <- list_model_names()
-
     stop("Model '", model_name, "' not found.\n",
          "Available models: ", paste(available, collapse = ", "))
   }
+  posterior_file <- loc$path
 
   # Load posterior draws
   draws <- readRDS(posterior_file)
 
   if (verbose) {
-    cat("  Loaded", nrow(draws), "draws,", ncol(draws), "parameters\n")
+    message("  Loaded ", nrow(draws), " draws, ", ncol(draws), " parameters")
+    if (loc$tier == "light") {
+      message("  Using lightweight posteriors (",
+              nrow(draws),
+              " draws). Run download_model_data(\"",
+              model_name,
+              "\") for the full posterior.")
+    }
   }
 
   # Subset if requested. Use deterministic stratified thinning

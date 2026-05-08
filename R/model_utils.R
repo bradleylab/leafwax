@@ -202,24 +202,33 @@ get_all_model_metadata <- function() {
 
 #' List model names
 #'
-#' @return Character vector of model names
+#' Returns the names of every model the package can resolve. Prefers
+#' the heavy posteriors directory when present (development install),
+#' otherwise falls back to the lightweight posteriors directory that
+#' ships with every install. The user cache is intentionally not
+#' enumerated here so the answer is stable regardless of what has been
+#' downloaded.
+#'
+#' @return Character vector of model names. Empty if neither directory
+#'   contains posterior files.
 #' @export
 list_model_names <- function() {
-  # Get actual models from package data directory
-  extdata_dir <- system.file("extdata", "posteriors", package = "leafwax")
-
-  if (extdata_dir == "" || !dir.exists(extdata_dir)) {
-    # If package not installed, look in local directory
-    if (dir.exists("inst/extdata/posteriors")) {
-      extdata_dir <- "inst/extdata/posteriors"
-    } else {
-      return(character(0))
+  for (subdir in c("posteriors", "posteriors_light")) {
+    extdata_dir <- system.file("extdata", subdir, package = "leafwax")
+    if (extdata_dir == "" || !dir.exists(extdata_dir)) {
+      local_dir <- file.path("inst", "extdata", subdir)
+      if (dir.exists(local_dir)) {
+        extdata_dir <- local_dir
+      } else {
+        next
+      }
+    }
+    files <- list.files(extdata_dir, pattern = "_posterior\\.rds$")
+    if (length(files) > 0L) {
+      return(gsub("_posterior\\.rds$", "", files))
     }
   }
-
-  available <- list.files(extdata_dir, pattern = "_posterior\\.rds$")
-  model_names <- gsub("_posterior\\.rds$", "", available)
-  return(model_names)
+  character(0)
 }
 
 #' Get model info

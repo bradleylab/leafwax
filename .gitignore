@@ -9,7 +9,6 @@
 
 # Build output
 .Rcheck/
-.Rbuildignore
 
 # Package tarballs
 *.tar.gz

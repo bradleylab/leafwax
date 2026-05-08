@@ -25,7 +25,7 @@
 #' }
 download_model_data <- function(model_name,
                                version = "latest",
-                               data_type = c("both", "posteriors", "lookup"),
+                               data_type = c("posteriors", "both", "lookup"),
                                cache_dir = NULL,
                                overwrite = FALSE,
                                verify = TRUE,
@@ -119,7 +119,7 @@ download_model_data <- function(model_name,
 #' urls <- get_data_url("b0b1_sp", "v1.0.0")
 #' }
 get_data_url <- function(model_name, version = "latest",
-                        data_type = c("both", "posteriors", "lookup")) {
+                        data_type = c("posteriors", "both", "lookup")) {
 
   data_type <- match.arg(data_type)
 
@@ -137,13 +137,14 @@ get_data_url <- function(model_name, version = "latest",
   urls <- list()
 
   if (data_type %in% c("both", "posteriors")) {
-    # Add posterior draws file
+    # Posterior draws. Filename must match what load_posteriors() reads
+    # via resolve_posterior_file(): <model>_posterior.rds (singular).
     urls[[length(urls) + 1]] <- list(
-      url = paste0(base_url, "/posteriors/", model_name, "_posteriors.rds"),
-      filename = paste0("posteriors/", model_name, "_posteriors.rds")
+      url = paste0(base_url, "/posteriors/", model_name, "_posterior.rds"),
+      filename = paste0("posteriors/", model_name, "_posterior.rds")
     )
 
-    # Add metadata file
+    # Metadata file (per-model).
     urls[[length(urls) + 1]] <- list(
       url = paste0(base_url, "/metadata/", model_name, "_metadata.rds"),
       filename = paste0("metadata/", model_name, "_metadata.rds")
@@ -151,7 +152,7 @@ get_data_url <- function(model_name, version = "latest",
   }
 
   if (data_type %in% c("both", "lookup")) {
-    # Add lookup table file
+    # Pre-computed spatial lookup (only meaningful for `_sp` models).
     urls[[length(urls) + 1]] <- list(
       url = paste0(base_url, "/lookup_tables/", model_name, "_lookup.rds"),
       filename = paste0("lookup_tables/", model_name, "_lookup.rds")

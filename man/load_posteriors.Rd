@@ -7,22 +7,32 @@
 load_posteriors(model_name, n_draws = NULL, verbose = TRUE)
 }
 \arguments{
-\item{model_name}{Character string specifying the model name}
+\item{model_name}{Character string specifying the model name.}
 
-\item{n_draws}{Integer number of posterior draws to use (NULL for all)}
+\item{n_draws}{Integer number of posterior draws to use, or NULL for
+all available. When the lightweight tier is in use, requesting
+more draws than are present silently returns the full 100.}
 
-\item{verbose}{Logical indicating whether to print loading information}
+\item{verbose}{Logical indicating whether to print loading info.}
 }
 \value{
-A list containing model draws and metadata
+A \code{leafwax_posterior} object: a list with model draws,
+metadata, optional spatial knots, and accessor closures.
 }
 \description{
-Loads posterior draws directly from package data - no downloads needed!
+Loads posterior draws for one of the 14 leafwax v10 models. The
+function looks for the requested model in three places, in order:
+the heavy posteriors that ship with a development install (1000
+draws/model), the user cache populated by \code{download_model_data()},
+and the lightweight posteriors that always ship with the package
+(100 draws/model). Heavy posteriors are excluded from the CRAN
+tarball; on a CRAN install the lightweight tier is the default and
+the user can call \code{download_model_data()} to obtain full draws.
 }
 \examples{
-# Load a model
+# Load a model (light tier, 100 draws on a fresh install)
 model <- load_posteriors("baseline")
 
-# Load with limited draws
-model_fast <- load_posteriors("baseline_sp", n_draws = 1000)
+# Spatial model with limited draws
+model_fast <- load_posteriors("baseline_sp", n_draws = 50)
 }
