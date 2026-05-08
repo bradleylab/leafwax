@@ -5,6 +5,34 @@
 # behavior consistent across versions.
 `%||%` <- function(x, y) if (is.null(x)) y else x
 
+# Standardised wording for the preview-tier warning. Emitted from
+# load_posteriors() when it falls back to inst/extdata/posteriors_light/,
+# and again from invert_d2H() / assess_claim() / detect_change() so the
+# warning is visible at the inferential call rather than only at the
+# (often nested) data-loading call.
+preview_tier_message <- function(model_name, n_draws, context = NULL) {
+  ctx <- if (is.null(context)) "" else paste0(" (", context, ")")
+  paste0(
+    "leafwax preview posteriors in use", ctx, ": ",
+    n_draws, " draws of '", model_name, "'. ",
+    "Tail probabilities and 95% credible intervals are unstable at ",
+    "this sample size; not suitable for inference. ",
+    "Run download_model_data(\"", model_name, "\") for the full ",
+    "posterior."
+  )
+}
+
+# Emit the preview-tier warning, gated by getOption("leafwax.suppress_preview_warning").
+# Tests set the option to TRUE in tests/testthat/helper-data.R; batch
+# users who have already acknowledged the limitation can do the same.
+warn_preview_tier <- function(model_name, n_draws, context = NULL) {
+  if (isTRUE(getOption("leafwax.suppress_preview_warning"))) {
+    return(invisible())
+  }
+  warning(preview_tier_message(model_name, n_draws, context),
+          call. = FALSE)
+}
+
 .onLoad <- function(libname, pkgname) {
   # Set default options if not already set
   op <- options()
@@ -26,7 +54,12 @@
     leafwax.verbose = TRUE,
 
     # Default data type to load ("minimal", "standard", or "full")
-    leafwax.default_data_type = "standard"
+    leafwax.default_data_type = "standard",
+
+    # Suppress the warning emitted when the preview-tier (100-draw
+    # fixture) posteriors are loaded. Set to TRUE in batch jobs that
+    # have already acknowledged the limitation.
+    leafwax.suppress_preview_warning = FALSE
   )
 
   # Only set options that haven't been set by user

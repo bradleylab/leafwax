@@ -243,29 +243,55 @@ assess_claim <- function(record,
   l3_details <- list(missing = l3_missing)
 
   if (l2_passed && length(l3_missing) == 0L) {
-    # Build / re-use the reconstruction.
-    if (is.null(reconstruction)) {
+    # Build / re-use the reconstruction. When we build it ourselves,
+    # the inner invert_d2H() already emits the preview-tier warning,
+    # so silence it there and re-emit at this layer with the L3+
+    # context. When the user supplies the reconstruction directly,
+    # there was no inner warning, and we need to emit the first one.
+    built_internally <- is.null(reconstruction)
+    if (built_internally) {
       if (is.null(longitude) || is.null(latitude)) {
         stop("Level 3+ assessment without an explicit reconstruction ",
              "requires longitude and latitude to run invert_d2H().")
       }
       n_obs <- length(d2h_wax)
-      reconstruction <- invert_d2H(
-        d2H_wax    = d2h_wax,
-        d2H_wax_sd = if (!is.null(d2h_wax_err)) d2h_wax_err else rep(sigma_a, n_obs),
-        longitude  = rep(longitude, n_obs),
-        latitude   = rep(latitude,  n_obs),
-        model_name = model_name,
-        sigma_within = claim$sigma_within,
-        slope        = beta_eff,
-        return_full  = TRUE,
-        verbose      = FALSE,
-        ...
+      reconstruction <- withCallingHandlers(
+        invert_d2H(
+          d2H_wax    = d2h_wax,
+          d2H_wax_sd = if (!is.null(d2h_wax_err)) d2h_wax_err else rep(sigma_a, n_obs),
+          longitude  = rep(longitude, n_obs),
+          latitude   = rep(latitude,  n_obs),
+          model_name = model_name,
+          sigma_within = claim$sigma_within,
+          slope        = beta_eff,
+          return_full  = TRUE,
+          verbose      = FALSE,
+          ...
+        ),
+        warning = function(w) {
+          if (grepl("^leafwax preview posteriors in use",
+                    conditionMessage(w))) {
+            invokeRestart("muffleWarning")
+          }
+        }
       )
     }
     if (is.null(reconstruction$posterior_draws)) {
       stop("reconstruction must be invert_d2H(..., return_full = TRUE) ",
            "and contain $posterior_draws")
+    }
+    # Re-emit the preview-tier warning at the inferential layer using
+    # the *reconstruction's* own model name — the user-supplied
+    # reconstruction may have been built from a different model than
+    # `model_name`, and pointing them at the wrong download URL is a
+    # silent footgun.
+    rec_tier <- attr(reconstruction, "leafwax_tier") %||%
+                reconstruction$model_info$tier %||% "unknown"
+    rec_model <- reconstruction$model_info$model_name %||% model_name
+    if (identical(rec_tier, "light")) {
+      warn_preview_tier(rec_model,
+                        nrow(reconstruction$posterior_draws),
+                        "assess_claim L3+")
     }
     draws <- as.matrix(reconstruction$posterior_draws)
     if (ncol(draws) != length(d2h_wax)) {

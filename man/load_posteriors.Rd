@@ -9,28 +9,45 @@ load_posteriors(model_name, n_draws = NULL, verbose = TRUE)
 \arguments{
 \item{model_name}{Character string specifying the model name.}
 
-\item{n_draws}{Integer number of posterior draws to use, or NULL for
-all available. When the lightweight tier is in use, requesting
-more draws than are present silently returns the full 100.}
+\item{n_draws}{Integer number of posterior draws to use, or \code{NULL}
+for all available. Requesting more draws than are present
+silently returns whatever is available (e.g. all 100 from the
+preview tier).}
 
 \item{verbose}{Logical indicating whether to print loading info.}
 }
 \value{
-A \code{leafwax_posterior} object: a list with model draws,
-metadata, optional spatial knots, and accessor closures.
+A \code{leafwax_posterior} object: a list with \code{draws},
+\code{metadata} (including \code{metadata$tier}, one of "heavy", "cache",
+"light"), optional \code{spatial}, and accessor closures.
 }
 \description{
 Loads posterior draws for one of the 14 leafwax v10 models. The
-function looks for the requested model in three places, in order:
-the heavy posteriors that ship with a development install (1000
-draws/model), the user cache populated by \code{download_model_data()},
-and the lightweight posteriors that always ship with the package
-(100 draws/model). Heavy posteriors are excluded from the CRAN
-tarball; on a CRAN install the lightweight tier is the default and
-the user can call \code{download_model_data()} to obtain full draws.
+function searches three tiers in order:
+}
+\details{
+\enumerate{
+\item \strong{Heavy} posteriors at \verb{inst/extdata/posteriors/} (1000 draws,
+development install only; excluded from the CRAN tarball).
+\item \strong{Cache} populated by \code{\link[=download_model_data]{download_model_data()}} under
+\code{\link[=get_cache_dir]{get_cache_dir()}}.
+\item \strong{Preview} posteriors at \verb{inst/extdata/posteriors_light/}. These
+are a 100-draw stratified subsample shipped with every install
+so examples and tests run offline. They are intended as a
+fixture for code-path verification, \strong{not} for inference: tail
+probabilities and 95\% credible intervals are noisy at this
+sample size. The package issues a warning whenever the preview
+tier is in use; downstream functions (\code{\link[=invert_d2H]{invert_d2H()}},
+\code{\link[=assess_claim]{assess_claim()}}, \code{\link[=detect_change]{detect_change()}}) repeat the warning so it is
+visible at the call that actually matters.
+}
+
+For inference, run \code{\link[=download_model_data]{download_model_data()}} once to populate the
+cache and then call \code{load_posteriors()} again — the cache tier wins
+over the preview tier and no further downloads are needed.
 }
 \examples{
-# Load a model (light tier, 100 draws on a fresh install)
+# Load a model (preview tier on a fresh install)
 model <- load_posteriors("baseline")
 
 # Spatial model with limited draws

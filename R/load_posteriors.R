@@ -42,14 +42,12 @@ resolve_posterior_file <- function(model_name) {
   fname <- paste0(model_name, "_posterior.rds")
 
   # Tier 1: heavy posteriors. Excluded from the CRAN tarball via
-  # .Rbuildignore but present on a development install.
+  # .Rbuildignore but present on a development install (and visible
+  # under devtools::load_all() because it shadows system.file() to
+  # the source tree).
   heavy <- system.file("extdata", "posteriors", fname, package = "leafwax")
   if (heavy != "" && file.exists(heavy)) {
     return(list(path = heavy, tier = "heavy"))
-  }
-  heavy_dev <- file.path("inst", "extdata", "posteriors", fname)
-  if (file.exists(heavy_dev)) {
-    return(list(path = heavy_dev, tier = "heavy"))
   }
 
   # Tier 2: user cache populated by `download_model_data()`. The
@@ -60,43 +58,54 @@ resolve_posterior_file <- function(model_name) {
     return(list(path = cache_path, tier = "cache"))
   }
 
-  # Tier 3: lightweight posteriors. Always shipped (~6 KB/model, 100
-  # draws). Sufficient for examples, tests, and quick exploration.
+  # Tier 3: preview posteriors. Always shipped (100-draw fixture).
+  # Sufficient for examples, tests, and the vignette to compile, but
+  # callers downstream warn loudly that it is not for inference.
   light <- system.file("extdata", "posteriors_light", fname,
                        package = "leafwax")
   if (light != "" && file.exists(light)) {
     return(list(path = light, tier = "light"))
   }
-  light_dev <- file.path("inst", "extdata", "posteriors_light", fname)
-  if (file.exists(light_dev)) {
-    return(list(path = light_dev, tier = "light"))
-  }
 
-  return(NULL)
+  NULL
 }
 
 #' Load posterior draws for a model
 #'
 #' Loads posterior draws for one of the 14 leafwax v10 models. The
-#' function looks for the requested model in three places, in order:
-#' the heavy posteriors that ship with a development install (1000
-#' draws/model), the user cache populated by `download_model_data()`,
-#' and the lightweight posteriors that always ship with the package
-#' (100 draws/model). Heavy posteriors are excluded from the CRAN
-#' tarball; on a CRAN install the lightweight tier is the default and
-#' the user can call `download_model_data()` to obtain full draws.
+#' function searches three tiers in order:
+#'
+#' 1. **Heavy** posteriors at `inst/extdata/posteriors/` (1000 draws,
+#'    development install only; excluded from the CRAN tarball).
+#' 2. **Cache** populated by [download_model_data()] under
+#'    [get_cache_dir()].
+#' 3. **Preview** posteriors at `inst/extdata/posteriors_light/`. These
+#'    are a 100-draw stratified subsample shipped with every install
+#'    so examples and tests run offline. They are intended as a
+#'    fixture for code-path verification, **not** for inference: tail
+#'    probabilities and 95% credible intervals are noisy at this
+#'    sample size. The package issues a warning whenever the preview
+#'    tier is in use; downstream functions ([invert_d2H()],
+#'    [assess_claim()], [detect_change()]) repeat the warning so it is
+#'    visible at the call that actually matters.
+#'
+#' For inference, run [download_model_data()] once to populate the
+#' cache and then call `load_posteriors()` again — the cache tier wins
+#' over the preview tier and no further downloads are needed.
 #'
 #' @param model_name Character string specifying the model name.
-#' @param n_draws Integer number of posterior draws to use, or NULL for
-#'   all available. When the lightweight tier is in use, requesting
-#'   more draws than are present silently returns the full 100.
+#' @param n_draws Integer number of posterior draws to use, or `NULL`
+#'   for all available. Requesting more draws than are present
+#'   silently returns whatever is available (e.g. all 100 from the
+#'   preview tier).
 #' @param verbose Logical indicating whether to print loading info.
 #'
-#' @return A `leafwax_posterior` object: a list with model draws,
-#'   metadata, optional spatial knots, and accessor closures.
+#' @return A `leafwax_posterior` object: a list with `draws`,
+#'   `metadata` (including `metadata$tier`, one of "heavy", "cache",
+#'   "light"), optional `spatial`, and accessor closures.
 #' @export
 #' @examples
-#' # Load a model (light tier, 100 draws on a fresh install)
+#' # Load a model (preview tier on a fresh install)
 #' model <- load_posteriors("baseline")
 #'
 #' # Spatial model with limited draws
@@ -120,13 +129,6 @@ load_posteriors <- function(model_name, n_draws = NULL, verbose = TRUE) {
 
   if (verbose) {
     message("  Loaded ", nrow(draws), " draws, ", ncol(draws), " parameters")
-    if (loc$tier == "light") {
-      message("  Using lightweight posteriors (",
-              nrow(draws),
-              " draws). Run download_model_data(\"",
-              model_name,
-              "\") for the full posterior.")
-    }
   }
 
   # Subset if requested. Use deterministic stratified thinning
@@ -144,6 +146,12 @@ load_posteriors <- function(model_name, n_draws = NULL, verbose = TRUE) {
     }
   }
 
+  # Warn after thinning so the reported draw count matches what the
+  # caller actually receives.
+  if (loc$tier == "light") {
+    warn_preview_tier(model_name, nrow(draws))
+  }
+
   # Create metadata. Capability flags are derived from the actual draws
   # column names rather than the model name, because some model names
   # (e.g., `full`, `full_sp`, `full_interact_sp`) include C4/PFT effects
@@ -155,6 +163,7 @@ load_posteriors <- function(model_name, n_draws = NULL, verbose = TRUE) {
     n_draws = nrow(draws),
     n_parameters = ncol(draws),
     parameters = param_names,
+    tier = loc$tier,
     has_elevation = any(grepl("^beta_elev", param_names)) ||
                     grepl("(env|elevation|elev)", model_name),
     has_c4        = any(grepl("^beta_c4", param_names)) ||

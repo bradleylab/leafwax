@@ -328,9 +328,18 @@ invert_d2h <- function(d2h_wax, d2h_wax_err = NULL,
     if (verbose) cat("Using default measurement uncertainty of 3 per mil\n")
   }
   
-  # Load the model
+  # Load the model. Suppress the inner preview-tier warning here and
+  # re-emit it below with the "invert_d2H" context, so the user sees
+  # one warning at the inferential layer rather than two.
   if (verbose) cat("Loading model:", model_name, "\n")
-  model <- load_posteriors(model_name, n_draws = n_draws, verbose = verbose)
+  model <- withCallingHandlers(
+    load_posteriors(model_name, n_draws = n_draws, verbose = verbose),
+    warning = function(w) {
+      if (grepl("^leafwax preview posteriors in use", conditionMessage(w))) {
+        invokeRestart("muffleWarning")
+      }
+    }
+  )
   
   # Check that requested predictors match the model
   model_meta <- model$metadata
@@ -647,14 +656,23 @@ invert_d2h <- function(d2h_wax, d2h_wax_err = NULL,
         round(mean(summary_df$prediction_interval_width), 1), " per mil\n", sep = "")
   }
   
+  # Tag the result with the posterior tier so downstream inferential
+  # functions (assess_claim, detect_change) can warn if the user is
+  # operating on the preview fixture.
+  tier <- model_meta$tier %||% "unknown"
+  if (identical(tier, "light")) {
+    warn_preview_tier(model_name, n_iter, "invert_d2H")
+  }
+
   if (return_full) {
-    return(list(
+    out <- list(
       summary = summary_df,
       posterior_draws = d2h_precip_post,
       model_info = list(
         model_name = model_name,
         n_draws = n_iter,
         n_locations = n_obs,
+        tier = tier,
         components_used = c(
           base = TRUE,
           elevation = model_meta$has_elevation && !is.null(elevation),
@@ -663,8 +681,11 @@ invert_d2h <- function(d2h_wax, d2h_wax_err = NULL,
           spatial = model_meta$has_gp
         )
       )
-    ))
+    )
+    attr(out, "leafwax_tier") <- tier
+    return(out)
   } else {
+    attr(summary_df, "leafwax_tier") <- tier
     return(summary_df)
   }
 }
