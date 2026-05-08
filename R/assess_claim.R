@@ -127,10 +127,25 @@ assess_claim <- function(record,
     stop("claim$sigma_within must be a single non-negative numeric value")
   }
 
-  # Defaults for optional fields.
-  sigma_a <- claim$sigma_analytical %||% 3
-  rho_t   <- claim$rho_t %||% 0
-  conf    <- claim$confidence %||% 0.95
+  # Defaults for optional fields, with finite-scalar validation. Each
+  # of these directly drives the Level 1 threshold; bad inputs upstream
+  # (NA, length > 1, non-numeric) need a controlled error here rather
+  # than a downstream "condition has length > 1".
+  .scalar <- function(x, name, allow_neg = FALSE) {
+    if (!is.numeric(x) || length(x) != 1L || !is.finite(x)) {
+      stop(sprintf(
+        "claim$%s must be a single finite numeric value", name
+      ))
+    }
+    if (!allow_neg && x < 0) {
+      stop(sprintf("claim$%s must be non-negative", name))
+    }
+    x
+  }
+  sigma_a <- .scalar(claim$sigma_analytical %||% 3, "sigma_analytical")
+  rho_t   <- .scalar(claim$rho_t            %||% 0, "rho_t",
+                     allow_neg = TRUE)
+  conf    <- .scalar(claim$confidence       %||% 0.95, "confidence")
   if (rho_t <= -1 || rho_t >= 1) {
     stop("claim$rho_t must be in (-1, 1)")
   }
@@ -173,15 +188,36 @@ assess_claim <- function(record,
   )
 
   # --- Level 2: corroborating evidence supplied -----------------------
+  # Require each entry to be named AND to carry non-empty, non-NA
+  # evidence content. Strings must be non-empty after whitespace strip;
+  # any other object type passes the structural check (we accept
+  # arbitrary evidence objects, e.g., a tibble of proxy data, as long
+  # as they are not NA and have positive length).
   cor_p <- claim$corroborating_proxies
-  has_cor <- is.list(cor_p) && length(cor_p) > 0L &&
-             !is.null(names(cor_p)) &&
-             all(nzchar(names(cor_p)))
+  has_cor <- FALSE
+  bad_cor <- character(0)
+  if (is.list(cor_p) && length(cor_p) > 0L &&
+      !is.null(names(cor_p)) && all(nzchar(names(cor_p)))) {
+    cor_ok <- vapply(cor_p, function(v) {
+      if (is.null(v) || (length(v) == 1L && is.na(v))) return(FALSE)
+      if (is.character(v)) {
+        return(any(nzchar(trimws(v)), na.rm = TRUE))
+      }
+      length(v) > 0L
+    }, logical(1L))
+    has_cor <- all(cor_ok)
+    if (!has_cor) bad_cor <- names(cor_p)[!cor_ok]
+  }
   l2_passed <- l1_passed && has_cor
   if (!l1_passed) {
     l2_summary <- "blocked by Level 1 failure"
-  } else if (!has_cor) {
+  } else if (!is.list(cor_p) || length(cor_p) == 0L ||
+             is.null(names(cor_p)) || !all(nzchar(names(cor_p)))) {
     l2_summary <- "no named corroborating_proxies supplied"
+  } else if (!has_cor) {
+    l2_summary <- sprintf(
+      "corroborating_proxies present but empty/NA for: %s",
+      paste(bad_cor, collapse = ", "))
   } else {
     l2_summary <- sprintf("corroborating_proxies supplied: %s",
                           paste(names(cor_p), collapse = ", "))
@@ -278,10 +314,21 @@ assess_claim <- function(record,
   l4_missing  <- character(0)
   for (k in l4_required) {
     s <- claim[[k]]
-    if (!is.list(s) || !isTRUE(s$value) ||
-        is.null(s$evidence) || !nzchar(s$evidence)) {
+    # Reject NA / non-character evidence explicitly. nzchar(NA) returns
+    # TRUE by default, so the older check let stationarity_evidence =
+    # NA_character_ pass; that promotes a Level 3 claim to Level 4 with
+    # missing evidence. Require a non-empty character scalar after
+    # whitespace stripping.
+    ok <- is.list(s) && isTRUE(s$value)
+    if (ok) {
+      e <- s$evidence
+      ok <- is.character(e) && length(e) == 1L &&
+            !is.na(e) && nzchar(trimws(e))
+    }
+    if (!ok) {
       l4_missing <- c(l4_missing,
-        sprintf("%s (need list(value = TRUE, evidence = <non-empty>))", k))
+        sprintf("%s (need list(value = TRUE, evidence = <non-empty character>))",
+                k))
     }
   }
   if (l3_passed && length(l4_missing) == 0L) {

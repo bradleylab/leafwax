@@ -189,6 +189,90 @@ test_that("assess_claim: rejects bad inputs", {
                "non-finite")
 })
 
+test_that("assess_claim: empty / NA corroborating_proxies values do not pass L2", {
+  rec <- .make_record(delta_wax = 50)
+  base_claim <- list(
+    level             = 4,
+    interval_baseline = c(0, 5000),
+    interval_test     = c(5000, 10000),
+    sigma_within      = 5,
+    sigma_analytical  = 3,
+    rho_t             = 0,
+    confidence        = 0.95
+  )
+  # Empty string is not evidence.
+  out_blank <- assess_claim(record = rec,
+                            claim = c(base_claim,
+                                      list(corroborating_proxies = list(speleothem = ""))))
+  expect_false(out_blank$levels$passed[2])
+  expect_match(out_blank$levels$summary[2], "empty/NA")
+
+  # NA is not evidence.
+  out_na <- assess_claim(record = rec,
+                         claim = c(base_claim,
+                                   list(corroborating_proxies = list(speleothem = NA))))
+  expect_false(out_na$levels$passed[2])
+  expect_match(out_na$levels$summary[2], "empty/NA")
+})
+
+test_that("assess_claim: NA stationarity evidence does not pass L4", {
+  rec <- .make_record(delta_wax = 80)
+  rec_recon <- .make_reconstruction(rec, delta_precip = -50)
+  claim <- list(
+    level                         = 4,
+    interval_baseline             = c(0, 5000),
+    interval_test                 = c(5000, 10000),
+    sigma_within                  = 5,
+    sigma_analytical              = 3,
+    rho_t                         = 0,
+    confidence                    = 0.95,
+    beta_eff                      = 0.55,
+    magnitude_precip              = 30,
+    corroborating_proxies         = list(speleothem = "concordant"),
+    vegetation_stationary         = list(value = TRUE,
+                                         evidence = NA_character_),
+    seasonal_source_stationary    = list(value = TRUE,
+                                         evidence = "speleothem stable"),
+    evapotranspirative_stationary = list(value = TRUE,
+                                         evidence = "leaf-water stable")
+  )
+  out <- assess_claim(record = rec, claim = claim,
+                      reconstruction = rec_recon)
+  expect_true(out$levels$passed[3])
+  expect_false(out$levels$passed[4])
+  expect_match(out$levels$summary[4], "vegetation_stationary")
+})
+
+test_that("assess_claim: invalid scalar fields error cleanly", {
+  rec <- .make_record(delta_wax = 50)
+  base_claim <- list(
+    level             = 1,
+    interval_baseline = c(0, 5000),
+    interval_test     = c(5000, 10000),
+    sigma_within      = 5
+  )
+  expect_error(
+    assess_claim(record = rec,
+                 claim = c(base_claim, list(sigma_analytical = NA_real_))),
+    "single finite numeric"
+  )
+  expect_error(
+    assess_claim(record = rec,
+                 claim = c(base_claim, list(rho_t = c(0.5, 0.6)))),
+    "single finite numeric"
+  )
+  expect_error(
+    assess_claim(record = rec,
+                 claim = c(base_claim, list(confidence = "high"))),
+    "single finite numeric"
+  )
+  expect_error(
+    assess_claim(record = rec,
+                 claim = c(base_claim, list(sigma_analytical = -1))),
+    "non-negative"
+  )
+})
+
 test_that("assess_claim: rho_t > 0 lowers the L1 threshold", {
   rec <- .make_record(delta_wax = 12)
   base_claim <- list(
