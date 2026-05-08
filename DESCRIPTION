@@ -10,7 +10,8 @@ Description: Bayesian inversion of leaf wax hydrogen isotopes to reconstruct
     Gaussian processes. Models are pre-computed using Stan and stored as
     posterior distributions for fast prediction without requiring Stan installation.
 License: MIT + file LICENSE
-URL: https://github.com/bradleylab/leafwax
+URL: https://github.com/bradleylab/leafwax,
+    https://bradleylab.github.io/leafwax
 BugReports: https://github.com/bradleylab/leafwax/issues
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
