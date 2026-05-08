@@ -63,6 +63,46 @@ reference:
       - example_data
       - model_metadata
 
+  - title: "Lower-level / legacy helpers"
+    desc: "Internal-style exports retained from v0.1.0 (data caching, lookup tables, batch processing, validation) and the lower-level invert_d2h() function. Most users will not call these directly."
+    contents:
+      - invert_d2h
+      - batch_invert_d2h
+      - batch_predict
+      - predict_d2h_precip
+      - validate_inputs
+      - validate_model_inputs
+      - validate_lookup_table
+      - get_model_parameters
+      - get_model_recommendations
+      - detect_model_capabilities
+      - list_model_names
+      - leafwax_config
+      - leafwax_set_config
+      - monitor_memory
+      - benchmark_lookup
+      - compare_models
+      - create_lookup_table
+      - create_regional_lookup
+      - cache_all_lookup_tables
+      - use_lookup_if_available
+      - get_spatial_params
+      - generate_fibonacci_sphere
+      - generate_global_grid
+      - predict_spatial_mpp
+      - predict_spatial_dual_gp
+      - download_model_data
+      - check_data_cache
+      - clear_data_cache
+      - clear_download_cache
+      - get_cache_dir
+      - get_cache_info
+      - get_data_path
+      - get_data_url
+      - list_cached_models
+      - setup_leafwax_data
+      - verify_data_integrity
+
 articles:
   - title: "Workflow"
     contents:
