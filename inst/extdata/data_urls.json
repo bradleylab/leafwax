@@ -1,13 +1,13 @@
 {
-  "version": "1.0.0",
-  "release_tag": "v1.0.0",
+  "version": "1.0.1",
+  "release_tag": "v1.0.1",
   "concept_doi": "10.5281/zenodo.20085465",
-  "version_doi": "10.5281/zenodo.20085466",
+  "version_doi": "10.5281/zenodo.20086180",
   "base_url_latest": "https://raw.githubusercontent.com/bradleylab/leafwax-data/main",
   "base_url_version": "https://raw.githubusercontent.com/bradleylab/leafwax-data/{version}",
-  "manifest_url": "https://raw.githubusercontent.com/bradleylab/leafwax-data/v1.0.0/manifest.json",
+  "manifest_url": "https://raw.githubusercontent.com/bradleylab/leafwax-data/v1.0.1/manifest.json",
   "fallback_urls": [
-    "https://zenodo.org/records/20085466/files"
+    "https://zenodo.org/records/20086180/files"
   ],
   "models": {
     "baseline":                 { "filename": "baseline_posterior.rds" },

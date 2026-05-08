@@ -101,7 +101,10 @@ check_model_data <- function(model_name, verbose = TRUE) {
 #' @keywords internal
 get_model_size_estimate <- function(model_name) {
 
-  # Load URL configuration
+  # The v0.2 data_urls.json schema dropped the per-model `files` /
+  # `size_mb` keys (the leafwax-data archive ships one .rds per model
+  # at the repo root). When that key is absent, fall through to the
+  # heuristic estimate rather than calling sum() on a NULL list.
   config_file <- system.file("extdata", "data_urls.json", package = "leafwax")
 
   if (file.exists(config_file)) {
@@ -109,16 +112,20 @@ get_model_size_estimate <- function(model_name) {
 
     if (model_name %in% names(config$models)) {
       model_info <- config$models[[model_name]]
-      total_size <- sum(sapply(model_info$files, function(x) x$size_mb))
-      return(round(total_size, 1))
+      if (!is.null(model_info$files) && length(model_info$files) > 0L) {
+        total_size <- sum(sapply(model_info$files,
+                                  function(x) x$size_mb %||% 0))
+        return(round(total_size, 1))
+      }
     }
   }
 
-  # Default estimate based on model type
-  if (grepl("sp", model_name)) {
-    return(35)  # Spatial models are larger
+  # Heuristic estimate: spatial models (~1 MB) are larger than
+  # non-spatial (~100 KB) at v10 / 1000 draws.
+  if (grepl("(^|_)sp$", model_name)) {
+    return(1.2)
   } else {
-    return(2)   # Non-spatial models
+    return(0.15)
   }
 }
 
