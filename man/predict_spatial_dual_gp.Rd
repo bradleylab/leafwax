@@ -31,3 +31,4 @@ v10's posterior, two names for the same draw), but have distinct
 \code{sigma_intercept_spatial} and \code{sigma_slope_spatial}, and distinct
 \verb{z_intercept_spatial[*]} and \verb{z_slope_spatial[*]} knot effects.
 }
+\keyword{internal}

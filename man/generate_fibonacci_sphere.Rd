@@ -15,3 +15,4 @@ Matrix with columns "lon" and "lat" in degrees
 \description{
 Generates evenly distributed points on a sphere using the Fibonacci spiral method.
 }
+\keyword{internal}

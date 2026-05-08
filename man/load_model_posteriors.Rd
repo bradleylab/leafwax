@@ -2,7 +2,7 @@
 % Please edit documentation in R/invert_d2h.R
 \name{load_model_posteriors}
 \alias{load_model_posteriors}
-\title{Load model posteriors from package data}
+\title{Load model posteriors from package data (legacy v0.1 wrapper)}
 \usage{
 load_model_posteriors(model_name, auto_download = NULL)
 }
@@ -15,5 +15,9 @@ load_model_posteriors(model_name, auto_download = NULL)
 Posterior draws as a data frame
 }
 \description{
-Load model posteriors from package data
+Retained for backwards compatibility with v0.1 callers. New code
+should use \code{\link[=load_posteriors]{load_posteriors()}}, which returns a structured
+\code{leafwax_posterior} object and supports the v0.2 three-tier
+resolver.
 }
+\keyword{internal}

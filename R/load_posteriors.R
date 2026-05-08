@@ -6,6 +6,7 @@
 #'
 #' @param n_points Number of points to generate
 #' @return Matrix with columns "lon" and "lat" in degrees
+#' @keywords internal
 #' @export
 generate_fibonacci_sphere <- function(n_points = 125) {
   golden_angle <- pi * (3.0 - sqrt(5.0))

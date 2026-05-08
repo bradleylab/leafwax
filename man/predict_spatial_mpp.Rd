@@ -35,3 +35,4 @@ Matern 3/2 kernel. The original implementation used an exponential
 kernel, did not standardize coordinates, and was incompatible with v10
 fits. New code should use \code{predict_spatial_dual_gp()}.
 }
+\keyword{internal}

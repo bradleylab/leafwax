@@ -17,6 +17,7 @@ NULL
 #' @param sigma marginal SD
 #' @param rho length scale (in standardized units; SAME units as d)
 #' @return covariance values matching shape of d
+#' @noRd
 matern32 <- function(d, sigma, rho) {
   scaled <- sqrt(3) * d / rho
   sigma^2 * (1 + scaled) * exp(-scaled)
@@ -26,6 +27,7 @@ matern32 <- function(d, sigma, rho) {
 #' @param a matrix(n_a, 2)
 #' @param b matrix(n_b, 2)
 #' @return matrix(n_a, n_b)
+#' @noRd
 pair_distances <- function(a, b) {
   outer(seq_len(nrow(a)), seq_len(nrow(b)),
         FUN = function(i, j) sqrt((a[i, 1] - b[j, 1])^2 + (a[i, 2] - b[j, 2])^2))
@@ -35,6 +37,7 @@ pair_distances <- function(a, b) {
 #' Stan model's `coord_scale_km = mean(coord_scaling) * 111.0` formula.
 #' @param ls_km numeric in km
 #' @param scaling list with $lon_sd and $lat_sd (degrees)
+#' @noRd
 ls_km_to_std <- function(ls_km, scaling) {
   coord_scale_km <- mean(c(scaling$lon_sd, scaling$lat_sd)) * 111.0
   ls_km / coord_scale_km
@@ -43,6 +46,7 @@ ls_km_to_std <- function(ls_km, scaling) {
 #' Standardize a coord matrix using the scaling parameters.
 #' @param coords matrix(n, 2) of (lon, lat) in degrees
 #' @param scaling list with $lon_mean, $lon_sd, $lat_mean, $lat_sd
+#' @noRd
 standardize_coords <- function(coords, scaling) {
   if (is.null(dim(coords))) coords <- matrix(coords, ncol = 2, byrow = TRUE)
   cbind(
@@ -129,6 +133,7 @@ predict_one_gp_mpp <- function(coords_new, knot_coords, z_knots,
 #' @return list with two matrices, each n_draws x n_obs:
 #'   `intercept` (additive contribution to beta_0 in standardized
 #'   d2H_wax space) and `slope` (additive contribution to beta_oipc).
+#' @keywords internal
 #' @export
 predict_spatial_dual_gp <- function(coords_new, knot_coords, draws, scaling) {
 
@@ -193,6 +198,7 @@ predict_spatial_dual_gp <- function(coords_new, knot_coords, draws, scaling) {
 #'   units (assumed already standardized for the legacy code path).
 #' @param sigma_gp_draws numeric(n_draws), GP marginal SD draws.
 #' @return matrix(n_draws, 1) of predicted GP values at the site.
+#' @keywords internal
 #' @export
 predict_spatial_mpp <- function(coords_std, knot_coords, z_spatial_draws,
                                 ls_gp_draws, sigma_gp_draws) {

@@ -1,6 +1,6 @@
 Package: leafwax
-Title: Bayesian Inversion of Leaf Wax d2H to Precipitation d2H
-Version: 0.2.0
+Title: Bayesian Inversion of Leaf Wax Hydrogen Isotopes to Precipitation
+Version: 0.2.1
 Authors@R:
     person("Alex", "Bradley", , "abradley@wustl.edu", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0002-4044-2802"))

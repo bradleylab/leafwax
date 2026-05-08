@@ -3,10 +3,17 @@
 #' @importFrom stats rnorm median sd quantile dist
 NULL
 
-#' Load model posteriors from package data
+#' Load model posteriors from package data (legacy v0.1 wrapper)
+#'
+#' Retained for backwards compatibility with v0.1 callers. New code
+#' should use [load_posteriors()], which returns a structured
+#' `leafwax_posterior` object and supports the v0.2 three-tier
+#' resolver.
+#'
 #' @param model_name Name of the model
 #' @param auto_download Logical whether to auto-download if missing
 #' @return Posterior draws as a data frame
+#' @keywords internal
 #' @export
 load_model_posteriors <- function(model_name, auto_download = NULL) {
 

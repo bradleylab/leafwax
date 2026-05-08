@@ -1,3 +1,32 @@
+# leafwax 0.2.1
+
+## CRAN preparation
+
+* Three-tier posterior resolver wired up: `load_posteriors()` and
+  `available_models()` look in heavy posteriors → user cache → preview
+  fixture, in that order. Heavy posteriors are now excluded from the
+  built tarball (~11 MB → ~1.6 MB).
+* `inst/extdata/posteriors_light/` is regenerated as a true 100-draw
+  stratified subsample of the heavy posteriors with the full column
+  set (the prior version dropped per-knot z columns and silently
+  broke spatial inversion). The script that produces it is at
+  `data-raw/regenerate_posteriors_light.R`.
+* The preview tier is treated as a fixture: `load_posteriors()`,
+  `invert_d2H()`, `assess_claim()`, and `detect_change()` warn loudly
+  whenever it is in use, naming the function context and the actual
+  draw count after thinning. Set `options(leafwax.suppress_preview_warning = TRUE)`
+  to silence the warning in batch jobs that have already acknowledged
+  the limitation.
+* `download_model_data()` now writes `<model>_posterior.rds`
+  (singular) to match what `load_posteriors()` reads.
+* `jsonlite` moved from `Suggests` to `Imports` (used unconditionally).
+* `DESCRIPTION` `Title` reworded to drop the `d2H` abbreviation.
+* Internal helpers (`generate_fibonacci_sphere()`,
+  `predict_spatial_dual_gp()`, `predict_spatial_mpp()`, the four math
+  primitives in `spatial_interpolation.R`, the legacy v0.1
+  `load_model_posteriors()`) are now flagged as internal in the help
+  index.
+
 # leafwax 0.2.0
 
 ## Major release: paleo-record workflow + v10 calibration
