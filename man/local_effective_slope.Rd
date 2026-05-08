@@ -85,10 +85,15 @@ s_fixed <- local_effective_slope(
   override = 0.55, ceiling = 0.88
 )
 
-# Pass through to the inversion
+# Pass through to the inversion. The slope vector and the
+# inversion's posterior must use the same n_draws: pair
+# local_effective_slope(..., n_draws = N) with
+# invert_d2H(..., n_posterior_draws = N, slope = s), or pass a
+# single point estimate (e.g., median(s)).
 invert_d2H(d2H_wax = -180, d2H_wax_sd = 3,
            longitude = -90, latitude = 38,
            model_name = "baseline_sp",
+           n_posterior_draws = 200,
            slope = s)
 }
 }
