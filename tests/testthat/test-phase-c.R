@@ -35,6 +35,18 @@ test_that("estimate_temporal_autocorrelation: lomb_scargle is not yet implemente
   )
 })
 
+test_that("estimate_temporal_autocorrelation: warns on dropped non-finite rows", {
+  set.seed(103)
+  d  <- rnorm(50, -150, 5)
+  ag <- seq(0, 5000, length.out = 50)
+  d[c(7, 22)] <- NA_real_
+  expect_warning(
+    rho_hat <- estimate_temporal_autocorrelation(d, ag, method = "ar1"),
+    "dropped 2 row"
+  )
+  expect_true(is.finite(rho_hat))
+})
+
 test_that("estimate_temporal_autocorrelation: rejects bad inputs", {
   expect_error(
     estimate_temporal_autocorrelation(c("a", "b"), c(1, 2)),
@@ -165,6 +177,34 @@ test_that("detect_change: rejects bad inputs", {
                   sigma_within = -1, beta_eff = 0.5),
     "non-negative"
   )
+})
+
+test_that("detect_change: rejects non-finite ages up front", {
+  rec <- .fake_reconstruction()
+  age <- seq(0, 10000, length.out = ncol(rec$posterior_draws))
+  age[5] <- NA_real_
+  expect_error(
+    detect_change(reconstruction = rec, age = age,
+                  baseline_interval = c(0, 5000),
+                  sigma_within = 16, beta_eff = 0.55),
+    "non-finite value"
+  )
+})
+
+test_that("invert_d2H: return_full = TRUE forwards correctly", {
+  res <- suppressWarnings(invert_d2H(
+    d2H_wax = rep(-180, 4),
+    d2H_wax_sd = rep(3, 4),
+    longitude = rep(-90, 4),
+    latitude = rep(38, 4),
+    model_name = "baseline_sp",
+    return_full = TRUE,
+    n_posterior_draws = 50
+  ))
+  expect_type(res, "list")
+  expect_true(!is.null(res$posterior_draws))
+  expect_true(is.matrix(res$posterior_draws))
+  expect_equal(ncol(res$posterior_draws), 4L)
 })
 
 test_that("detect_change: missing rho_t messages and defaults to 0", {

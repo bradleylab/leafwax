@@ -54,6 +54,20 @@ estimate_temporal_autocorrelation <- function(d2h_wax, age,
   }
 
   ok <- is.finite(d2h_wax) & is.finite(age)
+  n_dropped <- sum(!ok)
+  if (n_dropped > 0L) {
+    dropped_idx <- which(!ok)
+    warning(sprintf(
+      paste("estimate_temporal_autocorrelation() dropped %d row(s) with",
+            "non-finite d2h_wax or age (indices: %s). With irregular",
+            "missingness, lag-1 correlation can mistake non-adjacent",
+            "samples for neighbors; review the dropped rows."),
+      n_dropped,
+      paste(utils::head(dropped_idx, 10),
+            if (length(dropped_idx) > 10) "..." else "",
+            collapse = ", ")
+    ), call. = FALSE)
+  }
   if (sum(ok) < 3L) {
     return(NA_real_)
   }
@@ -156,6 +170,18 @@ detect_change <- function(reconstruction,
     stop(sprintf(
       "age must be numeric with length n_samples (%d); got length %d",
       n_obs, if (is.null(age)) 0L else length(age)
+    ))
+  }
+  if (any(!is.finite(age))) {
+    bad_idx <- which(!is.finite(age))
+    stop(sprintf(
+      paste("age contains %d non-finite value(s) at indices: %s.",
+            "Refusing to silently drop samples; remove or repair the",
+            "ages and re-run detect_change()."),
+      length(bad_idx),
+      paste(utils::head(bad_idx, 10),
+            if (length(bad_idx) > 10) "..." else "",
+            collapse = ", ")
     ))
   }
 

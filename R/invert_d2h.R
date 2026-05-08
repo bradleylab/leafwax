@@ -691,12 +691,17 @@ invert_d2H <- function(d2H_wax,
                       pft_grass = NULL,
                       model_name = "baseline",
                       n_posterior_draws = NULL,
+                      return_full = FALSE,
+                      credible_level = 0.9,
+                      verbose = TRUE,
                       sigma_within = NULL,
                       sigma_within_sd = NULL,
                       record_id = NULL,
                       slope = NULL) {
 
-  # Map old parameter names to new ones
+  # Map old parameter names to new ones. Pass through return_full,
+  # credible_level, and verbose so callers (e.g., detect_change()) can
+  # request the full posterior_draws matrix from the wrapper.
   invert_d2h(
     d2h_wax = d2H_wax,
     d2h_wax_err = d2H_wax_sd,
@@ -709,9 +714,9 @@ invert_d2H <- function(d2H_wax,
     pft_grass = pft_grass,
     model_name = model_name,
     n_draws = n_posterior_draws,
-    return_full = FALSE,
-    credible_level = 0.9,
-    verbose = TRUE,
+    return_full = return_full,
+    credible_level = credible_level,
+    verbose = verbose,
     sigma_within = sigma_within,
     sigma_within_sd = sigma_within_sd,
     record_id = record_id,
