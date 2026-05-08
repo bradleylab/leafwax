@@ -7,9 +7,34 @@
 available_models()
 }
 \value{
-Character vector of available model names
+Character vector of available model names. Models include:
+\itemize{
+\item \code{baseline}: Basic OIPC model without spatial effects
+\item \code{baseline_sp}: Basic model with spatial Gaussian process
+\item \code{baseline_env}: Includes elevation effects
+\item \code{baseline_env_sp}: Elevation effects with spatial GP
+\item \code{baseline_veg}: Includes vegetation (PFT) effects
+\item \code{baseline_veg_sp}: Vegetation effects with spatial GP
+\item \code{c4_only_sp}: C4 vegetation effects only (spatial)
+\item \code{elevation_only_sp}: Elevation effects only (spatial)
+\item \code{elevation_c4_sp}: Combined elevation and C4 effects
+\item \code{elevation_c4_interact_sp}: With interaction terms
+\item \code{full}: All effects without spatial component
+\item \code{full_sp}: All effects with spatial component
+\item \code{full_interact}: All effects with interactions
+\item \code{full_interact_sp}: Full model with spatial GP
+}
 }
 \description{
-Returns a list of available models with their descriptions and properties.
-The models are based on the spatial leafwax hierarchical Bayesian models.
+Returns a list of all available calibration models for leaf wax hydrogen isotope
+inversion. Models vary in their complexity and data requirements.
+}
+\examples{
+# List all available models
+models <- available_models()
+print(models)
+
+# Get details for a specific model
+model_info <- get_model_parameters("baseline_sp")
+print(model_info$description)
 }

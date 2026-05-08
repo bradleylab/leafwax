@@ -357,13 +357,13 @@ cache_all_lookup_tables <- function(cache_dir,
 
   # Get list of models if not provided
   if (is.null(models)) {
-    all_models <- list_available_models()
+    all_models <- available_models()
 
     # Filter for spatial models only
     models <- character()
     for (model in all_models) {
-      info <- get_model_info(model, summary = FALSE)
-      if (info$has_gp) {
+      info <- get_model_info(model)
+      if (isTRUE(info$has_spatial) || isTRUE(info$has_gp)) {
         models <- c(models, model)
       }
     }
@@ -431,13 +431,13 @@ print.leafwax_lookup_table <- function(x, ...) {
   cat("  Latitude:", x$metadata$bounds$lat[1], "to", x$metadata$bounds$lat[2], "\n")
   cat("Posterior draws:", x$n_draws, "\n")
   cat("Created:", format(x$metadata$created), "\n")
-  cat("\nGP Parameters (mean ± sd):\n")
+  cat("\nGP Parameters (mean +/- sd):\n")
   cat("  Length scale:",
-      sprintf("%.2f ± %.2f",
+      sprintf("%.2f +/- %.2f",
               x$metadata$gp_params$ls_mean,
               x$metadata$gp_params$ls_sd), "\n")
   cat("  Variance:",
-      sprintf("%.2f ± %.2f",
+      sprintf("%.2f +/- %.2f",
               x$metadata$gp_params$sigma_mean,
               x$metadata$gp_params$sigma_sd), "\n")
 }

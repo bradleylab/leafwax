@@ -1,5 +1,10 @@
 # R/zzz.R - Package startup configuration
 
+# Null-coalescing operator. Built into base R from 4.4.0 onward, but
+# the package depends on R >= 3.5, so we define it ourselves to keep
+# behavior consistent across versions.
+`%||%` <- function(x, y) if (is.null(x)) y else x
+
 .onLoad <- function(libname, pkgname) {
   # Set default options if not already set
   op <- options()

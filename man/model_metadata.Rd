@@ -3,57 +3,27 @@
 \docType{data}
 \name{model_metadata}
 \alias{model_metadata}
-\title{Model metadata for leafwax models}
+\title{Model metadata for the v10 calibration models}
 \format{
-A list of 14 model specifications, each containing:
-\describe{
-\item{name}{Model identifier (character)}
-\item{description}{Brief model description (character)}
-\item{has_elevation}{Whether model includes elevation effects (logical)}
-\item{has_c4}{Whether model includes C4 vegetation effects (logical)}
-\item{has_pft}{Whether model includes plant functional types (logical)}
-\item{has_gp}{Whether model includes spatial Gaussian process (logical)}
-\item{parameters}{Vector of parameter names (character)}
-\item{n_parameters}{Total number of parameters (numeric)}
-\item{formula}{Model formula representation (character)}
-\item{n_gp_knots}{Number of GP knots for spatial models (numeric, optional)}
-}
+A named list. Each element is itself a list with fields
+describing one model: \code{name}, \code{description},
+\code{has_spatial}, \code{has_elevation}, \code{has_c4},
+\code{has_vegetation}, and \code{size_mb}. See
+\code{\link{get_all_model_metadata}} for the canonical accessor.
 }
 \source{
-Model specifications from Bradley et al. (in prep)
+Generated from the v10 hierarchical Bayesian calibration run.
 }
 \usage{
 model_metadata
 }
 \description{
-A list containing metadata and specifications for all 14 hierarchical
-Bayesian models available in the leafwax package. Each model combines
-different environmental covariates and spatial structures.
-}
-\details{
-The models range from simple linear regression (b0b1) to complex
-hierarchical models with multiple covariates and spatial correlation
-(b0b1_elev_c4_pft_sp). Model names follow a convention:
-\itemize{
-\item Base: b0b1 (intercept and slope)
-\item Suffixes: elev (elevation), c4 (C4 vegetation), pft (plant functional types), sp (spatial)
-}
+A list summarizing the 14 hierarchical Bayesian calibration models
+shipped with the package. Field names match the v10 model variants
+described in the manuscript.
 }
 \examples{
 data(model_metadata)
-
-# List all model names
 names(model_metadata)
-
-# Get information for a specific model
-model_metadata$b0b1_sp
-
-# Find all spatial models
-spatial_models <- sapply(model_metadata, function(m) m$has_gp)
-names(model_metadata)[spatial_models]
-
-# Find models with elevation effects
-elev_models <- sapply(model_metadata, function(m) m$has_elevation)
-names(model_metadata)[elev_models]
 }
 \keyword{datasets}

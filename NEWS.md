@@ -1,70 +1,108 @@
-# leafwax 0.1.0
+# leafwax 0.2.0
 
-## Initial CRAN release
+## Major release: paleo-record workflow + v10 calibration
 
-### Major features
+`leafwax` 0.2.0 makes the package the operational backend for the
+manuscript "Spatial modeling improves the calibration of leaf wax
+hydrogen isotopes to precipitation" (Bradley, *Geochimica et
+Cosmochimica Acta*). The package now ships the v10 posterior draws
+for the 14 hierarchical Bayesian models reported in the manuscript
+and exposes the four-phase paleo workflow that the manuscript
+references in Sections 4.5.3, 4.5.5, and 4.5.6.
 
-* **Core functionality**
-  - `predict_d2h_precip()`: Main user-facing function for predictions
-  - Support for 14 hierarchical Bayesian models
-  - Automatic model selection based on available data
-  - Full uncertainty quantification with credible intervals
+### New functions
 
-* **Model types**
-  - Base models (b0b1)
-  - Models with elevation effects
-  - Models with C4 vegetation fraction
-  - Models with plant functional types (PFT)
-  - Spatial models with Gaussian processes
-  - Combined models with multiple covariates
+* `estimate_sigma_within(d2h_wax, age, baseline_interval, detrend,
+  ar1_correction)` -- estimate the within-record residual SD on a
+  stationarity-defended baseline interval. Manuscript Section 4.5.3.
+* `local_effective_slope(longitude, latitude, model_name, override,
+  ceiling = 0.88, n_draws)` -- per-draw local slope at a site, with
+  the simple-model ceiling from manuscript Section 4.5.5.
+* `estimate_temporal_autocorrelation(d2h_wax, age, method)` -- lag-1
+  autocorrelation for the within-record detection threshold.
+* `detect_change(reconstruction, age, baseline_interval,
+  test_intervals, sigma_within, sigma_analytical, rho_t, beta_eff,
+  confidence, magnitudes)` -- within-record d2H_precip detection
+  threshold and posterior probability of change.
+* `assess_claim(record, claim, reconstruction, ...)` -- walks the
+  four-level taxonomy from manuscript Section 4.5.6 and returns the
+  highest level a claim survives at, with itemized pass/fail reasons.
 
-* **Data management**
-  - Lazy loading system for model data
-  - Automatic downloads when needed
-  - Lightweight CRAN package (~1 MB)
-  - Full posteriors available on demand (~50 MB per model)
+### invert_d2H()
 
-* **Performance features**
-  - Batch processing for large datasets
-  - Progress indicators
-  - Parallel processing support
-  - Lookup tables for fast spatial predictions
+* New args `sigma_within`, `sigma_within_sd`, `record_id`, `slope`.
+* `sigma_within` enters in leaf-wax per-mil units and propagates
+  through `beta_oipc_eff` like the measurement uncertainty (combined
+  in quadrature in standardized wax space before inversion).
+* `record_id` validates that all input rows are from one site and
+  flags coordinate inconsistency under a constant identifier.
+* `slope` accepts NULL (model slope), a single point estimate, or a
+  per-draw vector; rejects zero / negative / non-finite values.
+* The exported wrapper now forwards `return_full`, `credible_level`,
+  and `verbose`.
 
-* **Advanced features**
-  - Model ensemble predictions
-  - Model comparison tools
-  - Custom spatial grids
-  - Regional lookup tables
-  - Full posterior distributions
+### Routing layer
 
-### Documentation
-
-* Three comprehensive vignettes:
-  - Getting Started guide
-  - Model Descriptions with theory
-  - Advanced Usage examples
-* Complete API reference
-* pkgdown website
-* Extensive examples
+* `available_models()` exposes the 14 v10 model names from the
+  manuscript: `baseline`, `baseline_sp`, `baseline_env`,
+  `baseline_env_sp`, `baseline_veg`, `baseline_veg_sp`, `full`,
+  `full_sp`, `full_interact`, `full_interact_sp`,
+  `elevation_only_sp`, `elevation_c4_sp`,
+  `elevation_c4_interact_sp`, `c4_only_sp`.
+* `load_posteriors()` derives capability flags (`has_c4`, `has_pft`,
+  `has_elevation`, `has_gp`, `has_interaction`) from posterior column
+  names rather than name regexes; `full`, `full_sp`, `full_interact`,
+  and `full_interact_sp` correctly report their vegetation and
+  interaction effects.
+* `load_posteriors()` subsamples deterministically (stratified
+  thinning), so two calls with the same `model_name` and `n_draws`
+  return the same draws subset. This is what lets
+  `local_effective_slope(..., n_draws = N)` pair by position with
+  `invert_d2H(..., n_posterior_draws = N, slope = ...)`.
 
 ### Data
 
-* Example dataset with 10 locations
-* Model metadata for all 14 models
-* Mini lookup table for demonstrations
-* Synthetic posteriors for testing
+* All 14 v10 model posterior draws shipped as
+  `inst/extdata/posteriors/<model>_posterior.rds`.
+* 125-knot Fibonacci-sphere knot files for the 9 spatial models
+  shipped as `inst/extdata/spatial_metadata/<model>_knots.rds`.
+* Standardisation parameters shipped as
+  `inst/extdata/scaling_params.rds`.
+* Lake Malawi LS11KOMA Common-Era leaf-wax record bundled at
+  `inst/extdata/example_records/LS11KOMA_d2H.csv` for the vignette.
 
-### Infrastructure
+### Vignettes
 
-* Full roxygen2 documentation
-* Comprehensive test suite
-* GitHub Actions CI/CD
-* pkgdown website configuration
+* New `paleo-record-workflow.Rmd`: end-to-end seven-step workflow on
+  the Lake Malawi record (load -> sigma_within -> slope -> inversion
+  -> detect_change -> assess_claim -> plot).
+* The three v0.1.0 vignettes (Getting Started, Advanced Usage, Model
+  Descriptions) are archived under `vignettes/_archive_v0.1.0/` and
+  excluded from the build pending a v0.3 rewrite.
 
-## Development versions
+### Tests
 
-### 0.0.9000 (pre-release)
+* New testthat suites for the v10 routing (`test-v10-posteriors.R`)
+  and each phase of the paleo workflow (`test-phase-{a,b,c,d}.R`).
+* 275 PASS / 0 FAIL / 0 WARN.
+* The four v0.1.0 testthat files referencing legacy model names and
+  `invert_d2h()` signatures are archived under
+  `tests/_archive_v0.1.0/` for reference.
 
-* Initial package structure
-* Basic inversion functions
-* Stan model implementations
+### `R CMD check`
+
+Status: 1 NOTE (extdata size ~10.6 MB, expected -- the shipped v10
+posteriors). All ERRORs and WARNINGs from the v0.1.0 baseline are
+resolved.
+
+### Codex review
+
+Each phase commit was reviewed via `codex review --commit HEAD` and
+the findings (1 P2 on Phase F, 2 P2s on Phase A, 2 P2s on Phase B,
+3 P2/P3s on Phase C, 3 P2s on Phase D) were addressed in dedicated
+follow-up commits. Phase E review returned clean.
+
+# leafwax 0.1.0
+
+Initial v0.1.0 release. See `tests/_archive_v0.1.0/README.md` and
+`vignettes/_archive_v0.1.0/` for archived material from this release.

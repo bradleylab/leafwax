@@ -78,26 +78,41 @@ load_posteriors <- function(model_name, n_draws = NULL, verbose = TRUE) {
     cat("  Loaded", nrow(draws), "draws,", ncol(draws), "parameters\n")
   }
 
-  # Subset if requested
+  # Subset if requested. Use deterministic stratified thinning
+  # (evenly spaced indices across all chains) rather than a random
+  # sample, so two independent calls with the same model_name and
+  # n_draws return the *same* draws subset. This is what allows
+  # local_effective_slope(..., n_draws = N) and invert_d2H(...,
+  # n_posterior_draws = N, slope = ...) to be paired by position
+  # without silent draw-misalignment (Codex P2 on Phase B).
   if (!is.null(n_draws) && n_draws < nrow(draws)) {
-    idx <- sample.int(nrow(draws), n_draws)
+    idx <- round(seq.int(1, nrow(draws), length.out = n_draws))
     draws <- draws[idx, , drop = FALSE]
     if (verbose) {
-      cat("  Subsampled to", n_draws, "draws\n")
+      cat("  Subsampled to", n_draws, "draws (deterministic stratified)\n")
     }
   }
 
-  # Create metadata
+  # Create metadata. Capability flags are derived from the actual draws
+  # column names rather than the model name, because some model names
+  # (e.g., `full`, `full_sp`, `full_interact_sp`) include C4/PFT effects
+  # without the substrings the older regex looked for. Spatial / interaction
+  # flags still come from the name (those are unambiguous in the v10 set).
+  param_names <- names(draws)
   metadata <- list(
     model_name = model_name,
     n_draws = nrow(draws),
     n_parameters = ncol(draws),
-    parameters = names(draws),
-    has_elevation = grepl("(env|elevation|elev)", model_name),
-    has_c4 = grepl("(c4|veg)", model_name),
-    has_pft = grepl("veg", model_name),
-    has_gp = grepl("sp", model_name),
-    has_interaction = grepl("interact", model_name)
+    parameters = param_names,
+    has_elevation = any(grepl("^beta_elev", param_names)) ||
+                    grepl("(env|elevation|elev)", model_name),
+    has_c4        = any(grepl("^beta_c4", param_names)) ||
+                    any(grepl("oipc.*c4|c4.*oipc", param_names, ignore.case = TRUE)),
+    has_pft       = any(grepl("^beta_(tree|shrub|grass)", param_names)),
+    has_gp        = grepl("(^|_)sp$", model_name),
+    has_interaction = grepl("interact", model_name) ||
+                      any(grepl("oipc.*(tree|shrub|grass|c4)|(tree|shrub|grass|c4).*oipc",
+                                param_names, ignore.case = TRUE))
   )
 
   # Load spatial metadata if needed
@@ -128,12 +143,33 @@ load_posteriors <- function(model_name, n_draws = NULL, verbose = TRUE) {
     }
   }
 
+  # Load standardization parameters used during v10 model fitting.
+  # All 14 model variants share an identical scaling_params list, so a
+  # single shipped file covers every model.
+  scaling <- NULL
+  scaling_file <- system.file("extdata", "scaling_params.rds",
+                              package = "leafwax")
+  if (!file.exists(scaling_file) || scaling_file == "") {
+    local_scaling <- file.path("inst", "extdata", "scaling_params.rds")
+    if (file.exists(local_scaling)) scaling_file <- local_scaling
+  }
+  if (file.exists(scaling_file) && scaling_file != "") {
+    scaling <- readRDS(scaling_file)
+    if (verbose) {
+      cat("  Loaded standardization parameters (",
+          length(scaling) - 1L, " fields)\n", sep = "")
+    }
+  } else if (verbose) {
+    cat("  No scaling_params.rds found; invert_d2H will fall back to placeholder defaults\n")
+  }
+
   # Create model object with helper functions
   model <- structure(
     list(
       draws = draws,
       metadata = metadata,
       spatial = spatial,
+      scaling = scaling,
 
       # Helper function to get base parameters
       get_base_params = function() {

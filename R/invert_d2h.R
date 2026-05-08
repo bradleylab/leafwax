@@ -177,7 +177,7 @@ use_example_data <- function(model_name) {
 #' @param pft_tree Numeric vector of tree PFT fraction (0-1)
 #' @param pft_shrub Numeric vector of shrub PFT fraction (0-1)
 #' @param pft_grass Numeric vector of grass PFT fraction (0-1)
-#' @param model Character string specifying which model to use (default: "baseline").
+#' @param model_name Character string specifying which model to use (default: "baseline").
 #'   Available models: "baseline", "baseline_sp", "baseline_env", "baseline_env_sp",
 #'   "baseline_veg", "baseline_veg_sp", "c4_only_sp", "elevation_only_sp",
 #'   "elevation_c4_sp", "elevation_c4_interact_sp", "full", "full_sp",
@@ -186,6 +186,38 @@ use_example_data <- function(model_name) {
 #' @param return_full Logical whether to return full posterior draws or just summary
 #' @param credible_level Numeric credible interval level (default 0.9)
 #' @param verbose Logical whether to print progress messages
+#' @param sigma_within Numeric, optional within-record residual standard
+#'   deviation in per mil. When supplied, an additional
+#'   `Normal(0, sigma_within)` noise term is added to the inverted
+#'   `d2H_precip` per posterior draw, representing residual variance
+#'   within a single sedimentary record (after spatial structure has
+#'   cancelled). Use `estimate_sigma_within()` to obtain this from a
+#'   stationary baseline interval of the record. Section 4.5.3 of the
+#'   manuscript explains why the global posterior `sigma` overstates
+#'   within-record uncertainty.
+#' @param sigma_within_sd Numeric, optional standard error on
+#'   `sigma_within`. When non-`NULL`, each posterior draw resamples the
+#'   residual SD from `Normal(sigma_within, sigma_within_sd)` (truncated
+#'   at zero), so uncertainty in the within-record SD itself propagates
+#'   into the prediction.
+#' @param record_id Character or numeric, optional record identifier.
+#'   When supplied and constant across all input rows, all rows are
+#'   treated as belonging to the same downcore series: the spatial
+#'   Gaussian process is evaluated once per posterior draw at the
+#'   shared site, so spatial draws are reused across the series rather
+#'   than redrawn per row. The current implementation already shares
+#'   spatial draws between identical (longitude, latitude) pairs; the
+#'   `record_id` argument adds explicit validation that the caller
+#'   intends within-record inference.
+#' @param slope Optional numeric override for the d2H_wax-d2H_precip
+#'   slope. NULL (default) uses the model's site-specific slope, i.e.,
+#'   `beta_oipc` plus the spatial slope GP perturbation at the site.
+#'   A single numeric replaces the slope with a fixed point estimate
+#'   (broadcast across all posterior draws). A vector of length
+#'   `n_draws` is used per draw. Use `local_effective_slope()` to
+#'   build a defensible per-draw override that respects the manuscript's
+#'   simple-model ceiling at alpha = 0.88 (Section 4.5.5). When
+#'   supplied, the override applies uniformly to every input row.
 #' 
 #' @return If return_full is FALSE, a data frame with columns:
 #'   \item{d2h_precip_mean}{Mean predicted precipitation d2H}
@@ -228,16 +260,66 @@ invert_d2h <- function(d2h_wax, d2h_wax_err = NULL,
                        longitude, latitude, elevation = NULL,
                        c4_percent = NULL,
                        pft_tree = NULL, pft_shrub = NULL, pft_grass = NULL,
-                       model_name = "baseline", 
+                       model_name = "baseline",
                        n_draws = NULL,
                        return_full = FALSE,
                        credible_level = 0.9,
-                       verbose = TRUE) {
-  
+                       verbose = TRUE,
+                       sigma_within = NULL,
+                       sigma_within_sd = NULL,
+                       record_id = NULL,
+                       slope = NULL) {
+
   # Input validation
   n_obs <- length(d2h_wax)
   if (length(longitude) != n_obs || length(latitude) != n_obs) {
     stop("All input vectors must have the same length")
+  }
+
+  # sigma_within validation (Phase A)
+  if (!is.null(sigma_within)) {
+    if (!is.numeric(sigma_within) || length(sigma_within) != 1L ||
+        is.na(sigma_within) || sigma_within < 0) {
+      stop("sigma_within must be a single non-negative numeric value (per mil)")
+    }
+  }
+  if (!is.null(sigma_within_sd)) {
+    if (is.null(sigma_within)) {
+      stop("sigma_within_sd supplied without sigma_within")
+    }
+    if (!is.numeric(sigma_within_sd) || length(sigma_within_sd) != 1L ||
+        is.na(sigma_within_sd) || sigma_within_sd < 0) {
+      stop("sigma_within_sd must be a single non-negative numeric value (per mil)")
+    }
+  }
+
+  # record_id validation (Phase A): when supplied, all rows must share
+  # one identifier. The spatial GP at identical (lon, lat) coordinates
+  # is already deterministic given each posterior draw, so a constant
+  # record_id triggers a verbose acknowledgement plus a coordinate
+  # consistency check rather than a separate code path.
+  if (!is.null(record_id)) {
+    if (length(record_id) == 1L) {
+      record_id_vec <- rep(record_id, n_obs)
+    } else if (length(record_id) == n_obs) {
+      record_id_vec <- record_id
+    } else {
+      stop("record_id must be length 1 or length(d2h_wax)")
+    }
+    if (length(unique(record_id_vec)) != 1L) {
+      stop("invert_d2H currently supports a single record per call; ",
+           "got ", length(unique(record_id_vec)), " unique record_id values. ",
+           "Call invert_d2H once per record.")
+    }
+    if (length(unique(longitude)) != 1L || length(unique(latitude)) != 1L) {
+      stop("record_id is constant but longitude/latitude vary across rows. ",
+           "All samples in a single record must share one site.")
+    }
+    if (verbose) {
+      cat("  record_id =", record_id_vec[1],
+          ": treating", n_obs, "rows as one downcore series ",
+          "(spatial GP shared across draws)\n", sep = "")
+    }
   }
   
   # Set default uncertainty if not provided
@@ -286,10 +368,26 @@ invert_d2h <- function(d2h_wax, d2h_wax_err = NULL,
   # Get draws
   draws <- model$draws
   n_iter <- nrow(draws)
-  
+
   # Initialize posterior prediction matrix
   d2h_precip_post <- matrix(NA, nrow = n_iter, ncol = n_obs)
-  
+
+  # Initialize scaling early so the elevation and spatial blocks below can
+  # reference it. Defaults are used when model$scaling is NULL.
+  if (is.null(model$scaling)) {
+    scaling <- list(
+      d2H_mean = -200, d2H_sd = 50,
+      oipc_mean = -50, oipc_sd = 50,
+      c4_mean = 25,   c4_sd = 25,
+      lon_mean = 0,   lon_sd = 90,
+      lat_mean = 0,   lat_sd = 45,
+      elev_mean = 1000, elev_sd = 1000
+    )
+    if (verbose) cat("  Using default scaling parameters (model lacks scaling data)\n")
+  } else {
+    scaling <- model$scaling
+  }
+
   # Get base parameters
   base_params <- model$get_base_params()
   beta_0 <- base_params$beta_0
@@ -356,168 +454,163 @@ invert_d2h <- function(d2h_wax, d2h_wax_err = NULL,
     }
   }
   
-  # Get spatial effects if applicable
-  spatial_effect <- matrix(0, nrow = n_iter, ncol = n_obs)
+  # Get dual-GP spatial effects (intercept and slope) at the prediction
+  # site(s). v10 uses a Matern 3/2 kernel in standardized 2D coordinate
+  # space, with two independent GPs sharing knot positions and length
+  # scale but having distinct sigma and z. predict_spatial_dual_gp
+  # returns matrices for both fields; intercept goes into mu, slope
+  # multiplies oipc in the inversion (below).
+  intercept_effect <- matrix(0, nrow = n_iter, ncol = n_obs)
+  slope_effect     <- matrix(0, nrow = n_iter, ncol = n_obs)
   if (model_meta$has_gp) {
-    spatial_params <- model$get_spatial_params()
-    
-    if (!is.null(spatial_params$z_spatial) && !is.null(model$spatial$knot_locs)) {
-      # We need to predict at new locations using the GP
-      z_spatial <- spatial_params$z_spatial
-      sigma_gp <- spatial_params$sigma_gp
-      ls_gp <- spatial_params$ls_gp
-      knot_locs <- model$spatial$knot_locs
-      
-      # Standardize coordinates using stored scaling parameters
-      if (!is.null(scaling$lon_mean)) {
-        lon_std <- (longitude - scaling$lon_mean) / scaling$lon_sd
-        lat_std <- (latitude - scaling$lat_mean) / scaling$lat_sd
-      } else {
-        # Fallback to simple standardization
-        warning("Coordinate scaling parameters not found. Using simple standardization.")
-        lon_std <- (longitude - mean(longitude)) / sd(longitude)
-        lat_std <- (latitude - mean(latitude)) / sd(latitude)
-      }
-      
-      coords_new <- cbind(lon_std, lat_std)
-      
-      # Check if we have K_knots matrix
-      if (!is.null(model$spatial$K_knots)) {
-        K_knots <- model$spatial$K_knots
-        
-        # For each posterior draw
-        for (iter in 1:n_iter) {
-          # Current hyperparameters
-          ls_current <- ls_gp[iter]
-          sigma_current <- sigma_gp[iter]
-          z_current <- z_spatial[iter, ]
-          
-          # Compute covariance between new locations and knots
-          K_new_knots <- matrix(NA, n_obs, nrow(knot_locs))
-          for (i in 1:n_obs) {
-            for (j in 1:nrow(knot_locs)) {
-              dist_sq <- sum((coords_new[i, ] - knot_locs[j, ])^2)
-              K_new_knots[i, j] <- exp(-sqrt(dist_sq) / ls_current)
-            }
-          }
-          
-          # Add jitter for numerical stability
-          K_knots_reg <- K_knots + diag(1e-6, nrow(K_knots))
-          
-          # Predictive process: spatial_effect = sigma_gp * K_new_knots * inv(K_knots) * z
-          spatial_effect[iter, ] <- sigma_current * K_new_knots %*% solve(K_knots_reg, z_current)
-        }
-      } else {
-        # If K_knots is missing, we need to reconstruct it
-        warning("K_knots matrix not found. Reconstructing from knot locations...")
-        
-        # Pre-compute distance matrices to avoid repeated calculations
-        n_knots <- nrow(knot_locs)
-        knot_dists_sq <- matrix(0, n_knots, n_knots)
-        for (i in 1:(n_knots-1)) {
-          for (j in (i+1):n_knots) {
-            d_sq <- sum((knot_locs[i, ] - knot_locs[j, ])^2)
-            knot_dists_sq[i, j] <- d_sq
-            knot_dists_sq[j, i] <- d_sq
-          }
-        }
-        
-        new_knot_dists_sq <- matrix(0, n_obs, n_knots)
-        for (i in 1:n_obs) {
-          for (j in 1:n_knots) {
-            new_knot_dists_sq[i, j] <- sum((coords_new[i, ] - knot_locs[j, ])^2)
-          }
-        }
-        
-        # Progress indicator for long computations
-        if (n_iter > 100 && verbose) {
-          cat("  Computing spatial effects for", n_iter, "iterations...\n")
-          pb <- txtProgressBar(min = 0, max = n_iter, style = 3)
-        }
-        
-        for (iter in 1:n_iter) {
-          if (n_iter > 100 && verbose && iter %% 50 == 0) {
-            setTxtProgressBar(pb, iter)
-          }
-          
-          # Current hyperparameters
-          ls_current <- ls_gp[iter]
-          sigma_current <- sigma_gp[iter]
-          z_current <- z_spatial[iter, ]
-          
-          # Reconstruct K_knots using pre-computed distances
-          K_knots_iter <- exp(-sqrt(knot_dists_sq) / ls_current)
-          diag(K_knots_iter) <- 1.0
-          
-          # Compute covariance between new locations and knots
-          K_new_knots <- exp(-sqrt(new_knot_dists_sq) / ls_current)
-          
-          # Add jitter for numerical stability
-          K_knots_reg <- K_knots_iter + diag(1e-6, n_knots)
-          
-          # Predictive process - use solve() which is faster than matrix inverse
-          spatial_effect[iter, ] <- sigma_current * K_new_knots %*% solve(K_knots_reg, z_current)
-        }
-        
-        if (n_iter > 100 && verbose) {
-          close(pb)
-        }
-      }
+    if (is.null(model$spatial$knot_locs)) {
+      stop("Spatial model loaded without knot_locs; cannot predict at new sites.")
     }
+    if (verbose) cat("  Computing dual-GP spatial effects (Matern 3/2)...\n")
+    coords_new <- cbind(longitude, latitude)
+    dual <- predict_spatial_dual_gp(coords_new, model$spatial$knot_locs,
+                                    draws, scaling)
+    intercept_effect <- dual$intercept
+    slope_effect     <- dual$slope
   }
   
-  # Handle missing scaling parameters - use sensible defaults based on literature
-  if (is.null(model$scaling)) {
-    # Create default scaling parameters based on typical leafwax data ranges
-    scaling <- list(
-      d2H_mean = -200,  # Typical leaf wax d2H mean
-      d2H_sd = 50,      # Typical leaf wax d2H standard deviation
-      oipc_mean = -50,  # Typical precipitation d2H mean
-      oipc_sd = 50,     # Typical precipitation d2H standard deviation
-      c4_mean = 25,     # Global average C4 percentage
-      c4_sd = 25,       # C4 percentage standard deviation
-      lon_mean = 0,     # Longitude mean (global)
-      lon_sd = 90,      # Longitude standard deviation
-      lat_mean = 0,     # Latitude mean (global)
-      lat_sd = 45,      # Latitude standard deviation
-      elev_mean = 1000, # Elevation mean in meters
-      elev_sd = 1000    # Elevation standard deviation
-    )
-    if (verbose) cat("  Using default scaling parameters (model lacks scaling data)\n")
-  } else {
-    scaling <- model$scaling
-  }
+  # scaling was initialized at the top of the function (above) so the
+  # elevation and spatial blocks can use it. No re-initialization here.
 
   # Standardize predictors using available scaling
   d2h_wax_std <- (d2h_wax - scaling$d2H_mean) / scaling$d2H_sd
   d2h_wax_err_std <- d2h_wax_err / scaling$d2H_sd
 
   c4_std <- (c4_percent - scaling$c4_mean) / scaling$c4_sd
-  
+
+  # Phase A: pre-compute the per-draw sigma_within draws. sigma_within
+  # is supplied by the caller in **leaf-wax per-mil units** (the units
+  # estimate_sigma_within() returns), so it must enter the inversion in
+  # wax space and then propagate through beta_oipc_eff like the
+  # measurement uncertainty already does. Convert to standardized wax
+  # units once here; the per-draw value is consumed inside the iter
+  # loop below as additional noise on d2h_wax_with_error.
+  #
+  # When sigma_within_sd is non-NULL, the within-record SD itself
+  # resamples per draw; the absolute value reflects the truncated tail
+  # at zero so the SD stays non-negative. Per-iter (not per-i) draws
+  # keep within-record samples sharing the same SD per draw, which
+  # matches how the posterior already shares parameter draws across
+  # the series.
+  use_sigma_within <- !is.null(sigma_within)
+  if (use_sigma_within) {
+    if (!is.null(sigma_within_sd) && sigma_within_sd > 0) {
+      sigma_w_draws_wax <- abs(rnorm(n_iter, sigma_within, sigma_within_sd))
+    } else {
+      sigma_w_draws_wax <- rep(sigma_within, n_iter)
+    }
+    # Standardize to the wax scale used internally during inversion.
+    sigma_w_draws_std <- sigma_w_draws_wax / scaling$d2H_sd
+  }
+
+  # Phase B: caller-supplied slope override. Length-1 broadcasts to all
+  # draws; length-n_iter is used per draw. The override replaces the
+  # model's beta_oipc + slope_GP path entirely and applies uniformly to
+  # every input row (no per-row spatial perturbation when overriding).
+  use_slope_override <- !is.null(slope)
+  if (use_slope_override) {
+    if (!is.numeric(slope) || any(!is.finite(slope))) {
+      stop("slope must be a finite numeric value or vector")
+    }
+    # Reject zero / near-zero slopes: the inversion divides by the
+    # slope, so a zero override produces NaN/Inf reconstructions
+    # silently. Force the user to supply a positive slope (the simple
+    # two-pool fractionation model is bounded above by ~0.88; values
+    # at or below zero have no scientific interpretation in this
+    # framework).
+    if (any(abs(slope) < .Machine$double.eps^0.5)) {
+      stop("slope contains values at or near zero; the inversion divides ",
+           "by slope and would produce NaN/Inf. Supply a positive slope.")
+    }
+    if (any(slope < 0)) {
+      stop("slope must be positive; got at least one negative value. ",
+           "Negative slopes have no interpretation in the d2H_wax<-d2H_precip ",
+           "inversion.")
+    }
+    if (length(slope) == 1L) {
+      slope_override <- rep(slope, n_iter)
+    } else if (length(slope) == n_iter) {
+      slope_override <- slope
+    } else {
+      stop(sprintf(
+        "slope must be length 1 or length n_draws (%d); got %d. ",
+        n_iter, length(slope)
+      ),
+      "Use local_effective_slope(..., n_draws = n) to build a per-draw vector ",
+      "of the right size, or pass a single point estimate.")
+    }
+    if (verbose) {
+      cat(sprintf(
+        "  Using slope override (range: %.3f to %.3f) instead of the ",
+        min(slope_override), max(slope_override)
+      ),
+      "model's site-specific slope.\n", sep = "")
+    }
+  }
+
   # Compute predictions for each location
   if (verbose) cat("Computing predictions...\n")
-  
+
   for (iter in 1:n_iter) {
-    # Build the mean prediction
-    mu_std <- beta_0[iter] + 
+    # Build the non-OIPC part of the linear predictor.
+    # The OIPC slope (with its spatially-varying perturbation) is handled
+    # separately during inversion below.
+    mu_std <- beta_0[iter] +
       elev_effect[iter, ] +
       beta_c4[iter] * c4_std +
       beta_tree[iter] * pft_tree +
       beta_shrub[iter] * pft_shrub +
       beta_grass[iter] * pft_grass +
-      spatial_effect[iter, ]
-    
-    # CRITICAL: Implement uncertainty propagation correctly
-    # The measurement has uncertainty, but we don't add sigma here
-    # because sigma represents unexplained variance that's already
-    # accounted for through the Bayesian posterior
+      intercept_effect[iter, ]
+
+    # Site-specific effective slope: global mean plus the spatially-varying
+    # perturbation at this location for this draw. v10 fitted a slope GP
+    # (z_slope_spatial[*]) on top of the global beta_oipc. Phase B: when
+    # a slope override is supplied, replace the per-row vector with the
+    # caller's per-draw scalar (broadcast to every row).
+    if (use_slope_override) {
+      beta_oipc_eff <- rep(slope_override[iter], n_obs)
+    } else {
+      beta_oipc_eff <- beta_oipc[iter] + slope_effect[iter, ]
+    }
+
+    # Uncertainty propagation. The base predictive includes:
+    # (1) the analytical uncertainty on d2H_wax (added in standardized
+    # space via d2h_wax_err_std), and (2) the regression-parameter
+    # uncertainty already carried through the posterior draws. The
+    # global residual sigma is intentionally NOT added here: when used
+    # for within-record change detection, the global posterior sigma
+    # overstates the relevant noise (it bundles between-site sources
+    # of variance the record does not carry; manuscript Section 4.5.3).
+    # Users who want a within-record residual SD pass it via
+    # sigma_within (Phase A); the noise enters in wax space below so
+    # it propagates through beta_oipc_eff like the measurement noise.
+    # Users who want global single-point predictive variance can wrap
+    # this call and add Normal(0, model$draws$sigma) noise themselves.
     for (i in 1:n_obs) {
-      # Only add measurement uncertainty
-      d2h_wax_with_error <- rnorm(1, d2h_wax_std[i], d2h_wax_err_std[i])
-      
-      # Invert to get precipitation d2H (in standardized space)
-      d2h_precip_std <- (d2h_wax_with_error - mu_std[i]) / beta_oipc[iter]
-      
+      # Combine measurement uncertainty and (Phase A) within-record
+      # residual in quadrature in standardized wax space, then draw
+      # the wax-error realization. Per-i draws keep adjacent samples
+      # within a record carrying independent residuals while sharing
+      # the iter-level posterior draw of parameters above.
+      if (use_sigma_within) {
+        wax_sd_std <- sqrt(d2h_wax_err_std[i]^2 + sigma_w_draws_std[iter]^2)
+      } else {
+        wax_sd_std <- d2h_wax_err_std[i]
+      }
+      d2h_wax_with_error <- rnorm(1, d2h_wax_std[i], wax_sd_std)
+
+      # Invert to get precipitation d2H (in standardized space). The
+      # /beta_oipc_eff[i] step naturally scales any wax-space noise
+      # (measurement + within-record residual) by the local effective
+      # slope.
+      d2h_precip_std <- (d2h_wax_with_error - mu_std[i]) / beta_oipc_eff[i]
+
       # Back-transform to original scale
       d2h_precip_post[iter, i] <- d2h_precip_std * scaling$oipc_sd + scaling$oipc_mean
     }
@@ -576,28 +669,16 @@ invert_d2h <- function(d2h_wax, d2h_wax_err = NULL,
   }
 }
 
-#' Invert leaf wax d2H to precipitation d2H (uppercase wrapper for compatibility)
-#' 
-#' This is a wrapper function that maintains backward compatibility with code
-#' that uses the uppercase function name and original parameter names.
-#' 
+#' @rdname invert_d2h
 #' @param d2H_wax Numeric vector of leaf wax d2H values (per mil)
 #' @param d2H_wax_sd Numeric vector of measurement uncertainties (per mil)
-#' @param longitude Numeric vector of longitudes (decimal degrees)
-#' @param latitude Numeric vector of latitudes (decimal degrees)
-#' @param elevation Numeric vector of elevations (meters)
 #' @param elevation_sd Elevation uncertainty (not used, kept for compatibility)
 #' @param c4_fraction Numeric vector of C4 vegetation percentage (0-100)
 #' @param c4_fraction_sd C4 fraction uncertainty (not used, kept for compatibility)
-#' @param pft_tree Numeric vector of tree PFT fraction (0-1)
-#' @param pft_shrub Numeric vector of shrub PFT fraction (0-1)
-#' @param pft_grass Numeric vector of grass PFT fraction (0-1)
 #' @param model_name Character string specifying which model to use
 #' @param n_posterior_draws Integer number of posterior draws to use
-#' 
-#' @return Same as invert_d2h
 #' @export
-invert_d2H <- function(d2H_wax, 
+invert_d2H <- function(d2H_wax,
                       d2H_wax_sd,
                       longitude,
                       latitude,
@@ -609,9 +690,18 @@ invert_d2H <- function(d2H_wax,
                       pft_shrub = NULL,
                       pft_grass = NULL,
                       model_name = "baseline",
-                      n_posterior_draws = NULL) {
-  
-  # Map old parameter names to new ones
+                      n_posterior_draws = NULL,
+                      return_full = FALSE,
+                      credible_level = 0.9,
+                      verbose = TRUE,
+                      sigma_within = NULL,
+                      sigma_within_sd = NULL,
+                      record_id = NULL,
+                      slope = NULL) {
+
+  # Map old parameter names to new ones. Pass through return_full,
+  # credible_level, and verbose so callers (e.g., detect_change()) can
+  # request the full posterior_draws matrix from the wrapper.
   invert_d2h(
     d2h_wax = d2H_wax,
     d2h_wax_err = d2H_wax_sd,
@@ -624,9 +714,13 @@ invert_d2H <- function(d2H_wax,
     pft_grass = pft_grass,
     model_name = model_name,
     n_draws = n_posterior_draws,
-    return_full = FALSE,
-    credible_level = 0.9,
-    verbose = TRUE
+    return_full = return_full,
+    credible_level = credible_level,
+    verbose = verbose,
+    sigma_within = sigma_within,
+    sigma_within_sd = sigma_within_sd,
+    record_id = record_id,
+    slope = slope
   )
 }
 
