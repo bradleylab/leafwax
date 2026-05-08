@@ -38,8 +38,10 @@ warn_preview_tier <- function(model_name, n_draws, context = NULL) {
   op <- options()
 
   op.leafwax <- list(
-    # Default data URL for downloading model data
-    leafwax.data_url = "https://github.com/leafwax-models/data/releases/download/v1.0.0/",
+    # Default data URL for downloading model data. Points at the
+    # bradleylab/leafwax-data archive, pinned to release v1.0.0.
+    # Concept DOI: 10.5281/zenodo.20085465.
+    leafwax.data_url = "https://raw.githubusercontent.com/bradleylab/leafwax-data/v1.0.0",
 
     # Default cache directory (NULL means use rappdirs default)
     leafwax.cache_dir = NULL,

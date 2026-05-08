@@ -137,22 +137,22 @@ get_data_url <- function(model_name, version = "latest",
   urls <- list()
 
   if (data_type %in% c("both", "posteriors")) {
-    # Posterior draws. Filename must match what load_posteriors() reads
-    # via resolve_posterior_file(): <model>_posterior.rds (singular).
+    # Posterior draws. The bradleylab/leafwax-data archive holds files
+    # at the repo root (not under a posteriors/ subdir), so the URL is
+    # flat. The cache filename keeps the posteriors/ prefix so the
+    # local cache directory stays organised. Filename must match what
+    # load_posteriors() reads via resolve_posterior_file():
+    # <model>_posterior.rds (singular).
     urls[[length(urls) + 1]] <- list(
-      url = paste0(base_url, "/posteriors/", model_name, "_posterior.rds"),
+      url = paste0(base_url, "/", model_name, "_posterior.rds"),
       filename = paste0("posteriors/", model_name, "_posterior.rds")
-    )
-
-    # Metadata file (per-model).
-    urls[[length(urls) + 1]] <- list(
-      url = paste0(base_url, "/metadata/", model_name, "_metadata.rds"),
-      filename = paste0("metadata/", model_name, "_metadata.rds")
     )
   }
 
   if (data_type %in% c("both", "lookup")) {
-    # Pre-computed spatial lookup (only meaningful for `_sp` models).
+    # Pre-computed spatial lookup tables are not yet shipped in the
+    # leafwax-data v1.0.0 release; the URL is left in place for
+    # forward compatibility but the request will 404 today.
     urls[[length(urls) + 1]] <- list(
       url = paste0(base_url, "/lookup_tables/", model_name, "_lookup.rds"),
       filename = paste0("lookup_tables/", model_name, "_lookup.rds")
