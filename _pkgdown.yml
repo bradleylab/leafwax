@@ -1,16 +1,10 @@
-url: https://yourusername.github.io/leafwax/
+url: https://bradleylab.github.io/leafwax/
 
 title: leafwax
-description: Bayesian inversion of leaf wax hydrogen isotopes to reconstruct precipitation isotopes
+description: Bayesian inversion of leaf wax hydrogen isotopes to precipitation isotopes.
 
 template:
   bootstrap: 5
-  bootswatch: cosmo
-  theme: arrow-lightbox
-  bslib:
-    primary: "#0054AD"
-    border-radius: 0.5rem
-    btn-border-radius: 0.25rem
 
 navbar:
   title: leafwax
@@ -18,140 +12,66 @@ navbar:
   left:
     - icon: fa-home
       href: index.html
-    - text: "Get Started"
-      href: articles/getting-started.html
+    - text: "Get started"
+      href: articles/paleo-record-workflow.html
     - text: "Reference"
       href: reference/index.html
-    - text: "Articles"
-      menu:
-        - text: "Getting Started"
-          href: articles/getting-started.html
-        - text: "Model Descriptions"
-          href: articles/model-descriptions.html
-        - text: "Advanced Usage"
-          href: articles/advanced-usage.html
-        - text: "-------"
-        - text: "Data Management"
-          href: articles/data-management.html
-        - text: "Lookup Tables"
-          href: articles/lookup-tables.html
     - text: "News"
       href: news/index.html
   right:
     - icon: fab fa-github
-      href: https://github.com/yourusername/leafwax
+      href: https://github.com/bradleylab/leafwax
       aria-label: GitHub
 
 home:
   sidebar:
-    structure: [links, license, community, citation, authors, dev, toc]
+    structure: [links, license, citation, authors, dev, toc]
   links:
     - text: Report a bug
-      href: https://github.com/yourusername/leafwax/issues
-    - text: Ask a question
-      href: https://github.com/yourusername/leafwax/discussions
+      href: https://github.com/bradleylab/leafwax/issues
 
 reference:
-  - title: "Main Functions"
-    desc: "Core functions for predicting precipitation isotopes"
+  - title: "Inversion"
+    desc: "Reconstruct d2H_precip from leaf-wax d2H_wax."
     contents:
-      - predict_d2h_precip
-      - invert_d2h
       - invert_d2H
-      - batch_predict
+      - invert_d2H_ensemble
 
-  - title: "Model Information"
-    desc: "Functions for exploring and selecting models"
+  - title: "Paleo-record workflow"
+    desc: "Within-record sigma_within, slope, change detection, claim taxonomy."
     contents:
-      - list_models
-      - select_best_model
-      - list_available_models
+      - estimate_sigma_within
+      - local_effective_slope
+      - estimate_temporal_autocorrelation
+      - detect_change
+      - assess_claim
+
+  - title: "Models"
+    desc: "Routing and metadata for the 14 v10 model variants."
+    contents:
+      - available_models
+      - get_all_model_metadata
       - get_model_info
-      - detect_model_capabilities
-
-  - title: "Data Management"
-    desc: "Functions for downloading and managing model data"
-    contents:
-      - download_model_data
-      - check_data_cache
-      - list_cached_models
-      - get_data_path
-      - clear_data_cache
-      - get_cache_info
-      - setup_leafwax_data
-
-  - title: "Model Loading"
-    desc: "Functions for loading model posteriors"
-    contents:
+      - list_models
       - load_posteriors
       - load_model_posteriors
+      - select_best_model
+      - select_best_model_from_flags
 
-  - title: "Spatial Functions"
-    desc: "Functions for spatial predictions and lookup tables"
-    contents:
-      - create_lookup_table
-      - get_spatial_params
-      - generate_global_grid
-      - create_regional_lookup
-      - use_lookup_if_available
-      - cache_all_lookup_tables
-      - validate_lookup_table
-      - predict_spatial_mpp
-
-  - title: "Ensemble Methods"
-    desc: "Functions for model ensembles and comparison"
-    contents:
-      - invert_d2H_ensemble
-      - compare_models
-
-  - title: "Utilities"
-    desc: "Helper and utility functions"
-    contents:
-      - validate_inputs
-      - monitor_memory
-      - leafwax_config
-      - leafwax_set_config
-      - available_models
-      - batch_invert_d2h
-      - benchmark_lookup
-
-  - title: "Data"
-    desc: "Included datasets"
+  - title: "Datasets"
     contents:
       - example_data
       - model_metadata
-      - mini_lookup_table
-      - mini_posteriors
-
-  - title: "Internal Functions"
-    desc: "Internal functions (not typically called directly)"
-    contents:
-      - process_sequential
-      - process_parallel
-      - get_download_files
-      - get_cache_files
-      - generate_fibonacci_sphere
 
 articles:
-  - title: "Getting Started"
-    desc: "Introduction and basic usage"
+  - title: "Workflow"
     contents:
-      - getting-started
-
-  - title: "Understanding Models"
-    desc: "Details about the hierarchical models"
-    contents:
-      - model-descriptions
-
-  - title: "Advanced Topics"
-    desc: "Advanced features and workflows"
-    contents:
-      - advanced-usage
+      - paleo-record-workflow
 
 news:
   releases:
-    - text: "Version 0.1.0"
-      href: https://github.com/yourusername/leafwax/releases/tag/v0.1.0
+    - text: "Version 0.2.0"
+      href: https://github.com/bradleylab/leafwax/releases/tag/v0.2.0
 
 development:
   mode: auto
@@ -164,13 +84,3 @@ footer:
   structure:
     left: developed_by
     right: built_with
-
-search:
-  exclude: ['news/index.html']
-  opengraph:
-    twitter:
-      card: summary
-      creator: "@alexbradley"
-
-deploy:
-  install_metadata: true
