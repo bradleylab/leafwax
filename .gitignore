@@ -7,9 +7,8 @@
 .Rproj.user/
 *.Rproj
 
-# Build output
-.Rcheck/
-.Rbuildignore
+# Build output (R CMD check artifacts; matches *.Rcheck/)
+*.Rcheck/
 
 # Package tarballs
 *.tar.gz
@@ -26,4 +25,5 @@
 
 # Generated docs / vignettes (if built)
 doc/
+docs/
 Meta/

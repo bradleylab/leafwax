@@ -14,7 +14,7 @@ validate_inputs(
   pft_tree = NULL,
   pft_shrub = NULL,
   pft_grass = NULL,
-  model_name = "b0b1"
+  model_name = "baseline"
 )
 }
 \arguments{

@@ -202,24 +202,33 @@ get_all_model_metadata <- function() {
 
 #' List model names
 #'
-#' @return Character vector of model names
+#' Returns the names of every model the package can resolve. Prefers
+#' the heavy posteriors directory when present (development install),
+#' otherwise falls back to the lightweight posteriors directory that
+#' ships with every install. The user cache is intentionally not
+#' enumerated here so the answer is stable regardless of what has been
+#' downloaded.
+#'
+#' @return Character vector of model names. Empty if neither directory
+#'   contains posterior files.
 #' @export
 list_model_names <- function() {
-  # Get actual models from package data directory
-  extdata_dir <- system.file("extdata", "posteriors", package = "leafwax")
-
-  if (extdata_dir == "" || !dir.exists(extdata_dir)) {
-    # If package not installed, look in local directory
-    if (dir.exists("inst/extdata/posteriors")) {
-      extdata_dir <- "inst/extdata/posteriors"
-    } else {
-      return(character(0))
+  for (subdir in c("posteriors", "posteriors_light")) {
+    extdata_dir <- system.file("extdata", subdir, package = "leafwax")
+    if (extdata_dir == "" || !dir.exists(extdata_dir)) {
+      local_dir <- file.path("inst", "extdata", subdir)
+      if (dir.exists(local_dir)) {
+        extdata_dir <- local_dir
+      } else {
+        next
+      }
+    }
+    files <- list.files(extdata_dir, pattern = "_posterior\\.rds$")
+    if (length(files) > 0L) {
+      return(gsub("_posterior\\.rds$", "", files))
     }
   }
-
-  available <- list.files(extdata_dir, pattern = "_posterior\\.rds$")
-  model_names <- gsub("_posterior\\.rds$", "", available)
-  return(model_names)
+  character(0)
 }
 
 #' Get model info
@@ -238,47 +247,3 @@ get_model_info <- function(model_name) {
   return(models[[model_name]])
 }
 
-#' Select best model based on available data
-#'
-#' @param data Data frame with predictor variables
-#' @return Recommended model name
-#' @export
-select_best_model <- function(data) {
-
-  # Check what predictors are available
-  has_elevation <- "elevation" %in% names(data)
-  has_c4 <- any(c("c4_fraction", "c4_percent") %in% names(data))
-  has_vegetation <- any(c("vegetation_type", "pft") %in% names(data))
-  has_coords <- all(c("longitude", "latitude") %in% names(data))
-
-  # Get available models to ensure we only recommend existing ones
-  available <- available_models()
-
-  # Select model based on available predictors (only return if available)
-  if (has_elevation && has_c4 && has_vegetation && has_coords && "full_sp" %in% available) {
-    return("full_sp")
-  } else if (has_elevation && has_c4 && has_coords && "elevation_c4_sp" %in% available) {
-    return("elevation_c4_sp")
-  } else if (has_elevation && has_vegetation && has_coords && "baseline_env_sp" %in% available) {
-    return("baseline_env_sp")  # Use env for elevation
-  } else if (has_c4 && has_vegetation && has_coords && "baseline_veg_sp" %in% available) {
-    return("baseline_veg_sp")
-  } else if (has_elevation && has_coords && "elevation_only_sp" %in% available) {
-    return("elevation_only_sp")
-  } else if (has_c4 && has_coords && "c4_only_sp" %in% available) {
-    return("c4_only_sp")
-  } else if (has_coords && "baseline_sp" %in% available) {
-    return("baseline_sp")
-  } else if (has_elevation && has_c4 && "full" %in% available) {
-    return("full")  # Non-spatial full model
-  } else if (has_elevation && "baseline_env" %in% available) {
-    return("baseline_env")
-  } else if ((has_c4 || has_vegetation) && "baseline_veg" %in% available) {
-    return("baseline_veg")
-  } else if ("baseline" %in% available) {
-    return("baseline")
-  } else {
-    # Return the first available model if nothing matches
-    return(available[1])
-  }
-}

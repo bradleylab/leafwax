@@ -1,0 +1,14 @@
+^\.github$
+^\.github/
+^\.serena$
+^\.context$
+^_pkgdown\.yml$
+^docs$
+^dev-notes$
+^tests/_archive_v0\.1\.0$
+^.*\.Rcheck$
+^.*\.tar\.gz$
+^data-raw$
+^LICENSE\.md$
+^inst/extdata/posteriors$
+^cran-comments\.md$

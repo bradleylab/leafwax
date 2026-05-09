@@ -18,7 +18,6 @@
 #' @param pft_grass Numeric vector of grass PFT fraction (optional)
 #' @param model Character string specifying model, or "auto" for automatic selection
 #' @param n_draws Integer number of posterior draws (NULL for all)
-#' @param use_lookup Logical whether to use lookup tables for spatial models
 #' @param credible_level Numeric credible interval level (default 0.9)
 #' @param return_draws Logical whether to return full posterior draws
 #' @param progress Logical whether to show progress bar for batch processing
@@ -28,11 +27,17 @@
 #' \describe{
 #'   \item{d2h_precip_mean}{Mean predicted precipitation d2H}
 #'   \item{d2h_precip_median}{Median predicted precipitation d2H}
-#'   \item{d2h_precip_sd}{Standard deviation of predictions}
-#'   \item{d2h_precip_lower}{Lower credible interval bound}
-#'   \item{d2h_precip_upper}{Upper credible interval bound}
+#'   \item{d2h_precip_sd}{Standard deviation of the posterior
+#'     predictive interval}
+#'   \item{d2h_precip_lower}{Lower bound of the credible interval}
+#'   \item{d2h_precip_upper}{Upper bound of the credible interval}
+#'   \item{prediction_interval_width}{Width of the credible interval}
 #'   \item{model_used}{Name of model used for prediction}
 #' }
+#'
+#' The interval is the posterior predictive specified in manuscript
+#' supplement Section S4.1, Eq. 7 (analytical uncertainty plus the
+#' model's posterior residual SD).
 #'
 #' @export
 #' @examples
@@ -52,7 +57,7 @@
 #' # Specify model explicitly
 #' results <- predict_d2h_precip(
 #'   example_data,
-#'   model = "b0b1_elev_sp"
+#'   model = "baseline_env_sp"
 #' )
 #'
 #' # Get full posterior draws
@@ -73,7 +78,6 @@ predict_d2h_precip <- function(data = NULL,
                               pft_grass = NULL,
                               model = "auto",
                               n_draws = NULL,
-                              use_lookup = TRUE,
                               credible_level = 0.9,
                               return_draws = FALSE,
                               progress = TRUE,
@@ -145,31 +149,25 @@ predict_d2h_precip <- function(data = NULL,
     }
   }
 
-  # Use lookup tables for spatial models if available and requested
-  lookup_table <- NULL
-  if (use_lookup && grepl("_sp", model)) {
-    if (verbose) cat("Checking for cached lookup table...\n")
-    lookup_result <- use_lookup_if_available(
-      model_name = model,
-      longitude = longitude,
-      latitude = latitude,
-      method = "bilinear"
-    )
-
-    if (!is.null(lookup_result)) {
-      lookup_table <- lookup_result$lookup_table
-      if (verbose) cat("Using pre-computed lookup table\n")
-    } else if (verbose) {
-      cat("No lookup table found, will compute spatial effects directly\n")
+  # Convert c4 from public-API fraction (0-1) to internal percent
+  # (0-100). NULL must stay NULL so the model-capability check inside
+  # invert_d2h() does not see a length-0 vector and warn spuriously.
+  if (!is.null(c4_fraction)) {
+    n_obs <- length(d2h_wax)
+    if (length(c4_fraction) != n_obs) {
+      stop(sprintf(
+        "c4_fraction has length %d but d2h_wax has length %d; vector lengths must match.",
+        length(c4_fraction), n_obs
+      ))
+    }
+    if (any(c4_fraction < 0, na.rm = TRUE) ||
+        any(c4_fraction > 1, na.rm = TRUE)) {
+      stop("c4_fraction must be in [0, 1] (a fraction, not a percent). ",
+           "Got values up to ", signif(max(c4_fraction, na.rm = TRUE), 3),
+           ". If your inputs are on the 0-100 percent scale, divide by 100.")
     }
   }
-
-  # Show progress bar for large datasets
-  if (progress && n_obs > 10) {
-    pb <- txtProgressBar(min = 0, max = n_obs, style = 3)
-  } else {
-    pb <- NULL
-  }
+  c4_percent_internal <- if (is.null(c4_fraction)) NULL else c4_fraction * 100
 
   # Call the core inversion function
   tryCatch({
@@ -179,7 +177,7 @@ predict_d2h_precip <- function(data = NULL,
       longitude = longitude,
       latitude = latitude,
       elevation = elevation,
-      c4_percent = c4_fraction * 100,  # Convert to percentage if needed
+      c4_percent = c4_percent_internal,
       pft_tree = pft_tree,
       pft_shrub = pft_shrub,
       pft_grass = pft_grass,
@@ -189,11 +187,6 @@ predict_d2h_precip <- function(data = NULL,
       credible_level = credible_level,
       verbose = FALSE  # We handle verbosity here
     )
-
-    if (!is.null(pb)) {
-      setTxtProgressBar(pb, n_obs)
-      close(pb)
-    }
 
     # Add model information to results
     if (!return_draws) {
@@ -209,14 +202,10 @@ predict_d2h_precip <- function(data = NULL,
     return(results)
 
   }, error = function(e) {
-    if (!is.null(pb)) close(pb)
-
     # Provide helpful error message
     if (grepl("not found|not available", e$message)) {
       message("\nModel data not available. To download:")
-      message("  download_model_data('", model, "', 'standard')")
-      message("\nOr enable auto-download:")
-      message("  options(leafwax.auto_download = TRUE)")
+      message("  download_model_data('", model, "')")
     }
 
     stop(e)
@@ -441,7 +430,7 @@ validate_inputs <- function(d2h_wax, longitude, latitude,
                           pft_tree = NULL,
                           pft_shrub = NULL,
                           pft_grass = NULL,
-                          model_name = "b0b1") {
+                          model_name = "baseline") {
 
   # Check required inputs
   if (is.null(d2h_wax) || length(d2h_wax) == 0) {
@@ -493,8 +482,6 @@ validate_inputs <- function(d2h_wax, longitude, latitude,
     stop("d2h_wax_err must be a single value or same length as d2h_wax")
   }
 
-  # Pull metadata via the v10 routing helper rather than the older
-  # data(model_metadata) lookup; the helper covers all 14 v10 names.
   metadata <- get_all_model_metadata()
 
   if (!model_name %in% names(metadata)) {
@@ -572,9 +559,12 @@ validate_inputs <- function(d2h_wax, longitude, latitude,
     model_name = model_name
   )
 
-  if (model_info$has_elevation) validated$elevation <- elevation
-  if (model_info$has_c4) validated$c4_fraction <- c4_fraction
-  if (model_info$has_pft) {
+  if (isTRUE(model_info$has_elevation)) validated$elevation <- elevation
+  if (isTRUE(model_info$has_c4)) validated$c4_fraction <- c4_fraction
+  # v10 metadata uses has_vegetation in place of has_pft; honour both so
+  # PFT vectors aren't silently dropped from the validated list when a
+  # caller passes a v10 metadata object.
+  if (has_pft_flag) {
     validated$pft_tree <- pft_tree
     validated$pft_shrub <- pft_shrub
     validated$pft_grass <- pft_grass

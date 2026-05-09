@@ -1,13 +1,10 @@
-# R/local_effective_slope.R - Per-draw d2H_wax<-d2H_precip slope at a
-# specific site, with optional override and stationarity ceiling.
-#
-# Phase B of the v0.2.0 paleo-record workflow. Implements the local
-# effective slope obligation from manuscript Section 4.5.5: a defensible
-# slope must come from the model's site-specific posterior plus an
-# explicit ceiling at alpha = 0.88, since the simple two-pool
-# fractionation model cannot exceed that under stationarity of
-# vegetation, leaf-water enrichment, seasonality, and source-water
-# sampling.
+# Per-draw d2H_wax<-d2H_precip slope at a specific site, with optional
+# override and stationarity ceiling. Implements the local effective
+# slope obligation from manuscript Section 4.5.5: a defensible slope
+# must come from the model's site-specific posterior plus an explicit
+# ceiling at alpha = 0.88, since the simple two-pool fractionation
+# model cannot exceed that under stationarity of vegetation, leaf-water
+# enrichment, seasonality, and source-water sampling.
 
 #' Local effective slope at a paleo-reconstruction site
 #'

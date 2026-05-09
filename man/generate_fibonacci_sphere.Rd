@@ -4,7 +4,7 @@
 \alias{generate_fibonacci_sphere}
 \title{Generate Fibonacci sphere points}
 \usage{
-generate_fibonacci_sphere(n_points = 125)
+generate_fibonacci_sphere(n_points = N_SPATIAL_KNOTS)
 }
 \arguments{
 \item{n_points}{Number of points to generate}
@@ -15,3 +15,4 @@ Matrix with columns "lon" and "lat" in degrees
 \description{
 Generates evenly distributed points on a sphere using the Fibonacci spiral method.
 }
+\keyword{internal}

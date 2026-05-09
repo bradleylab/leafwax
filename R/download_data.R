@@ -7,7 +7,7 @@
 #'
 #' @param model_name Character string specifying the model name
 #' @param version Version tag to download (default "latest")
-#' @param data_type Type of data to download: "posteriors", "lookup", or "both"
+#' @param data_type Type of data to download (only "posteriors" is currently supported)
 #' @param cache_dir Directory to save files (default uses get_cache_dir())
 #' @param overwrite Logical whether to overwrite existing files
 #' @param verify Logical whether to verify file integrity with checksums
@@ -18,14 +18,14 @@
 #' @examples
 #' \dontrun{
 #' # Download latest data for a model
-#' download_model_data("b0b1_sp", version = "latest")
+#' download_model_data("baseline_sp", version = "latest")
 #'
 #' # Download specific version
-#' download_model_data("b0b1_elev", version = "v1.0.0")
+#' download_model_data("baseline_env", version = "v1.0.1")
 #' }
 download_model_data <- function(model_name,
                                version = "latest",
-                               data_type = c("both", "posteriors", "lookup"),
+                               data_type = c("posteriors"),
                                cache_dir = NULL,
                                overwrite = FALSE,
                                verify = TRUE,
@@ -106,20 +106,20 @@ download_model_data <- function(model_name,
 #'
 #' @param model_name Character string specifying the model name
 #' @param version Version tag (e.g., "v1.0.0" or "latest")
-#' @param data_type Type of data: "posteriors", "lookup", or "both"
+#' @param data_type Type of data (only "posteriors" is currently supported)
 #'
 #' @return List of download URLs and filenames
 #' @export
 #' @examples
 #' \dontrun{
 #' # Get URLs for latest version
-#' urls <- get_data_url("b0b1_sp", "latest")
+#' urls <- get_data_url("baseline_sp", "latest")
 #'
 #' # Get URLs for specific version
-#' urls <- get_data_url("b0b1_sp", "v1.0.0")
+#' urls <- get_data_url("baseline_sp", "v1.0.1")
 #' }
 get_data_url <- function(model_name, version = "latest",
-                        data_type = c("both", "posteriors", "lookup")) {
+                        data_type = c("posteriors")) {
 
   data_type <- match.arg(data_type)
 
@@ -137,82 +137,19 @@ get_data_url <- function(model_name, version = "latest",
   urls <- list()
 
   if (data_type %in% c("both", "posteriors")) {
-    # Add posterior draws file
+    # Posterior draws. The bradleylab/leafwax-data archive holds files
+    # at the repo root (not under a posteriors/ subdir), so the URL is
+    # flat. The cache filename keeps the posteriors/ prefix so the
+    # local cache directory stays organised. Filename must match what
+    # load_posteriors() reads via resolve_posterior_file():
+    # <model>_posterior.rds (singular).
     urls[[length(urls) + 1]] <- list(
-      url = paste0(base_url, "/posteriors/", model_name, "_posteriors.rds"),
-      filename = paste0("posteriors/", model_name, "_posteriors.rds")
-    )
-
-    # Add metadata file
-    urls[[length(urls) + 1]] <- list(
-      url = paste0(base_url, "/metadata/", model_name, "_metadata.rds"),
-      filename = paste0("metadata/", model_name, "_metadata.rds")
-    )
-  }
-
-  if (data_type %in% c("both", "lookup")) {
-    # Add lookup table file
-    urls[[length(urls) + 1]] <- list(
-      url = paste0(base_url, "/lookup_tables/", model_name, "_lookup.rds"),
-      filename = paste0("lookup_tables/", model_name, "_lookup.rds")
+      url = paste0(base_url, "/", model_name, "_posterior.rds"),
+      filename = paste0("posteriors/", model_name, "_posterior.rds")
     )
   }
 
   return(urls)
-}
-
-#' Verify data integrity
-#'
-#' Verifies the integrity of downloaded files using checksums.
-#'
-#' @param filepath Path to the file to verify
-#' @param model_name Model name for looking up expected checksum
-#' @param filename Filename for looking up expected checksum
-#'
-#' @return Logical indicating whether the file is valid
-#' @export
-verify_data_integrity <- function(filepath, model_name = NULL, filename = NULL) {
-
-  if (!file.exists(filepath)) {
-    warning("File does not exist: ", filepath)
-    return(FALSE)
-  }
-
-  # Calculate file checksum
-  file_checksum <- tools::md5sum(filepath)
-
-  # Load expected checksums
-  manifest <- get_data_manifest()
-
-  # Find expected checksum
-  if (!is.null(filename)) {
-    expected <- manifest$files[[filename]]$checksum
-  } else if (!is.null(model_name)) {
-    # Try to find by model name pattern
-    matching <- grep(model_name, names(manifest$files), value = TRUE)
-    if (length(matching) > 0) {
-      expected <- manifest$files[[matching[1]]]$checksum
-    } else {
-      expected <- NULL
-    }
-  } else {
-    # Try to match by filename from path
-    fname <- basename(filepath)
-    expected <- manifest$files[[fname]]$checksum
-  }
-
-  if (is.null(expected)) {
-    warning("No checksum found in manifest for file")
-    return(TRUE)  # Allow file if no checksum available
-  }
-
-  # Compare checksums
-  if (as.character(file_checksum) != expected) {
-    warning("Checksum mismatch! File may be corrupted.")
-    return(FALSE)
-  }
-
-  return(TRUE)
 }
 
 #' Download file with progress bar
@@ -229,7 +166,7 @@ download_with_progress <- function(url, destfile, verbose = TRUE) {
 
   # Try to get file size first
   h <- tryCatch({
-    curlGetHeaders(url)
+    base::curlGetHeaders(url)
   }, error = function(e) NULL)
 
   file_size <- NULL
@@ -247,14 +184,20 @@ download_with_progress <- function(url, destfile, verbose = TRUE) {
     # Set up progress bar
     pb <- utils::txtProgressBar(min = 0, max = file_size, style = 3)
 
-    # Download in chunks
-    con_in <- url(url, "rb")
-    con_out <- file(temp_file, "wb")
-
+    # Open connections lazily and track them so the error handler can
+    # only close what was actually opened. Pre-fix the handler called
+    # close() on con_out unconditionally, which raised a secondary
+    # error and masked the original download failure when url() opened
+    # but file() had not yet been reached.
+    con_in <- NULL
+    con_out <- NULL
     bytes_downloaded <- 0
     chunk_size <- 65536  # 64KB chunks
 
     tryCatch({
+      con_in  <- url(url, "rb")
+      con_out <- file(temp_file, "wb")
+
       while (TRUE) {
         chunk <- readBin(con_in, "raw", chunk_size)
         if (length(chunk) == 0) break
@@ -265,8 +208,8 @@ download_with_progress <- function(url, destfile, verbose = TRUE) {
         utils::setTxtProgressBar(pb, bytes_downloaded)
       }
 
-      close(con_in)
-      close(con_out)
+      close(con_in);  con_in  <- NULL
+      close(con_out); con_out <- NULL
       close(pb)
 
       # Move temp file to destination
@@ -276,9 +219,9 @@ download_with_progress <- function(url, destfile, verbose = TRUE) {
       return(TRUE)
 
     }, error = function(e) {
-      close(con_in)
-      close(con_out)
-      close(pb)
+      if (!is.null(con_in))  try(close(con_in),  silent = TRUE)
+      if (!is.null(con_out)) try(close(con_out), silent = TRUE)
+      try(close(pb), silent = TRUE)
       if (file.exists(temp_file)) file.remove(temp_file)
       warning("Download failed: ", e$message)
       return(FALSE)
@@ -311,11 +254,11 @@ get_url_config <- function() {
   if (file.exists(config_file)) {
     config <- jsonlite::fromJSON(config_file)
   } else {
-    # Use default configuration
+    # Fallback for broken installs where data_urls.json is missing from extdata.
     config <- list(
-      base_url_latest = "https://github.com/[YOUR-USERNAME]/leafwax-data/releases/latest/download",
-      base_url_version = "https://github.com/[YOUR-USERNAME]/leafwax-data/releases/download/{version}",
-      manifest_url = "https://github.com/[YOUR-USERNAME]/leafwax-data/releases/latest/download/manifest.json"
+      base_url_latest = "https://github.com/bradleylab/leafwax-data/releases/latest/download",
+      base_url_version = "https://github.com/bradleylab/leafwax-data/releases/download/{version}",
+      manifest_url = "https://github.com/bradleylab/leafwax-data/releases/latest/download/manifest.json"
     )
   }
 
@@ -324,22 +267,29 @@ get_url_config <- function() {
 
 #' Get data manifest
 #'
-#' Loads or downloads the data manifest with file checksums.
+#' Loads or downloads the data manifest with file checksums. Returns
+#' `NULL` (with a `warning()`) when the manifest is unreachable and
+#' there is no cached copy on disk; callers must treat that as
+#' "checksum verification skipped" rather than "no checksums found".
 #'
-#' @return List with manifest data
+#' @return Parsed manifest list, or `NULL` if no manifest is
+#'   available locally and the download failed.
 #' @keywords internal
 get_data_manifest <- function() {
 
-  # Check for cached manifest
   cache_dir <- get_cache_dir()
   manifest_file <- file.path(cache_dir, "manifest.json")
 
-  # Download if not present or older than 1 day
+  # Download if not present or older than 1 day. If the download
+  # fails, surface the error to the caller via warning() rather than
+  # silently masquerading as "manifest with zero files" (which earlier
+  # callers misread as "no checksums available -> trust the file").
   if (!file.exists(manifest_file) ||
       difftime(Sys.time(), file.info(manifest_file)$mtime, units = "days") > 1) {
 
     url_config <- get_url_config()
 
+    download_err <- NULL
     tryCatch({
       utils::download.file(
         url_config$manifest_url,
@@ -348,18 +298,23 @@ get_data_manifest <- function() {
         quiet = TRUE
       )
     }, error = function(e) {
-      # Return empty manifest if download fails
-      return(list(files = list()))
+      download_err <<- conditionMessage(e)
     })
+
+    if (!is.null(download_err) && !file.exists(manifest_file)) {
+      warning("Could not fetch data manifest: ", download_err,
+              call. = FALSE)
+      return(NULL)
+    }
   }
 
-  if (file.exists(manifest_file)) {
-    manifest <- jsonlite::fromJSON(manifest_file)
-  } else {
-    manifest <- list(files = list())
+  if (!file.exists(manifest_file)) {
+    warning("Data manifest not found and could not be downloaded.",
+            call. = FALSE)
+    return(NULL)
   }
 
-  return(manifest)
+  jsonlite::fromJSON(manifest_file)
 }
 
 #' Clear download cache
@@ -367,7 +322,7 @@ get_data_manifest <- function() {
 #' Removes downloaded model data from the local cache.
 #'
 #' @param model_name Model name to clear (NULL for all)
-#' @param type Type of data to clear: "all", "posteriors", "lookup"
+#' @param type Type of data to clear: "all" or "posteriors"
 #' @param confirm Whether to ask for confirmation
 #'
 #' @return Invisible NULL
@@ -375,17 +330,17 @@ get_data_manifest <- function() {
 #' @examples
 #' \dontrun{
 #' # Clear cache for specific model
-#' clear_download_cache("b0b1_sp")
+#' clear_download_cache("baseline_sp")
 #'
 #' # Clear all cached data
 #' clear_download_cache(confirm = FALSE)
 #' }
 clear_download_cache <- function(model_name = NULL,
-                                type = c("all", "posteriors", "lookup"),
+                                type = c("all", "posteriors"),
                                 confirm = TRUE) {
 
   type <- match.arg(type)
-  cache_dir <- get_cache_dir()
+  cache_dir <- get_cache_dir(create = FALSE)
 
   if (!dir.exists(cache_dir)) {
     message("Cache directory does not exist")
@@ -406,12 +361,6 @@ clear_download_cache <- function(model_name = NULL,
                         list.files(file.path(cache_dir, "posteriors"),
                                  pattern = pattern, full.names = TRUE),
                         list.files(file.path(cache_dir, "metadata"),
-                                 pattern = pattern, full.names = TRUE))
-  }
-
-  if (type %in% c("all", "lookup")) {
-    files_to_remove <- c(files_to_remove,
-                        list.files(file.path(cache_dir, "lookup_tables"),
                                  pattern = pattern, full.names = TRUE))
   }
 

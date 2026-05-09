@@ -13,12 +13,19 @@ get_model_parameters <- function(model_name) {
   # Base parameters that all models have
   base_params <- c("beta_0", "beta_oipc", "sigma")
 
-  # Initialize capabilities
+  # Initialize capabilities. The v10 fits did not produce beta_elev
+  # coefficients despite the historical "elevation_*" / "env" naming;
+  # has_elevation is therefore FALSE for every v10 model. The "env"
+  # variants instead carry a beta_precip term (precipitation amount),
+  # exposed here as has_precip. Capability flags stay name-based so this
+  # function is callable without loading the posterior; load_posteriors()
+  # cross-checks the actual columns at load time.
   capabilities <- list(
     has_spatial = grepl("_sp$", model_name),
-    has_elevation = grepl("(env|elevation)", model_name),
-    has_c4 = grepl("(c4|veg)", model_name),
-    has_pft = grepl("veg", model_name),
+    has_elevation = FALSE,
+    has_precip = grepl("env", model_name) || grepl("^full", model_name),
+    has_c4 = grepl("(c4|veg|^full)", model_name),
+    has_pft = grepl("(veg|^full)", model_name),
     has_interaction = grepl("interact", model_name)
   )
 
@@ -29,8 +36,8 @@ get_model_parameters <- function(model_name) {
     expected_params <- c(expected_params, "lambda_decay", "effective_scale_km")
   }
 
-  if (capabilities$has_elevation) {
-    expected_params <- c(expected_params, "beta_elev")
+  if (capabilities$has_precip) {
+    expected_params <- c(expected_params, "beta_precip")
   }
 
   if (capabilities$has_c4) {
@@ -43,10 +50,6 @@ get_model_parameters <- function(model_name) {
 
   # Required predictors for this model
   required_predictors <- c("d2h_wax", "longitude", "latitude")
-
-  if (capabilities$has_elevation) {
-    required_predictors <- c(required_predictors, "elevation")
-  }
 
   if (capabilities$has_c4 && !capabilities$has_pft) {
     required_predictors <- c(required_predictors, "c4_percent")
@@ -61,7 +64,7 @@ get_model_parameters <- function(model_name) {
     capabilities = capabilities,
     expected_parameters = expected_params,
     required_predictors = required_predictors,
-    knot_count = if (capabilities$has_spatial) 125 else 0,
+    knot_count = if (capabilities$has_spatial) N_SPATIAL_KNOTS else 0L,
     description = generate_model_description(model_name, capabilities)
   ))
 }
@@ -188,62 +191,3 @@ validate_model_inputs <- function(model_name, d2h_wax, longitude, latitude,
   ))
 }
 
-#' Get model recommendations based on available data
-#'
-#' Suggests the best model(s) to use given the available predictors.
-#'
-#' @param has_elevation Whether elevation data is available
-#' @param has_c4 Whether C4 vegetation data is available
-#' @param has_pft Whether PFT data is available
-#' @param prefer_spatial Whether to prefer spatial models
-#' @param available_models Vector of available model names (optional)
-#' @return Ranked list of recommended models
-#' @export
-get_model_recommendations <- function(has_elevation = FALSE, has_c4 = FALSE, has_pft = FALSE,
-                                    prefer_spatial = TRUE, available_models = NULL) {
-
-  if (is.null(available_models)) {
-    available_models <- available_models()
-  }
-
-  recommendations <- list()
-
-  for (model in available_models) {
-    model_info <- get_model_parameters(model)
-    caps <- model_info$capabilities
-
-    # Calculate compatibility score
-    score <- 0
-
-    # Base compatibility
-    score <- score + 10
-
-    # Bonus for using available predictors
-    if (has_elevation && caps$has_elevation) score <- score + 20
-    if (has_c4 && caps$has_c4) score <- score + 15
-    if (has_pft && caps$has_pft) score <- score + 15
-
-    # Bonus for spatial models if preferred
-    if (prefer_spatial && caps$has_spatial) score <- score + 10
-
-    # Penalty for requiring unavailable predictors
-    if (caps$has_elevation && !has_elevation) score <- score - 50
-    if (caps$has_c4 && !has_c4 && !caps$has_pft) score <- score - 30
-    if (caps$has_pft && !has_pft) score <- score - 40
-
-    recommendations[[model]] <- list(
-      model_name = model,
-      score = score,
-      description = model_info$description,
-      compatible = score > 0
-    )
-  }
-
-  # Sort by score (descending)
-  recommendations <- recommendations[order(sapply(recommendations, function(x) x$score), decreasing = TRUE)]
-
-  # Filter to only compatible models
-  compatible_models <- recommendations[sapply(recommendations, function(x) x$compatible)]
-
-  return(compatible_models)
-}

@@ -3,7 +3,7 @@
 #
 # Phase C of the v0.2.0 paleo-record workflow. Implements the within-
 # record change-detection threshold from manuscript Section 4.5.3 and
-# computes the posterior probability that ΔδD_precip between two
+# computes the posterior probability that delta-d2H_precip between two
 # stratigraphic intervals exceeds a user-supplied magnitude.
 
 #' Estimate lag-1 temporal autocorrelation
@@ -100,12 +100,15 @@ estimate_temporal_autocorrelation <- function(d2h_wax, age,
 #'
 #' \deqn{\mathrm{threshold}_{precip} =
 #'       \frac{z_{\alpha/2}\, \sqrt{2(1 - \rho_t)}\,
-#'             \sqrt{\sigma_{within}^2 + \sigma_{analytical}^2}}
+#'             \sqrt{\sigma_{residual}^2 + \sigma_{analytical}^2}}
 #'            {\beta_{\mathrm{eff}}}}
 #'
 #' The threshold is the smallest difference in `d2H_precip` between two
 #' independent samples that can be distinguished from within-record
-#' noise at the chosen confidence level.
+#' noise at the chosen confidence level. The spatial GP intercept
+#' contributes a constant to every sample in the record and cancels in
+#' the contrast; the same `sigma_residual` from the spatial calibration
+#' applies (manuscript Section 4.5.3).
 #'
 #' @param reconstruction Output of `invert_d2H(..., return_full = TRUE)`
 #'   on a downcore series. Must contain a `posterior_draws` matrix of
@@ -118,8 +121,9 @@ estimate_temporal_autocorrelation <- function(d2h_wax, age,
 #'   test window, or a named list of length-2 numerics for multiple
 #'   windows. NULL skips the per-interval probability table and returns
 #'   only the threshold.
-#' @param sigma_within Numeric, required, the within-record residual SD
-#'   in leaf-wax per mil (typically from `estimate_sigma_within()`).
+#' @param sigma_residual Numeric, required, the model's posterior
+#'   residual SD on the leaf-wax per-mil scale (`sigma`, approximately
+#'   16 per mil for the spatial models; see Section 4.5.3).
 #' @param sigma_analytical Numeric, the analytical uncertainty on
 #'   `d2H_wax` measurements in per mil (default 3).
 #' @param rho_t Numeric, lag-1 temporal autocorrelation. Use
@@ -137,7 +141,7 @@ estimate_temporal_autocorrelation <- function(d2h_wax, age,
 #'     \item `threshold` - the detection threshold on `d2H_precip` at
 #'       the requested confidence level.
 #'     \item `formula` - the components used: `z`, `rho_t`,
-#'       `sigma_within`, `sigma_analytical`, `beta_eff`.
+#'       `sigma_residual`, `sigma_analytical`, `beta_eff`.
 #'     \item `intervals` - a data frame with one row per test interval
 #'       reporting the posterior median and CI of `delta` and (if
 #'       `magnitudes` supplied) the posterior probability of exceeding
@@ -148,7 +152,7 @@ detect_change <- function(reconstruction,
                           age,
                           baseline_interval,
                           test_intervals = NULL,
-                          sigma_within,
+                          sigma_residual,
                           sigma_analytical = 3,
                           rho_t = NULL,
                           beta_eff,
@@ -160,6 +164,17 @@ detect_change <- function(reconstruction,
     stop("reconstruction must be the list returned by ",
          "invert_d2H(..., return_full = TRUE) and contain ",
          "$posterior_draws")
+  }
+  # Re-raise the preview-tier warning at the change-detection layer.
+  # Posterior-probability statements (`p_exceed`) are exactly what the
+  # 100-draw fixture estimates poorly.
+  rec_tier <- attr(reconstruction, "leafwax_tier") %||%
+              reconstruction$model_info$tier %||% "unknown"
+  rec_model <- reconstruction$model_info$model_name %||% "<unknown>"
+  if (identical(rec_tier, "light")) {
+    warn_preview_tier(rec_model,
+                      nrow(reconstruction$posterior_draws),
+                      "detect_change")
   }
   draws <- reconstruction$posterior_draws
   if (!is.matrix(draws)) draws <- as.matrix(draws)
@@ -188,10 +203,10 @@ detect_change <- function(reconstruction,
   if (!is.numeric(baseline_interval) || length(baseline_interval) != 2L) {
     stop("baseline_interval must be a numeric vector of length 2: c(min, max)")
   }
-  if (missing(sigma_within) || is.null(sigma_within) ||
-      !is.numeric(sigma_within) || length(sigma_within) != 1L ||
-      !is.finite(sigma_within) || sigma_within < 0) {
-    stop("sigma_within must be a single non-negative numeric value (per mil)")
+  if (missing(sigma_residual) || is.null(sigma_residual) ||
+      !is.numeric(sigma_residual) || length(sigma_residual) != 1L ||
+      !is.finite(sigma_residual) || sigma_residual < 0) {
+    stop("sigma_residual must be a single non-negative numeric value (per mil)")
   }
   if (!is.numeric(sigma_analytical) || length(sigma_analytical) != 1L ||
       !is.finite(sigma_analytical) || sigma_analytical < 0) {
@@ -219,7 +234,7 @@ detect_change <- function(reconstruction,
 
   # --- detection threshold (manuscript Section 4.5.3) -----------------
   z <- stats::qnorm(1 - (1 - confidence) / 2)
-  sigma_combined <- sqrt(sigma_within^2 + sigma_analytical^2)
+  sigma_combined <- sqrt(sigma_residual^2 + sigma_analytical^2)
   threshold_wax    <- z * sqrt(2 * (1 - rho_t)) * sigma_combined
   threshold_precip <- threshold_wax / abs(beta_eff)
 
@@ -260,7 +275,7 @@ detect_change <- function(reconstruction,
           "test_interval '%s' contains no samples; reporting NA",
           names(test_intervals)[k]
         ))
-        rows[[k]] <- data.frame(
+        empty_row <- data.frame(
           interval     = names(test_intervals)[k],
           n_baseline   = length(base_idx),
           n_test       = 0L,
@@ -270,6 +285,15 @@ detect_change <- function(reconstruction,
           delta_upper  = NA_real_,
           stringsAsFactors = FALSE
         )
+        # Pad magnitude columns with NA so the column set matches
+        # populated rows; otherwise rbind across mixed empty + non-empty
+        # intervals fails when magnitudes is supplied.
+        if (!is.null(magnitudes)) {
+          for (m in magnitudes) {
+            empty_row[[sprintf("p_abs_delta_gt_%g", m)]] <- NA_real_
+          }
+        }
+        rows[[k]] <- empty_row
         next
       }
       mu_base <- if (length(base_idx) == 1L) draws[, base_idx]
@@ -309,7 +333,7 @@ detect_change <- function(reconstruction,
       z                 = z,
       confidence        = confidence,
       rho_t             = rho_t,
-      sigma_within      = sigma_within,
+      sigma_residual    = sigma_residual,
       sigma_analytical  = sigma_analytical,
       sigma_combined    = sigma_combined,
       beta_eff          = beta_eff,

@@ -83,7 +83,7 @@ test_that("detect_change: threshold matches the manuscript formula at rho_t = 0"
     reconstruction    = rec,
     age               = age,
     baseline_interval = c(0, 5000),
-    sigma_within      = 16,
+    sigma_residual    = 16,
     sigma_analytical  = 3,
     rho_t             = 0,
     beta_eff          = 0.55,
@@ -104,7 +104,7 @@ test_that("detect_change: positive autocorrelation lowers the threshold", {
   age <- seq(0, 10000, length.out = ncol(rec$posterior_draws))
   args <- list(reconstruction = rec, age = age,
                baseline_interval = c(0, 5000),
-               sigma_within = 16, sigma_analytical = 3,
+               sigma_residual = 16, sigma_analytical = 3,
                beta_eff = 0.55, confidence = 0.95)
   t0 <- do.call(detect_change, c(args, list(rho_t = 0)))$threshold
   t5 <- do.call(detect_change, c(args, list(rho_t = 0.5)))$threshold
@@ -129,7 +129,7 @@ test_that("detect_change: posterior probability of change is sane", {
     age               = age,
     baseline_interval = c(0, 5000),
     test_intervals    = list(late = c(5000, 10000)),
-    sigma_within      = 5, sigma_analytical = 3,
+    sigma_residual    = 5, sigma_analytical = 3,
     rho_t             = 0.5, beta_eff = 0.55, confidence = 0.95,
     magnitudes        = c(10, 30, 80)
   )
@@ -149,32 +149,32 @@ test_that("detect_change: rejects bad inputs", {
   expect_error(
     detect_change(reconstruction = list(), age = age,
                   baseline_interval = c(0, 5000),
-                  sigma_within = 5, beta_eff = 0.5),
+                  sigma_residual = 5, beta_eff = 0.5),
     "posterior_draws"
   )
   expect_error(
     detect_change(reconstruction = rec, age = age[-1],
                   baseline_interval = c(0, 5000),
-                  sigma_within = 5, beta_eff = 0.5),
+                  sigma_residual = 5, beta_eff = 0.5),
     "length n_samples"
   )
   expect_error(
     detect_change(reconstruction = rec, age = age,
                   baseline_interval = c(0, 5000),
-                  sigma_within = 5, beta_eff = 0),
+                  sigma_residual = 5, beta_eff = 0),
     "non-zero"
   )
   expect_error(
     detect_change(reconstruction = rec, age = age,
                   baseline_interval = c(0, 5000),
-                  sigma_within = 5, beta_eff = 0.5,
+                  sigma_residual = 5, beta_eff = 0.5,
                   rho_t = 1.5),
     "in \\(-1, 1\\)"
   )
   expect_error(
     detect_change(reconstruction = rec, age = age,
                   baseline_interval = c(0, 5000),
-                  sigma_within = -1, beta_eff = 0.5),
+                  sigma_residual = -1, beta_eff = 0.5),
     "non-negative"
   )
 })
@@ -186,7 +186,7 @@ test_that("detect_change: rejects non-finite ages up front", {
   expect_error(
     detect_change(reconstruction = rec, age = age,
                   baseline_interval = c(0, 5000),
-                  sigma_within = 16, beta_eff = 0.55),
+                  sigma_residual = 16, beta_eff = 0.55),
     "non-finite value"
   )
 })
@@ -213,7 +213,7 @@ test_that("detect_change: missing rho_t messages and defaults to 0", {
   expect_message(
     out <- detect_change(reconstruction = rec, age = age,
                          baseline_interval = c(0, 5000),
-                         sigma_within = 16, beta_eff = 0.55),
+                         sigma_residual = 16, beta_eff = 0.55),
     "rho_t = 0"
   )
   expect_equal(out$formula$rho_t, 0)

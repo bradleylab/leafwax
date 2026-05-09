@@ -11,7 +11,7 @@
 #' \itemize{
 #'   \item Level 1: a leaf-wax delta-2-H change occurred between two
 #'     intervals. Defensible when the change exceeds analytical
-#'     uncertainty and the within-record residual SD `sigma_within`.
+#'     uncertainty.
 #'   \item Level 2: the wax change is consistent with a directional
 #'     hydroclimate change. Requires corroborating evidence (multi-
 #'     proxy concordance, sedimentological context, or biomarker
@@ -19,9 +19,9 @@
 #'     `corroborating_proxies`.
 #'   \item Level 3: the wax change implies a quantitative
 #'     delta-2-H_precip magnitude. Requires a defended local effective
-#'     slope, a defended `sigma_within`, and explicit uncertainty
-#'     propagation through the inversion. When `reconstruction` is
-#'     NULL the function calls `invert_d2H()` itself.
+#'     slope and explicit uncertainty propagation through the
+#'     inversion. When `reconstruction` is NULL the function calls
+#'     `invert_d2H()` itself.
 #'   \item Level 4: the magnitude is uniquely attributable to
 #'     precipitation isotope change rather than to vegetation,
 #'     source-water seasonality, or evapotranspirative enrichment.
@@ -39,8 +39,7 @@
 #' @param claim Named list specifying the claim. Required fields:
 #'   `level` (integer 1-4, the level the user is asserting),
 #'   `interval_baseline` (length-2 numeric c(min, max) age window),
-#'   `interval_test` (length-2 numeric age window),
-#'   `sigma_within` (per mil; from `estimate_sigma_within()`).
+#'   `interval_test` (length-2 numeric age window).
 #'   Optional fields, used by higher levels:
 #'   `sigma_analytical` (default 3),
 #'   `rho_t` (default 0; from `estimate_temporal_autocorrelation()`),
@@ -54,9 +53,8 @@
 #'   `evapotranspirative_stationary` (each a list with `value` (TRUE)
 #'     and a non-empty `evidence` string; required at Level 4).
 #' @param reconstruction Optional output of `invert_d2H(..., return_full
-#'   = TRUE)` on the record. When NULL and the claim's level is 3 or 4,
-#'   the function runs the inversion itself given `longitude` /
-#'   `latitude` / `model_name`.
+#'   = TRUE)` on the record. When NULL and the claim's level is 3 or
+#'   4, the function runs the inversion itself.
 #' @param longitude,latitude Site coordinates, used only when
 #'   `reconstruction` is NULL.
 #' @param model_name Model to use when running the inversion (default
@@ -107,8 +105,7 @@ assess_claim <- function(record,
       !isTRUE(claim$level %in% 1:4)) {
     stop("claim$level must be one of 1, 2, 3, 4")
   }
-  required <- c("level", "interval_baseline", "interval_test",
-                "sigma_within")
+  required <- c("level", "interval_baseline", "interval_test")
   missing_req <- setdiff(required, names(claim))
   if (length(missing_req) > 0L) {
     stop("claim is missing required fields: ",
@@ -120,11 +117,6 @@ assess_claim <- function(record,
       length(claim$interval_test) != 2L) {
     stop("claim$interval_baseline and claim$interval_test must each ",
          "be length-2 numeric vectors c(min, max)")
-  }
-  if (!is.numeric(claim$sigma_within) ||
-      length(claim$sigma_within) != 1L ||
-      !is.finite(claim$sigma_within) || claim$sigma_within < 0) {
-    stop("claim$sigma_within must be a single non-negative numeric value")
   }
 
   # Defaults for optional fields, with finite-scalar validation. Each
@@ -167,10 +159,15 @@ assess_claim <- function(record,
 
   delta_wax <- mean(d2h_wax[test_idx]) - mean(d2h_wax[base_idx])
 
-  # --- Level 1: wax change exceeds noise -----------------------------
+  # --- Level 1: wax change exceeds analytical noise ------------------
+  # Manuscript Section 4.5.3: L1 is defensible whenever the change
+  # exceeds analytical uncertainty. The mean-of-n_b vs mean-of-n_t
+  # contrast variance is sigma_a^2 * (1/n_b + 1/n_t), scaled by
+  # 2(1-rho_t) for autocorrelation; the per-sample formula here gives
+  # the same threshold for n_b = n_t = 1 and is a conservative ceiling
+  # for larger samples.
   z <- stats::qnorm(1 - (1 - conf) / 2)
-  threshold_wax <- z * sqrt(2 * (1 - rho_t)) *
-                   sqrt(claim$sigma_within^2 + sigma_a^2)
+  threshold_wax <- z * sqrt(2 * (1 - rho_t)) * sigma_a
   l1_passed  <- abs(delta_wax) > threshold_wax
   l1_summary <- sprintf(
     "delta_wax = %.2f permil; %d%% threshold = %.2f permil (%s)",
@@ -180,7 +177,6 @@ assess_claim <- function(record,
   l1_details <- list(
     delta_wax            = delta_wax,
     threshold_wax        = threshold_wax,
-    sigma_within         = claim$sigma_within,
     sigma_analytical     = sigma_a,
     rho_t                = rho_t,
     n_baseline           = length(base_idx),
@@ -226,7 +222,7 @@ assess_claim <- function(record,
     corroborating_proxies = cor_p
   )
 
-  # --- Level 3: defended slope + sigma_within + propagated inversion --
+  # --- Level 3: defended slope + propagated inversion ----------------
   l3_missing <- character(0)
   beta_eff <- claim$beta_eff
   if (is.null(beta_eff) || !is.numeric(beta_eff) ||
@@ -243,29 +239,54 @@ assess_claim <- function(record,
   l3_details <- list(missing = l3_missing)
 
   if (l2_passed && length(l3_missing) == 0L) {
-    # Build / re-use the reconstruction.
-    if (is.null(reconstruction)) {
+    # Build / re-use the reconstruction. When we build it ourselves,
+    # the inner invert_d2H() already emits the preview-tier warning,
+    # so silence it there and re-emit at this layer with the L3+
+    # context. When the user supplies the reconstruction directly,
+    # there was no inner warning, and we need to emit the first one.
+    built_internally <- is.null(reconstruction)
+    if (built_internally) {
       if (is.null(longitude) || is.null(latitude)) {
         stop("Level 3+ assessment without an explicit reconstruction ",
              "requires longitude and latitude to run invert_d2H().")
       }
       n_obs <- length(d2h_wax)
-      reconstruction <- invert_d2H(
-        d2H_wax    = d2h_wax,
-        d2H_wax_sd = if (!is.null(d2h_wax_err)) d2h_wax_err else rep(sigma_a, n_obs),
-        longitude  = rep(longitude, n_obs),
-        latitude   = rep(latitude,  n_obs),
-        model_name = model_name,
-        sigma_within = claim$sigma_within,
-        slope        = beta_eff,
-        return_full  = TRUE,
-        verbose      = FALSE,
-        ...
+      reconstruction <- withCallingHandlers(
+        invert_d2H(
+          d2H_wax    = d2h_wax,
+          d2H_wax_sd = if (!is.null(d2h_wax_err)) d2h_wax_err else rep(sigma_a, n_obs),
+          longitude  = rep(longitude, n_obs),
+          latitude   = rep(latitude,  n_obs),
+          model_name = model_name,
+          slope        = beta_eff,
+          return_full  = TRUE,
+          verbose      = FALSE,
+          ...
+        ),
+        warning = function(w) {
+          if (grepl("^leafwax preview posteriors in use",
+                    conditionMessage(w))) {
+            invokeRestart("muffleWarning")
+          }
+        }
       )
     }
     if (is.null(reconstruction$posterior_draws)) {
       stop("reconstruction must be invert_d2H(..., return_full = TRUE) ",
            "and contain $posterior_draws")
+    }
+    # Re-emit the preview-tier warning at the inferential layer using
+    # the *reconstruction's* own model name — the user-supplied
+    # reconstruction may have been built from a different model than
+    # `model_name`, and pointing them at the wrong download URL is a
+    # silent footgun.
+    rec_tier <- attr(reconstruction, "leafwax_tier") %||%
+                reconstruction$model_info$tier %||% "unknown"
+    rec_model <- reconstruction$model_info$model_name %||% model_name
+    if (identical(rec_tier, "light")) {
+      warn_preview_tier(rec_model,
+                        nrow(reconstruction$posterior_draws),
+                        "assess_claim L3+")
     }
     draws <- as.matrix(reconstruction$posterior_draws)
     if (ncol(draws) != length(d2h_wax)) {

@@ -1,5 +1,21 @@
 # R/batch_processing.R - Functions for batch processing with progress indicators
 
+# Column-tolerant rbind for chunked batch results. Pads any chunk
+# missing columns with NA so a successful + errored chunk mix can be
+# combined without aborting. Returns a single data frame with the union
+# of all input columns.
+.rbind_chunks <- function(chunks) {
+  chunks <- Filter(Negate(is.null), chunks)
+  if (length(chunks) == 0L) return(data.frame())
+  all_cols <- unique(unlist(lapply(chunks, names), use.names = FALSE))
+  padded <- lapply(chunks, function(d) {
+    missing_cols <- setdiff(all_cols, names(d))
+    for (col in missing_cols) d[[col]] <- NA
+    d[, all_cols, drop = FALSE]
+  })
+  do.call(rbind, padded)
+}
+
 #' Batch predict precipitation d2H for multiple sites
 #'
 #' Processes multiple sites with progress indicators and optional parallelization.
@@ -28,7 +44,7 @@
 #' results <- batch_predict(large_data, parallel = TRUE, n_cores = 4)
 #'
 #' # Process with specific model
-#' results <- batch_predict(large_data, model = "b0b1_elev_sp")
+#' results <- batch_predict(large_data, model = "baseline_env_sp")
 #' }
 batch_predict <- function(data,
                          model = "auto",
@@ -69,8 +85,10 @@ batch_predict <- function(data,
     results <- process_sequential(data, chunks, model, progress, ...)
   }
 
-  # Combine results
-  combined_results <- do.call(rbind, results)
+  # Combine results. Use a column-tolerant rbind so a chunk that hit the
+  # error-fallback path (smaller column set) does not abort the overall
+  # batch with "numbers of columns of arguments do not match".
+  combined_results <- .rbind_chunks(results)
 
   # Add diagnostics if requested
   if (return_diagnostics) {
@@ -134,13 +152,15 @@ process_sequential <- function(data, chunks, model, progress, ...) {
 
     }, error = function(e) {
       warning("Error in chunk ", i, ": ", e$message)
-      # Return NA results for failed chunk
+      # Return NA results for failed chunk. Column set must match the
+      # success path so rbind across chunks does not fail.
       chunk_results <- data.frame(
         d2h_precip_mean = rep(NA, nrow(chunk_data)),
         d2h_precip_median = rep(NA, nrow(chunk_data)),
         d2h_precip_sd = rep(NA, nrow(chunk_data)),
         d2h_precip_lower = rep(NA, nrow(chunk_data)),
         d2h_precip_upper = rep(NA, nrow(chunk_data)),
+        prediction_interval_width = rep(NA_real_, nrow(chunk_data)),
         model_used = NA,
         .row_id = chunk_data$.row_id
       )
@@ -152,9 +172,10 @@ process_sequential <- function(data, chunks, model, progress, ...) {
     }
   }
 
+  processing_time <- as.numeric(Sys.time() - start_time, units = "secs")
+
   if (progress) {
     close(pb)
-    processing_time <- as.numeric(Sys.time() - start_time, units = "secs")
     cat(sprintf("\nCompleted in %.1f seconds (%.1f sites/sec)\n",
                 processing_time,
                 nrow(data) / processing_time))
@@ -219,13 +240,15 @@ process_parallel <- function(data, chunks, model, n_cores, progress, ...) {
       chunk_results$.row_id <- chunk_data$.row_id
       chunk_results
     }, error = function(e) {
-      # Return NA results for failed chunk
+      # Return NA results for failed chunk. Column set must match the
+      # success path so rbind across chunks does not fail.
       data.frame(
         d2h_precip_mean = rep(NA, nrow(chunk_data)),
         d2h_precip_median = rep(NA, nrow(chunk_data)),
         d2h_precip_sd = rep(NA, nrow(chunk_data)),
         d2h_precip_lower = rep(NA, nrow(chunk_data)),
         d2h_precip_upper = rep(NA, nrow(chunk_data)),
+        prediction_interval_width = rep(NA_real_, nrow(chunk_data)),
         model_used = NA,
         .row_id = chunk_data$.row_id
       )
@@ -264,13 +287,13 @@ process_parallel <- function(data, chunks, model, n_cores, progress, ...) {
 #' # Compare multiple models
 #' comparison <- compare_models(
 #'   example_data,
-#'   models = c("b0b1", "b0b1_elev", "b0b1_sp")
+#'   models = c("baseline", "baseline_env", "baseline_sp")
 #' )
 #'
 #' # Get all individual model results
 #' all_results <- compare_models(
 #'   example_data,
-#'   models = c("b0b1", "b0b1_elev"),
+#'   models = c("baseline", "baseline_env"),
 #'   return_all = TRUE
 #' )
 #' }
@@ -281,15 +304,41 @@ compare_models <- function(data,
                           progress = TRUE,
                           ...) {
 
-  # Default to comparing base, elevation, and spatial models
+  # Default to a small structurally diverse comparison set rather than
+  # all 14 v10 models. Users wanting an exhaustive sweep should pass
+  # available_models() explicitly.
   if (is.null(models)) {
-    models <- c("b0b1", "b0b1_elev", "b0b1_sp", "b0b1_elev_sp")
+    models <- c("baseline", "baseline_sp", "full_sp")
   }
 
-  # Check which models have data available
-  available_models <- list_models(check_data = TRUE, verbose = FALSE)
-  models_with_data <- models[models %in% available_models$model[
-    available_models$data_status != "Not available"
+  # Validate `...` against predict_d2h_precip's formals up front. R's
+  # tryCatch around the per-model loop would otherwise convert an
+  # "unused argument" error from a typo (e.g. `verb = FALSE`) into a
+  # silent per-model warning, which then bubbles up as the misleading
+  # "All models failed" stop. Catching here gives the user the actual
+  # cause. After validation, drop the loop-controlled formals
+  # (data/model/progress/verbose) from extra_args so they cannot be
+  # supplied twice in the do.call below.
+  pdp_formals <- names(formals(predict_d2h_precip))
+  extra_args <- list(...)
+  if (length(extra_args) > 0L) {
+    bad <- setdiff(names(extra_args), pdp_formals)
+    if (length(bad) > 0L) {
+      pass_through <- setdiff(pdp_formals,
+                              c("data", "model", "progress", "verbose"))
+      stop("Unknown argument(s) passed via `...`: ",
+           paste(sQuote(bad), collapse = ", "),
+           ". Valid `...` names for compare_models: ",
+           paste(sQuote(pass_through), collapse = ", "), ".")
+    }
+    extra_args[c("data", "model", "progress", "verbose")] <- NULL
+  }
+
+  # Check which models have data available. Bind to a local name that
+  # does NOT shadow the exported available_models() function.
+  available_df <- list_models(check_data = TRUE, verbose = FALSE)
+  models_with_data <- models[models %in% available_df$model[
+    available_df$data_status != "Not available"
   ]]
 
   if (length(models_with_data) == 0) {
@@ -320,20 +369,18 @@ compare_models <- function(data,
     }
 
     tryCatch({
-      results <- predict_d2h_precip(
-        data,
-        model = model_name,
-        progress = FALSE,
-        verbose = FALSE,
-        ...
-      )
+      # `extra_args` was validated above and stripped of the formals
+      # that this loop sets explicitly (data, model, progress, verbose).
+      results <- do.call(predict_d2h_precip, c(
+        list(data = data, model = model_name,
+             progress = FALSE, verbose = FALSE),
+        extra_args
+      ))
 
-      # Rename columns to include model name
-      names(results)[names(results) != ".row_id"] <- paste0(
-        names(results)[names(results) != ".row_id"],
-        "_", model_name
-      )
-
+      # Store raw per-model results. The per-model column rename is
+      # applied below in the return_all = TRUE path; the ensemble
+      # summary path needs the original column names to extract the
+      # `d2h_precip_mean` / `d2h_precip_median` series uniformly.
       model_results[[model_name]] <- results
 
     }, error = function(e) {
@@ -355,11 +402,21 @@ compare_models <- function(data,
 
   # Combine results
   if (return_all) {
-    # Return all individual model results
-    combined <- model_results[[1]]
+    # Return all individual model results. Apply the per-model column
+    # rename here so the cbind product carries unambiguous,
+    # model-tagged column names.
+    rename_cols <- function(df, mname) {
+      keep <- names(df) == ".row_id"
+      names(df)[!keep] <- paste0(names(df)[!keep], "_", mname)
+      df
+    }
+    combined <- rename_cols(model_results[[1]], names(model_results)[1])
     if (length(model_results) > 1) {
       for (i in 2:length(model_results)) {
-        combined <- cbind(combined, model_results[[i]])
+        combined <- cbind(
+          combined,
+          rename_cols(model_results[[i]], names(model_results)[i])
+        )
       }
     }
     return(combined)
@@ -368,11 +425,19 @@ compare_models <- function(data,
     mean_cols <- grep("mean", names(model_results[[1]]), value = TRUE)
     median_cols <- grep("median", names(model_results[[1]]), value = TRUE)
 
-    # Extract predictions from each model
+    # Extract predictions from each model. sapply() returns a vector
+    # (no dim) when each model contributes a length-1 prediction; coerce
+    # to a 1 x n_models matrix so the row-wise apply() below works for
+    # both single-site and multi-site inputs.
     means <- sapply(model_results, function(x) x[[mean_cols[1]]])
     medians <- sapply(model_results, function(x) x[[median_cols[1]]])
+    if (is.null(dim(means)))   means   <- matrix(means,   nrow = 1)
+    if (is.null(dim(medians))) medians <- matrix(medians, nrow = 1)
 
-    # Compute ensemble statistics
+    # Compute ensemble statistics. `models_used` reports the models
+    # that actually succeeded (`names(model_results)`), not the
+    # originally requested set, so partial-failure runs are not
+    # silently misreported.
     ensemble_results <- data.frame(
       d2h_precip_ensemble_mean = apply(means, 1, summary_fun, na.rm = TRUE),
       d2h_precip_ensemble_median = apply(medians, 1, summary_fun, na.rm = TRUE),
@@ -380,39 +445,10 @@ compare_models <- function(data,
       d2h_precip_ensemble_min = apply(means, 1, min, na.rm = TRUE),
       d2h_precip_ensemble_max = apply(means, 1, max, na.rm = TRUE),
       n_models = apply(means, 1, function(x) sum(!is.na(x))),
-      models_used = paste(models, collapse = ";")
+      models_used = paste(names(model_results), collapse = ";")
     )
 
     return(ensemble_results)
   }
 }
 
-#' Monitor memory usage during batch processing
-#'
-#' Utility function to track memory usage during large batch operations.
-#'
-#' @param message Optional message to print with memory info
-#' @return List with memory statistics
-#' @export
-monitor_memory <- function(message = NULL) {
-
-  if (!is.null(message)) {
-    cat(message, "\n")
-  }
-
-  # Get memory info
-  mem_used <- as.numeric(utils::object.size(ls(envir = .GlobalEnv))) / 1024^2
-  gc_info <- gc()
-
-  mem_stats <- list(
-    used_mb = mem_used,
-    gc_used_mb = sum(gc_info[, 2]),
-    gc_max_mb = sum(gc_info[, 6])
-  )
-
-  cat(sprintf("Memory: %.1f MB used, %.1f MB after gc\n",
-              mem_stats$used_mb,
-              mem_stats$gc_used_mb))
-
-  return(invisible(mem_stats))
-}

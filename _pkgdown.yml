@@ -12,6 +12,7 @@ navbar:
   left:
     - icon: fa-home
       href: index.html
+      aria-label: "Home"
     - text: "Get started"
       href: articles/paleo-record-workflow.html
     - text: "Reference"
@@ -38,9 +39,8 @@ reference:
       - invert_d2H_ensemble
 
   - title: "Paleo-record workflow"
-    desc: "Within-record sigma_within, slope, change detection, claim taxonomy."
+    desc: "Local slope, change detection, claim taxonomy."
     contents:
-      - estimate_sigma_within
       - local_effective_slope
       - estimate_temporal_autocorrelation
       - detect_change
@@ -54,82 +54,53 @@ reference:
       - get_model_info
       - list_models
       - load_posteriors
-      - load_model_posteriors
-      - select_best_model
       - select_best_model_from_flags
 
   - title: "Datasets"
     contents:
       - example_data
-      - model_metadata
 
-  - title: "Lower-level / legacy helpers"
-    desc: "Internal-style exports retained from v0.1.0 (data caching, lookup tables, batch processing, validation) and the lower-level invert_d2h() function. Most users will not call these directly."
+  - title: "Lower-level helpers"
+    desc: "Internal-style exports (data caching, batch processing, validation) and the lower-level invert_d2h() function. Most users will not call these directly."
     contents:
       - invert_d2h
-      - batch_invert_d2h
       - batch_predict
       - predict_d2h_precip
       - validate_inputs
       - validate_model_inputs
-      - validate_lookup_table
       - get_model_parameters
-      - get_model_recommendations
       - detect_model_capabilities
       - list_model_names
       - leafwax_config
       - leafwax_set_config
-      - monitor_memory
-      - benchmark_lookup
       - compare_models
-      - create_lookup_table
-      - create_regional_lookup
-      - cache_all_lookup_tables
-      - use_lookup_if_available
-      - get_spatial_params
       - generate_fibonacci_sphere
-      - generate_global_grid
-      - predict_spatial_mpp
       - predict_spatial_dual_gp
       - predict_one_gp_mpp
       - download_model_data
       - check_data_cache
-      - clear_data_cache
       - clear_download_cache
       - get_cache_dir
       - get_cache_info
       - get_data_path
       - get_data_url
       - list_cached_models
-      - setup_leafwax_data
-      - verify_data_integrity
-      - check_model_data
       - download_with_progress
       - generate_model_description
       - get_cache_files
       - get_data_manifest
-      - get_download_files
-      - get_model_size_estimate
       - get_url_config
       - process_parallel
       - process_sequential
-      - use_example_data
 
-  - title: "Math / GP internals"
-    desc: "Numerical kernels and helper functions used by the spatial GP layer. Documented for completeness; not part of the user-facing API."
+  - title: "S3 print methods"
+    desc: "Pretty-printing for the package's own S3 classes."
     contents:
-      - matern32
-      - pair_distances
-      - ls_km_to_std
-      - standardize_coords
       - print.leafwax_posterior
-      - print.leafwax_lookup_table
 
   - title: "Package"
     contents:
       - leafwax-package
-      - mini_lookup_table
-      - mini_posteriors
 
 articles:
   - title: "Workflow"

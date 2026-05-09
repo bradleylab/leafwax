@@ -7,7 +7,7 @@
 \title{leafwax: Bayesian Calibration of Leaf Wax Hydrogen Isotope Reconstructions}
 \description{
 The leafwax package provides tools for probabilistic inversion of leaf wax
-hydrogen isotope measurements (δ2H) to reconstruct precipitation isotope values.
+hydrogen isotope measurements (delta-2-H) to reconstruct precipitation isotope values.
 It implements hierarchical Bayesian models that account for multiple sources of
 uncertainty including measurement error, biological fractionation, and spatial
 correlation in isotope patterns.
@@ -15,23 +15,29 @@ correlation in isotope patterns.
 \section{Main Functions}{
 
 \describe{
-\item{\code{\link{invert_d2h}}}{Perform Bayesian inversion of leaf wax δ2H to precipitation δ2H}
+\item{\code{\link{invert_d2H}}}{Bayesian inversion of leaf wax delta2H to precipitation delta2H}
 \item{\code{\link{available_models}}}{List all available calibration models}
 \item{\code{\link{load_posteriors}}}{Load posterior distributions for a specific model}
 \item{\code{\link{get_model_parameters}}}{Get model capabilities and required parameters}
 \item{\code{\link{validate_model_inputs}}}{Validate inputs for a specific model}
-\item{\code{\link{get_model_recommendations}}}{Get model recommendations based on available data}
 }
 }
 
 \section{Available Models}{
 
-The package includes 14 calibration models with different capabilities:
+The package includes 14 calibration models with different capabilities. The
+v10 fits include precipitation amount (\code{baseline_env*} and
+\code{full*} variants), C4 abundance, and PFT cover; none of the v10
+variants carry a fitted elevation coefficient despite the historical
+"elevation_*" naming. Capability flags exposed by
+\code{get_model_parameters()} are derived from each model's posterior
+columns at load time.
 \itemize{
 \item \strong{Basic models}: baseline, baseline_sp
-\item \strong{Elevation models}: baseline_env, baseline_env_sp, elevation_only_sp
+\item \strong{Precipitation models}: baseline_env, baseline_env_sp
 \item \strong{Vegetation models}: baseline_veg, baseline_veg_sp, c4_only_sp
-\item \strong{Combined models}: elevation_c4_sp, elevation_c4_interact_sp
+\item \strong{Combined spatial models}: elevation_only_sp,
+elevation_c4_sp, elevation_c4_interact_sp
 \item \strong{Full models}: full, full_sp, full_interact, full_interact_sp
 }
 
@@ -41,14 +47,10 @@ Fibonacci sphere lattice for improved uncertainty quantification.
 
 \section{Model Selection}{
 
-Choose models based on available ancillary data:
-\itemize{
-\item Use \code{baseline} for simple applications with only location data
-\item Use \code{baseline_env} when elevation data is available
-\item Use \code{baseline_veg} when vegetation (PFT) data is available
-\item Use spatial models (_sp) for better uncertainty quantification
-\item Use \code{get_model_recommendations()} for automated model selection
-}
+Pass \code{model = "auto"} to \code{predict_d2h_precip()} to let
+\code{select_best_model_from_flags()} choose a model based on which
+covariates the caller has supplied; otherwise pick a model name from
+\code{available_models()} explicitly.
 }
 
 \section{Key Features}{
@@ -58,7 +60,6 @@ Choose models based on available ancillary data:
 \item Support for single and multi-location inversions
 \item Spatial correlation via Gaussian processes
 \item Automatic handling of missing covariates
-\item Comprehensive model validation and recommendations
 }
 }
 
@@ -68,17 +69,12 @@ models <- available_models()
 print(models)
 
 # Simple single-location inversion
-result <- invert_d2h(
-  d2h_wax = -150,
+result <- invert_d2H(
+  d2H_wax = -150,
+  d2H_wax_sd = 3,
   longitude = -120,
   latitude = 40,
-  model = "baseline"
-)
-
-# Get model recommendations based on available data
-recommendations <- get_model_recommendations(
-  has_elevation = TRUE,
-  prefer_spatial = TRUE
+  model_name = "baseline"
 )
 
 }
@@ -92,11 +88,15 @@ Sachse, D., Billault, I., Bowen, G. J., Chikaraishi, Y., Dawson, T. E., Feakins,
 Molecular paleohydrology: Interpreting the hydrogen-isotopic composition of lipid biomarkers from photosynthesizing organisms.
 Annual Review of Earth and Planetary Sciences, 40, 221-249.
 \doi{10.1146/annurev-earth-042711-105535}
+
+Bradley, A. (2026). leafwax v10 model posteriors.
+Zenodo concept DOI \doi{10.5281/zenodo.20085465}.
 }
 \seealso{
 Useful links:
 \itemize{
   \item \url{https://github.com/bradleylab/leafwax}
+  \item \url{https://bradleylab.github.io/leafwax}
   \item Report bugs at \url{https://github.com/bradleylab/leafwax/issues}
 }
 

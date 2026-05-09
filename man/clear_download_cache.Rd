@@ -6,14 +6,14 @@
 \usage{
 clear_download_cache(
   model_name = NULL,
-  type = c("all", "posteriors", "lookup"),
+  type = c("all", "posteriors"),
   confirm = TRUE
 )
 }
 \arguments{
 \item{model_name}{Model name to clear (NULL for all)}
 
-\item{type}{Type of data to clear: "all", "posteriors", "lookup"}
+\item{type}{Type of data to clear: "all" or "posteriors"}
 
 \item{confirm}{Whether to ask for confirmation}
 }
@@ -26,7 +26,7 @@ Removes downloaded model data from the local cache.
 \examples{
 \dontrun{
 # Clear cache for specific model
-clear_download_cache("b0b1_sp")
+clear_download_cache("baseline_sp")
 
 # Clear all cached data
 clear_download_cache(confirm = FALSE)

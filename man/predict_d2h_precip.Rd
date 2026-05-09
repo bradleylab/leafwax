@@ -17,7 +17,6 @@ predict_d2h_precip(
   pft_grass = NULL,
   model = "auto",
   n_draws = NULL,
-  use_lookup = TRUE,
   credible_level = 0.9,
   return_draws = FALSE,
   progress = TRUE,
@@ -49,8 +48,6 @@ predict_d2h_precip(
 
 \item{n_draws}{Integer number of posterior draws (NULL for all)}
 
-\item{use_lookup}{Logical whether to use lookup tables for spatial models}
-
 \item{credible_level}{Numeric credible interval level (default 0.9)}
 
 \item{return_draws}{Logical whether to return full posterior draws}
@@ -64,11 +61,17 @@ A data frame with predictions (or list if return_draws = TRUE):
 \describe{
 \item{d2h_precip_mean}{Mean predicted precipitation d2H}
 \item{d2h_precip_median}{Median predicted precipitation d2H}
-\item{d2h_precip_sd}{Standard deviation of predictions}
-\item{d2h_precip_lower}{Lower credible interval bound}
-\item{d2h_precip_upper}{Upper credible interval bound}
+\item{d2h_precip_sd}{Standard deviation of the posterior
+predictive interval}
+\item{d2h_precip_lower}{Lower bound of the credible interval}
+\item{d2h_precip_upper}{Upper bound of the credible interval}
+\item{prediction_interval_width}{Width of the credible interval}
 \item{model_used}{Name of model used for prediction}
 }
+
+The interval is the posterior predictive specified in manuscript
+supplement Section S4.1, Eq. 7 (analytical uncertainty plus the
+model's posterior residual SD).
 }
 \description{
 Main user-facing function for inverting leaf wax hydrogen isotopes to
@@ -92,7 +95,7 @@ results <- predict_d2h_precip(
 # Specify model explicitly
 results <- predict_d2h_precip(
   example_data,
-  model = "b0b1_elev_sp"
+  model = "baseline_env_sp"
 )
 
 # Get full posterior draws

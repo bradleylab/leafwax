@@ -51,6 +51,6 @@ results <- batch_predict(large_data, progress = TRUE)
 results <- batch_predict(large_data, parallel = TRUE, n_cores = 4)
 
 # Process with specific model
-results <- batch_predict(large_data, model = "b0b1_elev_sp")
+results <- batch_predict(large_data, model = "baseline_env_sp")
 }
 }

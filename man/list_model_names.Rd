@@ -7,8 +7,14 @@
 list_model_names()
 }
 \value{
-Character vector of model names
+Character vector of model names. Empty if neither directory
+contains posterior files.
 }
 \description{
-List model names
+Returns the names of every model the package can resolve. Prefers
+the heavy posteriors directory when present (development install),
+otherwise falls back to the lightweight posteriors directory that
+ships with every install. The user cache is intentionally not
+enumerated here so the answer is stable regardless of what has been
+downloaded.
 }

@@ -28,7 +28,6 @@
                                  n_iter = 800,
                                  seed = 2) {
   set.seed(seed)
-  baseline_age <- c(min(record$age), median(record$age))
   is_test <- record$age > median(record$age)
   mu <- ifelse(is_test, baseline_mu_precip + delta_precip, baseline_mu_precip)
   draws <- matrix(NA_real_, nrow = n_iter, ncol = nrow(record))
@@ -45,7 +44,6 @@ test_that("assess_claim: 5 permil wax shift, no corroboration, lands at L0/L1", 
     level             = 4,
     interval_baseline = c(0, 5000),
     interval_test     = c(5000, 10000),
-    sigma_within      = 5,
     sigma_analytical  = 3,
     rho_t             = 0,
     confidence        = 0.95
@@ -63,7 +61,6 @@ test_that("assess_claim: large wax shift clears L1 but no corroboration → L1 m
     level             = 4,
     interval_baseline = c(0, 5000),
     interval_test     = c(5000, 10000),
-    sigma_within      = 5,
     sigma_analytical  = 3,
     rho_t             = 0,
     confidence        = 0.95
@@ -80,7 +77,6 @@ test_that("assess_claim: corroborating proxies promote L1 → L2", {
     level                 = 4,
     interval_baseline     = c(0, 5000),
     interval_test         = c(5000, 10000),
-    sigma_within          = 5,
     sigma_analytical      = 3,
     rho_t                 = 0,
     confidence            = 0.95,
@@ -103,7 +99,6 @@ test_that("assess_claim: defended slope + magnitude reaches L3 when posterior ag
     level                 = 4,
     interval_baseline     = c(0, 5000),
     interval_test         = c(5000, 10000),
-    sigma_within          = 5,
     sigma_analytical      = 3,
     rho_t                 = 0,
     confidence            = 0.95,
@@ -128,7 +123,6 @@ test_that("assess_claim: full stationarity evidence reaches L4", {
     level                 = 4,
     interval_baseline     = c(0, 5000),
     interval_test         = c(5000, 10000),
-    sigma_within          = 5,
     sigma_analytical      = 3,
     rho_t                 = 0,
     confidence            = 0.95,
@@ -156,7 +150,6 @@ test_that("assess_claim: missing L3 magnitude blocks promotion", {
     level                 = 3,
     interval_baseline     = c(0, 5000),
     interval_test         = c(5000, 10000),
-    sigma_within          = 5,
     sigma_analytical      = 3,
     confidence            = 0.95,
     beta_eff              = 0.55,
@@ -177,15 +170,13 @@ test_that("assess_claim: rejects bad inputs", {
   expect_error(assess_claim(record = list(d2h_wax = 1:5),
                             claim = list(level = 1,
                                          interval_baseline = c(0, 1),
-                                         interval_test = c(1, 2),
-                                         sigma_within = 5)),
+                                         interval_test = c(1, 2))),
                "d2h_wax")  # missing age column
   bad_rec <- rec; bad_rec$age[3] <- NA_real_
   expect_error(assess_claim(record = bad_rec,
                             claim = list(level = 1,
                                          interval_baseline = c(0, 5000),
-                                         interval_test = c(5000, 10000),
-                                         sigma_within = 5)),
+                                         interval_test = c(5000, 10000))),
                "non-finite")
 })
 
@@ -195,7 +186,6 @@ test_that("assess_claim: empty / NA corroborating_proxies values do not pass L2"
     level             = 4,
     interval_baseline = c(0, 5000),
     interval_test     = c(5000, 10000),
-    sigma_within      = 5,
     sigma_analytical  = 3,
     rho_t             = 0,
     confidence        = 0.95
@@ -222,7 +212,6 @@ test_that("assess_claim: NA stationarity evidence does not pass L4", {
     level                         = 4,
     interval_baseline             = c(0, 5000),
     interval_test                 = c(5000, 10000),
-    sigma_within                  = 5,
     sigma_analytical              = 3,
     rho_t                         = 0,
     confidence                    = 0.95,
@@ -248,8 +237,7 @@ test_that("assess_claim: invalid scalar fields error cleanly", {
   base_claim <- list(
     level             = 1,
     interval_baseline = c(0, 5000),
-    interval_test     = c(5000, 10000),
-    sigma_within      = 5
+    interval_test     = c(5000, 10000)
   )
   expect_error(
     assess_claim(record = rec,
@@ -274,12 +262,14 @@ test_that("assess_claim: invalid scalar fields error cleanly", {
 })
 
 test_that("assess_claim: rho_t > 0 lowers the L1 threshold", {
-  rec <- .make_record(delta_wax = 12)
+  # L1 threshold = z * sqrt(2*(1-rho_t)) * sigma_analytical.
+  # With sigma_analytical = 3: rho_t = 0 -> ~8.3 permil; rho_t = 0.8 ->
+  # ~3.7 permil. 5 permil is below the first, above the second.
+  rec <- .make_record(delta_wax = 5)
   base_claim <- list(
     level             = 1,
     interval_baseline = c(0, 5000),
     interval_test     = c(5000, 10000),
-    sigma_within      = 5,
     sigma_analytical  = 3,
     confidence        = 0.95
   )
@@ -287,8 +277,6 @@ test_that("assess_claim: rho_t > 0 lowers the L1 threshold", {
                                   claim = c(base_claim, list(rho_t = 0)))
   out_correlated  <- assess_claim(record = rec,
                                   claim = c(base_claim, list(rho_t = 0.8)))
-  # 12 permil delta is below the rho_t = 0 threshold but above the
-  # rho_t = 0.8 threshold (sqrt(2*0.2) shrinks the threshold by ~63%).
   expect_false(out_independent$levels$passed[1])
   expect_true(out_correlated$levels$passed[1])
 })

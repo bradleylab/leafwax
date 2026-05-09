@@ -142,7 +142,7 @@
   "notes": {
     "coordinates": "Longitude and latitude are always optional but recommended for better predictions",
     "elevation": "Elevation should be provided in meters above sea level",
-    "c4_fraction": "C4 vegetation fraction as percentage (0-100)",
+    "c4_fraction": "C4 vegetation cover as a fraction in [0, 1] on the public API; converted to percent (0-100) internally before standardisation.",
     "pft": "Plant functional type fractions should sum to 1.0",
     "spatial_knots": "All spatial models use 120 Fibonacci sphere knots for GP approximation"
   }
