@@ -1,113 +1,86 @@
 # leafwax 0.2.2
 
-## Audit follow-up fixes
-
-Pre-merge code audit (Claude correctness + adversarial reviewers
-2026-05-08, plus a follow-up codex review pass) caught nine additional
-issues in the runtime-correctness commit. All are fixed here.
-
-### Codex follow-up pass
-
-* **Equal model weighting in the ensemble pool.** The first audit
-  pass switched `invert_d2H_ensemble()` to per-site pooling; codex
-  flagged that the per-site bag was still `unlist()` of all per-model
-  draws followed by a single `sample()`. When models have different
-  draw counts (e.g. one model from the 1000-draw heavy tier, two from
-  the 100-draw preview tier), this biases the pool toward the
-  longer-draw model. The fix resamples each model down to a uniform
-  per-model count before concatenating, so each model contributes
-  ~`n_target / k` draws regardless of its source draw count.
-* **Cache helpers aligned with the v0.2 download layout.**
-  `download_model_data()` writes a single posterior file per model at
-  `posteriors/<model>_posterior.rds`, but the legacy
-  `check_data_cache()`, `list_cached_models()`, and `get_cache_files()`
-  helpers were still looking for v0.1's
-  `metadata/<model>_metadata.rds`,
-  `posteriors/<model>_2000draws.rds`, and
-  `posteriors_full/<model>_complete.rds` paths. After a successful
-  download these helpers all reported the model as absent. The three
-  helpers now read the canonical v0.2 layout. The `data_type`
-  argument of `check_data_cache()` is retained for API compatibility
-  but is now a no-op (the v0.2 download ships one file per model).
-
-### Claude reviewer pass
-
-* **`invert_d2H_ensemble()` multi-site pooling.** The previous pool
-  flattened the per-model `posterior_draws` matrix across BOTH the
-  draw axis AND the site axis, then sampled `n_draws` values from the
-  flattened bag — collapsing multi-site input to one scalar mean
-  shared across all sites. The fix pools per-site, per-draw across
-  models with equal weighting. **Return shape changed** (see Breaking
-  changes below).
-* **`compare_models()` error swallowing.** A user typo in `...` (e.g.
-  `verb = FALSE` for `verbose = FALSE`) would cause every per-model
-  `do.call()` to fail with "unused argument", the per-model `tryCatch`
-  would swallow each failure as a warning, and the function would then
-  abort with the misleading "All models failed". `compare_models()`
-  now validates `...` against `predict_d2h_precip()`'s formals up
-  front and reports unknown argument names with a clear error before
-  the model loop runs.
-* **`compare_models()` `models_used` honesty.** When some models in
-  the requested set fail (e.g. invalid name), the ensemble summary's
-  `models_used` field used to report the originally requested set
-  rather than the models that actually contributed to the ensemble.
-  Now reports `names(model_results)` so partial-failure runs are
-  not silently misreported.
-* **`c4_fraction` length validation.** A length-mismatch with
-  `d2H_wax` previously triggered R's silent vector recycling and ran
-  to completion with corrupted standardised values. Both wrappers
-  (`invert_d2H()` and `predict_d2h_precip()`) now reject mismatched
-  lengths with a clear error.
-* **`c4_fraction` error message clarity.** The "must be in [0, 1]"
-  error now (a) names the offending maximum value, (b) explicitly
-  says "fraction, not a percent", and (c) tells the user to divide
-  by 100 if their inputs are on the percent scale. Aimed at users
-  migrating from the v0.1 `c4_percent` API.
-* **`data_urls.json` consistency.** `base_url_latest` previously
-  pointed at the `main` branch of `bradleylab/leafwax-data` while
-  `manifest_url` was pinned to `v1.0.1`. Aligned both to `v1.0.1`
-  so a future non-no-op `verify_data_integrity()` cannot trip on
-  drift between latest-branch files and a v1.0.1 manifest.
-* **`clear_download_cache()` no longer creates the cache directory
-  before checking that it exists.** Replaced the default
-  `get_cache_dir()` call with `get_cache_dir(create = FALSE)`.
-  Pre-existing cosmetic bug, fixed in passing.
-
-New regression tests in `tests/testthat/test-cleanup-v022.R` lock in
-each of these fixes.
-
 ## Bug fixes (runtime correctness)
 
-* `invert_d2H_ensemble()`: three bugs fixed. (i) Default `models =`
-  argument referenced v0.1 names (`b0b1_*`) that are not in the v10
-  registry; replaced with `c("full_sp", "full_interact_sp",
-  "elevation_c4_interact_sp")`. (ii) The validation step accessed
-  `available_models()$model`, but `available_models()` returns a
-  character vector — that subset was always `NULL` and the validation
-  silently skipped. Now reads the vector directly. (iii) The inner
-  `invert_d2H()` call did not pass `return_full = TRUE`, so the
-  pooling step downstream read `$posterior_draws` from a summary data
-  frame and got `NULL`. Now forces `return_full = TRUE`.
+* `invert_d2H_ensemble()`: rewritten to fix multiple bugs in the
+  default-args path. The previous default `models =` argument used
+  v0.1 names that are not in the v10 registry; replaced with
+  `c("full_sp", "full_interact_sp", "elevation_c4_interact_sp")`.
+  Validation accessed `available_models()$model`, but
+  `available_models()` returns a character vector, so the subset was
+  always `NULL` and validation silently skipped; now reads the vector
+  directly. The inner `invert_d2H()` call did not pass
+  `return_full = TRUE`, so the pooling step downstream read
+  `$posterior_draws` from a summary data frame and got `NULL`; now
+  forces `return_full = TRUE`. The pooling step itself flattened the
+  per-model `posterior_draws` matrix across BOTH the draw and site
+  axes, collapsing multi-site input to one scalar mean shared across
+  all sites; now pools per-site, per-draw across models. The pool
+  also previously concatenated all per-model draws and then sampled,
+  which gave models with more draws (e.g. 1000-draw heavy tier vs.
+  100-draw preview tier) a proportionally larger share of the
+  "equal" pool; now resamples each model to a uniform `n_target / k`
+  draws first and concatenates. **Return shape changed** (see
+  Breaking changes below).
 * `compare_models()`: default `models =` argument referenced v0.1
   names; replaced with `c("baseline", "baseline_sp", "full_sp")`.
-  Also fixed two latent failures unrelated to v0.1 cleanup but blocking
-  the default invocation: a `verbose` partial-match conflict when
-  forwarding `...` to `predict_d2h_precip()`, and a missing matrix
-  coercion when single-row input made the per-model means a length-N
-  vector with `NULL` `dim()`. The per-model column rename for
-  `return_all = TRUE` is now applied only on that path; the ensemble
-  summary path keeps the original column names so the per-model
-  series can be extracted uniformly.
-* `predict_d2h_precip()` and `invert_d2H()`: the `c4_fraction * 100`
-  conversion was unconditional, so a `NULL` input became `numeric(0)`
-  and tripped a spurious capability-mismatch warning inside the core
-  inversion. Both wrappers now keep `NULL` as `NULL` and validate that
-  user inputs lie in `[0, 1]`.
+  Several latent failures also blocked the default invocation. A
+  `verbose` partial-match conflict when forwarding `...` to
+  `predict_d2h_precip()` was producing
+  `formal argument "verbose" matched by multiple actual arguments`;
+  switched to `do.call()` with a filtered extra-args list. Single-row
+  input made the per-model means a length-N vector with `NULL` `dim()`,
+  tripping the row-wise `apply()`; coerced to a 1xN matrix in that
+  case. The per-model column rename for `return_all = TRUE` was being
+  applied unconditionally and broke the ensemble-summary path; now
+  only applied on the `return_all = TRUE` path. A user typo in `...`
+  (e.g. `verb = FALSE`) used to cause every per-model `do.call()` to
+  fail with "unused argument", the per-model `tryCatch` would swallow
+  each failure as a warning, and the function would abort with the
+  misleading "All models failed"; `compare_models()` now validates
+  `...` against `predict_d2h_precip()`'s formals up front and reports
+  unknown argument names with a clear error before the model loop
+  runs. The `models_used` field of the returned ensemble summary
+  used to report the originally requested set rather than the models
+  that actually contributed; now reports `names(model_results)` so
+  partial-failure runs are not silently misreported.
+* `predict_d2h_precip()` and `invert_d2H()`: the
+  `c4_fraction * 100` conversion was unconditional, so a `NULL`
+  input became `numeric(0)` and tripped a spurious capability-mismatch
+  warning inside the core inversion. Both wrappers now keep `NULL` as
+  `NULL`. They also now reject vector-length mismatches between
+  `c4_fraction` and `d2H_wax` (was: silent R recycling with a generic
+  warning) and validate that user inputs lie in `[0, 1]`. The
+  out-of-range error names the offending maximum value and tells the
+  caller to divide by 100 if the input is on the percent scale.
 * `get_data_manifest()`: previously returned `list(files = list())`
   on download failure, which downstream `verify_data_integrity()`
   read as "no checksums available, allow the file." Now returns
   `NULL` with a `warning()`; `verify_data_integrity()` treats `NULL`
   as "verification skipped" and warns explicitly.
+* `check_data_cache()`, `list_cached_models()`, and
+  `get_cache_files()`: `download_model_data()` writes a single
+  posterior file per model at
+  `posteriors/<model>_posterior.rds`, but these three helpers were
+  still looking for the v0.1 layout
+  (`metadata/<model>_metadata.rds`,
+  `posteriors/<model>_2000draws.rds`, and
+  `posteriors_full/<model>_complete.rds`). After any successful
+  download they reported the model as absent. The three helpers now
+  read the canonical v0.2 layout. The `data_type` argument of
+  `check_data_cache()` is retained for API compatibility but is now
+  a no-op.
+* `data_urls.json`: `base_url_latest` previously pointed at the
+  `main` branch of `bradleylab/leafwax-data` while `manifest_url`
+  was pinned to `v1.0.1`. Aligned both to `v1.0.1` so a future
+  non-no-op `verify_data_integrity()` cannot trip on drift between
+  latest-branch files and a v1.0.1 manifest.
+* `clear_download_cache()` no longer creates the cache directory
+  before checking that it exists. Replaced the default
+  `get_cache_dir()` call with `get_cache_dir(create = FALSE)`.
+
+Regression tests covering these fixes are in
+`tests/testthat/test-cleanup-v022.R`.
 
 ## Breaking changes
 
