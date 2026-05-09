@@ -90,16 +90,34 @@ invert_d2H_ensemble <- function(...,
   }
   n_sites <- n_sites_per_model[[1]]
 
-  # Pool per-site, per-draw across models with equal weighting. For
-  # each site, concatenate the per-model draws into one bag of length
-  # sum(n_draws_per_model), then resample n_target draws (n_target =
-  # the first model's n_draws, so the output dimension matches a
-  # single-model run).
+  # Pool per-site, per-draw across models with equal weighting.
+  # Naively concatenating each model's per-site draws and then
+  # resampling biases the pool toward the model with the most draws
+  # (e.g., a 1000-draw heavy posterior contributes 10x more samples
+  # than a 100-draw preview-tier model). Instead, resample each model
+  # to a uniform `per_model` count first, then concatenate. Total pool
+  # size matches the first model's draw count so the output dimension
+  # is unchanged from a single-model run.
+  k <- length(draws_list)
   n_target <- n_draws_per_model[[1]]
+  per_model <- floor(n_target / k)
+  remainder <- n_target - per_model * k
   pooled <- matrix(NA_real_, nrow = n_target, ncol = n_sites)
   for (site_idx in seq_len(n_sites)) {
-    bag <- unlist(lapply(draws_list, function(m) m[, site_idx]))
-    pooled[, site_idx] <- sample(bag, size = n_target, replace = TRUE)
+    chunks <- lapply(draws_list, function(m) {
+      sample(m[, site_idx], size = per_model, replace = TRUE)
+    })
+    bag <- unlist(chunks, use.names = FALSE)
+    if (remainder > 0L) {
+      # Distribute the remainder across models so the pool is exactly
+      # n_target and weighting stays as close to equal as possible.
+      extras <- sample(seq_len(k), size = remainder, replace = FALSE)
+      for (j in extras) {
+        bag <- c(bag, sample(draws_list[[j]][, site_idx], size = 1L,
+                             replace = TRUE))
+      }
+    }
+    pooled[, site_idx] <- bag
   }
 
   # Per-site point-estimate summary. Each column of `pooled` is the

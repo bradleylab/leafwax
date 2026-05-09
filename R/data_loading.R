@@ -65,17 +65,20 @@ get_data_path <- function(filename, data_source = "auto") {
 
 #' Check if model data exists in cache
 #'
-#' Checks whether the specified model data files exist in the local cache.
+#' Checks whether the heavy posterior file for a model is present in
+#' the user cache populated by [download_model_data()].
 #'
-#' @param model_name Character string specifying the model name
-#' @param data_type Type of data to check: "minimal", "standard", or "full"
-#' @param verbose Logical, whether to print status messages
-#' @return Logical indicating whether the data exists
+#' @param model_name Character string specifying the model name.
+#' @param data_type Retained for API compatibility. The v0.2 download
+#'   layout ships a single posterior file per model
+#'   (`posteriors/<model>_posterior.rds`) so all values check the same
+#'   path; the argument is accepted but otherwise ignored.
+#' @param verbose Logical, whether to print status messages.
+#' @return Logical indicating whether the cached posterior file exists.
 #' @export
 #' @examples
 #' \dontrun{
-#' # Check if standard data exists for a model
-#' exists <- check_data_cache("baseline_sp", "standard")
+#' exists <- check_data_cache("baseline_sp")
 #' }
 check_data_cache <- function(model_name,
                              data_type = c("minimal", "standard", "full"),
@@ -89,33 +92,17 @@ check_data_cache <- function(model_name,
     return(FALSE)
   }
 
-  # Define expected files based on data type
-  expected_files <- switch(data_type,
-    minimal = c(
-      file.path(cache_dir, "metadata", paste0(model_name, "_metadata.rds"))
-    ),
-    standard = c(
-      file.path(cache_dir, "metadata", paste0(model_name, "_metadata.rds")),
-      file.path(cache_dir, "posteriors", paste0(model_name, "_2000draws.rds"))
-    ),
-    full = c(
-      file.path(cache_dir, "metadata", paste0(model_name, "_metadata.rds")),
-      file.path(cache_dir, "posteriors", paste0(model_name, "_2000draws.rds")),
-      file.path(cache_dir, "posteriors_full", paste0(model_name, "_complete.rds"))
-    )
-  )
-
-  files_exist <- file.exists(expected_files)
+  posterior_file <- file.path(cache_dir, "posteriors",
+                              paste0(model_name, "_posterior.rds"))
+  exists <- file.exists(posterior_file)
 
   if (verbose) {
-    cat("Checking for", data_type, "data for model", model_name, "\n")
-    for (i in seq_along(expected_files)) {
-      status <- ifelse(files_exist[i], "[OK]", "[X]")
-      cat("  ", status, basename(expected_files[i]), "\n")
-    }
+    status <- if (exists) "[OK]" else "[X]"
+    cat("Checking cache for model", model_name, "\n")
+    cat("  ", status, basename(posterior_file), "\n")
   }
 
-  return(all(files_exist))
+  return(exists)
 }
 
 #' List available models in cache
@@ -143,49 +130,23 @@ list_cached_models <- function(data_type = NULL, verbose = TRUE) {
     return(character(0))
   }
 
-  metadata_dir <- file.path(cache_dir, "metadata")
-
-  if (!dir.exists(metadata_dir)) {
-    if (verbose) cat("No metadata directory found\n")
+  posteriors_dir <- file.path(cache_dir, "posteriors")
+  if (!dir.exists(posteriors_dir)) {
+    if (verbose) cat("No posteriors directory found in cache\n")
     return(character(0))
   }
 
-  # List all metadata files
-  metadata_files <- list.files(metadata_dir, pattern = "_metadata\\.rds$")
-
-  if (length(metadata_files) == 0) {
+  posterior_files <- list.files(posteriors_dir, pattern = "_posterior\\.rds$")
+  if (length(posterior_files) == 0) {
     if (verbose) cat("No models found in cache\n")
     return(character(0))
   }
 
-  # Extract model names
-  models <- gsub("_metadata\\.rds$", "", metadata_files)
-
-  # Filter by data type if specified
-  if (!is.null(data_type)) {
-    models_filtered <- character(0)
-    for (model in models) {
-      if (check_data_cache(model, data_type, verbose = FALSE)) {
-        models_filtered <- c(models_filtered, model)
-      }
-    }
-    models <- models_filtered
-  }
+  models <- gsub("_posterior\\.rds$", "", posterior_files)
 
   if (verbose) {
     cat("Cached models:\n")
-    if (length(models) == 0) {
-      cat("  None\n")
-    } else {
-      for (model in models) {
-        types <- character(0)
-        if (check_data_cache(model, "minimal", FALSE)) types <- c(types, "minimal")
-        if (check_data_cache(model, "standard", FALSE)) types <- c(types, "standard")
-        if (check_data_cache(model, "full", FALSE)) types <- c(types, "full")
-
-        cat("  ", model, "[", paste(types, collapse = ", "), "]\n")
-      }
-    }
+    for (model in models) cat("  ", model, "\n")
     cat("\nCache directory:", cache_dir, "\n")
   }
 
@@ -288,43 +249,21 @@ clear_data_cache <- function(model_name = NULL,
 
 #' Get cache files for a model
 #'
-#' Internal function to get list of cache files for a model.
+#' Internal helper that returns the cached file paths for a model.
+#' The v0.2 download layout ships a single posterior per model at
+#' `posteriors/<model>_posterior.rds`, so the returned vector has at
+#' most one element. The `data_type` argument is accepted for API
+#' compatibility but does not affect the result.
 #'
-#' @param model_name Model name
-#' @param data_type Data type (NULL for all)
-#' @param cache_dir Cache directory path
-#' @return Character vector of file paths
+#' @param model_name Model name.
+#' @param data_type Retained for API compatibility (ignored).
+#' @param cache_dir Cache directory path.
+#' @return Character vector of cached file paths that exist on disk.
 #' @keywords internal
 get_cache_files <- function(model_name, data_type, cache_dir) {
-
-  files <- character(0)
-
-  if (is.null(data_type) || data_type == "minimal") {
-    files <- c(files,
-              file.path(cache_dir, "metadata",
-                       paste0(model_name, "_metadata.rds")))
-  }
-
-  if (is.null(data_type) || data_type == "standard") {
-    files <- c(files,
-              file.path(cache_dir, "posteriors",
-                       paste0(model_name, "_2000draws.rds")))
-  }
-
-  if (is.null(data_type) || data_type == "full") {
-    files <- c(files,
-              file.path(cache_dir, "posteriors_full",
-                       paste0(model_name, "_complete.rds")))
-
-    if (grepl("_sp", model_name)) {
-      files <- c(files,
-                file.path(cache_dir, "spatial_grids",
-                         paste0(model_name, "_grid.rds")))
-    }
-  }
-
-  # Only return files that exist
-  files[file.exists(files)]
+  posterior_file <- file.path(cache_dir, "posteriors",
+                              paste0(model_name, "_posterior.rds"))
+  posterior_file[file.exists(posterior_file)]
 }
 
 #' Get cache size information

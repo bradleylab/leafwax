@@ -2,9 +2,35 @@
 
 ## Audit follow-up fixes
 
-Pre-merge code audit (Claude correctness + adversarial reviewers, 2026-05-08)
-caught seven additional issues in the runtime-correctness commit. All
-are fixed here.
+Pre-merge code audit (Claude correctness + adversarial reviewers
+2026-05-08, plus a follow-up codex review pass) caught nine additional
+issues in the runtime-correctness commit. All are fixed here.
+
+### Codex follow-up pass
+
+* **Equal model weighting in the ensemble pool.** The first audit
+  pass switched `invert_d2H_ensemble()` to per-site pooling; codex
+  flagged that the per-site bag was still `unlist()` of all per-model
+  draws followed by a single `sample()`. When models have different
+  draw counts (e.g. one model from the 1000-draw heavy tier, two from
+  the 100-draw preview tier), this biases the pool toward the
+  longer-draw model. The fix resamples each model down to a uniform
+  per-model count before concatenating, so each model contributes
+  ~`n_target / k` draws regardless of its source draw count.
+* **Cache helpers aligned with the v0.2 download layout.**
+  `download_model_data()` writes a single posterior file per model at
+  `posteriors/<model>_posterior.rds`, but the legacy
+  `check_data_cache()`, `list_cached_models()`, and `get_cache_files()`
+  helpers were still looking for v0.1's
+  `metadata/<model>_metadata.rds`,
+  `posteriors/<model>_2000draws.rds`, and
+  `posteriors_full/<model>_complete.rds` paths. After a successful
+  download these helpers all reported the model as absent. The three
+  helpers now read the canonical v0.2 layout. The `data_type`
+  argument of `check_data_cache()` is retained for API compatibility
+  but is now a no-op (the v0.2 download ships one file per model).
+
+### Claude reviewer pass
 
 * **`invert_d2H_ensemble()` multi-site pooling.** The previous pool
   flattened the per-model `posterior_draws` matrix across BOTH the

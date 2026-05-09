@@ -7,16 +7,20 @@
 get_cache_files(model_name, data_type, cache_dir)
 }
 \arguments{
-\item{model_name}{Model name}
+\item{model_name}{Model name.}
 
-\item{data_type}{Data type (NULL for all)}
+\item{data_type}{Retained for API compatibility (ignored).}
 
-\item{cache_dir}{Cache directory path}
+\item{cache_dir}{Cache directory path.}
 }
 \value{
-Character vector of file paths
+Character vector of cached file paths that exist on disk.
 }
 \description{
-Internal function to get list of cache files for a model.
+Internal helper that returns the cached file paths for a model.
+The v0.2 download layout ships a single posterior per model at
+\verb{posteriors/<model>_posterior.rds}, so the returned vector has at
+most one element. The \code{data_type} argument is accepted for API
+compatibility but does not affect the result.
 }
 \keyword{internal}

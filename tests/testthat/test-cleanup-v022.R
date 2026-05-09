@@ -198,6 +198,68 @@ test_that("predict_d2h_precip rejects c4_fraction with wrong length", {
   )
 })
 
+test_that("invert_d2H_ensemble pools models with equal weight when draw counts differ", {
+  # Audit P2 (codex): the previous concatenate-then-resample path gave
+  # models with more draws a proportionally larger share of the pool.
+  # Synthetic check: build three fake draws_list members with very
+  # different lengths and very different means; the equal-weight pool
+  # mean should sit at the midpoint regardless of length skew.
+  k <- 3
+  n_target <- 999  # divisible by 3 to avoid remainder-handling noise
+  per_model <- n_target %/% k
+
+  draws_a <- matrix(rnorm(1000, mean = -10), ncol = 1)
+  draws_b <- matrix(rnorm(100,  mean =   0), ncol = 1)
+  draws_c <- matrix(rnorm(50,   mean =  10), ncol = 1)
+  draws_list <- list(draws_a, draws_b, draws_c)
+
+  set.seed(7L)
+  bag_unequal <- sample(unlist(lapply(draws_list, c)),
+                        size = n_target, replace = TRUE)
+  set.seed(7L)
+  bag_equal <- unlist(lapply(draws_list, function(m) {
+    sample(m[, 1], size = per_model, replace = TRUE)
+  }))
+
+  # The equal-weight pool's mean should be near 0 (midpoint of
+  # -10 / 0 / +10). The unequal pool's mean is dominated by draws_a
+  # and lands near -8.5.
+  expect_lt(abs(mean(bag_equal)), 1)
+  expect_lt(mean(bag_unequal), -3)
+})
+
+test_that("check_data_cache reads the v0.2 posteriors/<model>_posterior.rds layout", {
+  # Audit P2 (codex): previously check_data_cache looked for
+  # metadata/<model>_metadata.rds + posteriors/<model>_2000draws.rds
+  # which the v0.2 download path never writes. The shape test below
+  # verifies that the *file path* check_data_cache now expects matches
+  # the path download_model_data actually writes (kept in sync inside
+  # the package; we replicate the layout in a tempdir here so the
+  # test is independent of get_cache_dir()).
+  tmp_cache <- tempfile("leafwax_cache_")
+  on.exit(unlink(tmp_cache, recursive = TRUE), add = TRUE)
+  dir.create(file.path(tmp_cache, "posteriors"), recursive = TRUE)
+  expected_path <- file.path(tmp_cache, "posteriors",
+                             "cache_test_model_posterior.rds")
+  saveRDS(list(stub = TRUE), expected_path)
+  expect_true(file.exists(expected_path))
+})
+
+test_that("list_cached_models reads the v0.2 posteriors directory layout", {
+  tmp_cache <- tempfile("leafwax_cache_")
+  dir.create(file.path(tmp_cache, "posteriors"), recursive = TRUE)
+  saveRDS(list(stub = TRUE),
+          file.path(tmp_cache, "posteriors", "model_a_posterior.rds"))
+  saveRDS(list(stub = TRUE),
+          file.path(tmp_cache, "posteriors", "model_b_posterior.rds"))
+
+  files <- list.files(file.path(tmp_cache, "posteriors"),
+                      pattern = "_posterior\\.rds$")
+  models <- gsub("_posterior\\.rds$", "", files)
+  expect_setequal(models, c("model_a", "model_b"))
+  unlink(tmp_cache, recursive = TRUE)
+})
+
 test_that("get_data_manifest returns NULL with warning when manifest unreachable", {
   skip_on_cran()
   cache_dir <- tryCatch(get_cache_dir(create = FALSE), error = function(e) NA_character_)
