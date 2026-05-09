@@ -2,29 +2,41 @@
 
 ## Bug fixes (runtime correctness)
 
-* `invert_d2H()` and `invert_d2h()`: the reported credible interval was
-  labelled `prediction_interval_width` but did not include the model's
-  residual SD `sigma`, making it a credible interval on the fitted
-  value rather than a posterior predictive interval. At a typical site
-  this gave intervals roughly an order of magnitude narrower than the
-  manuscript's per-site uncertainties. The default now returns the
-  full Bayesian posterior predictive interval (parameter uncertainty
-  + measurement uncertainty + residual `sigma` + `sigma_within` if
-  supplied). New argument `interval_type = c("predictive", "fitted")`
-  selects between the two; `interval_type = "fitted"` reproduces the
-  pre-v0.2.2 behavior. The returned object carries
-  `attr(., "leafwax_interval_type")` so downstream callers can detect
-  a misuse. `predict_d2h_precip()` and `invert_d2H_ensemble()`
-  inherit the predictive default.
-* `detect_change()` and `assess_claim()` (Level 3+): require the
-  reconstruction to be built with `interval_type = "fitted"`. The
-  within-record contrast formula in manuscript Section 4.5.3 is
-  derived under the assumption that the global residual SD is not in
-  the posterior; using a predictive reconstruction would inflate
-  `p_exceed` and the detection threshold. `assess_claim()` now
-  passes `interval_type = "fitted"` on its internal `invert_d2H()`
-  call. Both functions raise an informative error when given a
-  user-supplied predictive reconstruction.
+* `invert_d2H()` and `invert_d2h()`: the reported credible interval
+  did not include the model's posterior residual SD `sigma`, so the
+  reported `prediction_interval_width` was the wrong quantity for
+  single-site reconstruction. At a typical site this gave intervals
+  roughly an order of magnitude narrower than the manuscript's
+  per-site uncertainties. The function now exposes the two
+  uncertainty regimes the manuscript distinguishes:
+  `uncertainty_mode = c("absolute", "within_record")` (default
+  `"absolute"`).
+  - `"absolute"` matches the supplement Section S4.1 Eq. 7
+    posterior predictive: `analytical^2 + sigma_residual^2` enters
+    the wax-error draw, plus parameter and spatial uncertainty
+    through the per-iteration posterior draws. This is the right
+    quantity for single-site absolute reconstruction at a new site.
+  - `"within_record"` matches the within-record substitution in
+    main text Section 4.5.3: `analytical^2 + sigma_within^2`
+    replaces the global residual term, where `sigma_within` is
+    record-specific and supplied by the caller (e.g. via
+    `estimate_sigma_within()`). This is the input expected by
+    `detect_change()` and `assess_claim()`.
+  The two regimes are mutually exclusive: `sigma_within` replaces
+  the global residual SD, it does not add on top of it. Calling
+  `uncertainty_mode = "absolute"` with a non-NULL `sigma_within`
+  raises an error; calling `uncertainty_mode = "within_record"`
+  with a NULL or zero `sigma_within` raises an error (manuscript
+  Section 4.5.3 obligation 1: estimate it from the record). The
+  output carries `attr(., "leafwax_uncertainty_mode")`,
+  `attr(., "leafwax_sigma_within")`, and an `uncertainty_mode`
+  column so the regime is self-describing.
+* `detect_change()` and `assess_claim()` (Level 3+) now require the
+  reconstruction to be built with `uncertainty_mode = "within_record"`
+  and a positive recorded `sigma_within`; both functions cross-check
+  the value against their own `sigma_within` argument and warn on
+  mismatch. `assess_claim()` passes `uncertainty_mode = "within_record"`
+  on its internal `invert_d2H()` call.
 * `invert_d2H_ensemble()`: rewritten to fix multiple bugs in the
   default-args path. The previous default `models =` argument used
   v0.1 names that are not in the v10 registry; replaced with
@@ -107,18 +119,17 @@ Regression tests covering these fixes are in
 
 ## Breaking changes
 
-* `invert_d2H()` reported intervals are now wider by default (full
-  posterior predictive instead of fitted-value credible interval). The
-  point estimate (`d2h_precip_mean`, `d2h_precip_median`) is unchanged;
-  `d2h_precip_sd`, `d2h_precip_lower`, `d2h_precip_upper`, and
-  `prediction_interval_width` are wider. Pre-v0.2.2 numbers are
-  reproducible via `interval_type = "fitted"`. `detect_change()` and
-  `assess_claim()` now require the fitted form explicitly; existing
-  scripts that built a downcore reconstruction and passed it to
-  `detect_change()` or `assess_claim()` must add
-  `interval_type = "fitted"` to the `invert_d2H()` call. Callers that
-  let `assess_claim()` build the reconstruction internally are
-  unaffected.
+* `invert_d2H()` reported intervals at the default settings are now
+  wider (the absolute single-site posterior predictive includes the
+  residual `sigma`). The point estimate (`d2h_precip_mean`,
+  `d2h_precip_median`) is unchanged; `d2h_precip_sd`,
+  `d2h_precip_lower`, `d2h_precip_upper`, and
+  `prediction_interval_width` are wider. Existing scripts that built
+  a downcore reconstruction and passed it to `detect_change()` or
+  `assess_claim()` must change the `invert_d2H()` call to
+  `uncertainty_mode = "within_record"` and supply a positive
+  `sigma_within`. Callers that let `assess_claim()` build the
+  reconstruction internally are unaffected.
 * `invert_d2H_ensemble()` return shape changed. `posterior_draws` is
   now an `n_draws x n_sites` matrix (previously: a flat vector of
   length `n_draws` for single-site, silently corrupted for multi-site).

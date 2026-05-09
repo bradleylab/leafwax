@@ -65,8 +65,15 @@ A data frame with predictions (or list if return_draws = TRUE):
 \item{d2h_precip_mean}{Mean predicted precipitation d2H}
 \item{d2h_precip_median}{Median predicted precipitation d2H}
 \item{d2h_precip_sd}{Standard deviation of predictions}
-\item{d2h_precip_lower}{Lower credible interval bound}
-\item{d2h_precip_upper}{Upper credible interval bound}
+\item{d2h_precip_lower}{Lower bound of the reported interval}
+\item{d2h_precip_upper}{Upper bound of the reported interval}
+\item{prediction_interval_width}{Width of the reported interval}
+\item{uncertainty_mode}{\code{"absolute"} -- single-site posterior
+predictive interval (manuscript supplement Section S4.1,
+Eq. 7). For within-record contrasts, call \code{invert_d2H()}
+directly with \code{uncertainty_mode = "within_record"} and a
+record-specific \code{sigma_within} (see \code{?invert_d2H} and
+\code{detect_change()}).}
 \item{model_used}{Name of model used for prediction}
 }
 }

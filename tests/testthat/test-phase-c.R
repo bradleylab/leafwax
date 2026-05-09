@@ -60,20 +60,30 @@ test_that("estimate_temporal_autocorrelation: rejects bad inputs", {
 })
 
 # Helper: build a plausible reconstruction object for detect_change().
+# Synthesises the leafwax_uncertainty_mode + leafwax_sigma_within attrs
+# detect_change() now requires; the helper stands in for an
+# invert_d2H(..., uncertainty_mode = "within_record",
+# sigma_within = ...) call.
 .fake_reconstruction <- function(n_iter = 500, n_obs = 30,
                                  mean_baseline = -60, mean_test = -100,
-                                 sd_per_sample = 10, seed = 1) {
+                                 sd_per_sample = 10, seed = 1,
+                                 sigma_within = 16) {
   set.seed(seed)
   draws <- matrix(NA_real_, nrow = n_iter, ncol = n_obs)
   for (j in seq_len(n_obs)) {
     mu <- if (j <= n_obs / 2) mean_baseline else mean_test
     draws[, j] <- rnorm(n_iter, mu, sd_per_sample)
   }
-  list(
+  rec <- list(
     summary = NULL,
     posterior_draws = draws,
-    model_info = list(model_name = "fake")
+    model_info = list(model_name = "fake",
+                      uncertainty_mode = "within_record",
+                      sigma_within = sigma_within)
   )
+  attr(rec, "leafwax_uncertainty_mode") <- "within_record"
+  attr(rec, "leafwax_sigma_within") <- sigma_within
+  rec
 }
 
 test_that("detect_change: threshold matches the manuscript formula at rho_t = 0", {
@@ -122,7 +132,7 @@ test_that("detect_change: posterior probability of change is sane", {
   # Posterior delta = mean(test) - mean(baseline) is concentrated near
   # -40, so Pr(|delta| > 30) should be high; Pr(|delta| > 80) low.
   rec <- .fake_reconstruction(mean_baseline = -60, mean_test = -100,
-                              sd_per_sample = 10)
+                              sd_per_sample = 10, sigma_within = 5)
   age <- seq(0, 10000, length.out = ncol(rec$posterior_draws))
   out <- detect_change(
     reconstruction    = rec,
@@ -143,7 +153,7 @@ test_that("detect_change: posterior probability of change is sane", {
 })
 
 test_that("detect_change: rejects bad inputs", {
-  rec <- .fake_reconstruction()
+  rec <- .fake_reconstruction(sigma_within = 5)
   age <- seq(0, 10000, length.out = ncol(rec$posterior_draws))
 
   expect_error(

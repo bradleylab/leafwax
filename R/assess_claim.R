@@ -54,13 +54,15 @@
 #'   `evapotranspirative_stationary` (each a list with `value` (TRUE)
 #'     and a non-empty `evidence` string; required at Level 4).
 #' @param reconstruction Optional output of `invert_d2H(..., return_full
-#'   = TRUE, interval_type = "fitted")` on the record. When NULL and
-#'   the claim's level is 3 or 4, the function runs the inversion
-#'   itself with the correct `interval_type`. When supplied directly,
-#'   it must be built with `interval_type = "fitted"`: the L3+ contrast
-#'   is derived under the assumption that the global residual SD is
-#'   not in the posterior (manuscript Section 4.5.3). Passing a
-#'   `"predictive"` reconstruction raises an error.
+#'   = TRUE, uncertainty_mode = "within_record", sigma_within = ...)`
+#'   on the record. When NULL and the claim's level is 3 or 4, the
+#'   function runs the inversion itself with `uncertainty_mode =
+#'   "within_record"` and `sigma_within = claim$sigma_within`. When
+#'   supplied directly, it must be built in within-record mode with a
+#'   positive `sigma_within`: the L3+ contrast formula is derived
+#'   under the within-record substitution where `sigma_within`
+#'   replaces the global residual SD (manuscript Section 4.5.3).
+#'   Passing an absolute-mode reconstruction raises an error.
 #' @param longitude,latitude Site coordinates, used only when
 #'   `reconstruction` is NULL.
 #' @param model_name Model to use when running the inversion (default
@@ -270,7 +272,7 @@ assess_claim <- function(record,
           slope        = beta_eff,
           return_full  = TRUE,
           verbose      = FALSE,
-          interval_type = "fitted",
+          uncertainty_mode = "within_record",
           ...
         ),
         warning = function(w) {
@@ -285,16 +287,34 @@ assess_claim <- function(record,
       stop("reconstruction must be invert_d2H(..., return_full = TRUE) ",
            "and contain $posterior_draws")
     }
-    rec_interval <- attr(reconstruction, "leafwax_interval_type") %||%
-                    reconstruction$model_info$interval_type %||%
-                    NA_character_
-    if (!is.na(rec_interval) && identical(rec_interval, "predictive")) {
-      stop("assess_claim L3+ requires invert_d2H(..., interval_type = ",
-           "\"fitted\"); the predictive interval includes the global ",
-           "residual sigma, which inflates within-record p_exceed ",
-           "(manuscript Section 4.5.3). Rebuild the reconstruction with ",
-           "interval_type = \"fitted\" or omit it and let assess_claim ",
-           "build it internally.")
+    rec_mode <- attr(reconstruction, "leafwax_uncertainty_mode") %||%
+                reconstruction$model_info$uncertainty_mode %||%
+                NA_character_
+    rec_sigma_w <- attr(reconstruction, "leafwax_sigma_within") %||%
+                   reconstruction$model_info$sigma_within %||%
+                   NA_real_
+    if (is.na(rec_mode) || !identical(rec_mode, "within_record")) {
+      stop("assess_claim L3+ requires invert_d2H(..., ",
+           "uncertainty_mode = \"within_record\", sigma_within = ...); ",
+           "the absolute mode uses the global residual sigma, which ",
+           "miscalibrates within-record p_exceed (manuscript Section ",
+           "4.5.3). Rebuild the reconstruction with ",
+           "uncertainty_mode = \"within_record\" and a record-specific ",
+           "sigma_within, or omit `reconstruction` and let ",
+           "assess_claim build it internally.")
+    }
+    if (is.na(rec_sigma_w) || rec_sigma_w <= 0) {
+      stop("Reconstruction passed to assess_claim L3+ has no ",
+           "sigma_within recorded. Manuscript Section 4.5.3 requires ",
+           "a record-specific sigma_within for within-record use. ",
+           "Rebuild the reconstruction with a positive sigma_within.")
+    }
+    if (!is.na(rec_sigma_w) && !is.null(claim$sigma_within) &&
+        !isTRUE(all.equal(rec_sigma_w, claim$sigma_within,
+                          tolerance = 1e-6))) {
+      warning(sprintf(
+        "Reconstruction sigma_within (%g) differs from claim$sigma_within (%g); using the reconstruction value for posterior contrasts and the claim value only for the L3 threshold formula.",
+        rec_sigma_w, claim$sigma_within), call. = FALSE)
     }
     # Re-emit the preview-tier warning at the inferential layer using
     # the *reconstruction's* own model name — the user-supplied

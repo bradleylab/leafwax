@@ -105,30 +105,33 @@ test_that("estimate_sigma_within: rejects bad inputs", {
                "length 2")
 })
 
-test_that("invert_d2H: sigma_within widens predictive uncertainty monotonically", {
+test_that("invert_d2H within_record: larger sigma_within widens the predictive SD monotonically", {
   args <- list(
     d2H_wax = rep(-180, 5),
     d2H_wax_sd = rep(3, 5),
     longitude = rep(-90, 5),
     latitude = rep(38, 5),
     elevation = rep(200, 5),
-    model_name = "baseline_sp"
+    model_name = "baseline_sp",
+    uncertainty_mode = "within_record"
   )
 
-  set.seed(7)
-  base_res <- suppressWarnings(do.call(invert_d2H, args))
   set.seed(7)
   small_res <- suppressWarnings(do.call(invert_d2H,
                                         c(args, list(sigma_within = 5))))
   set.seed(7)
+  med_res <- suppressWarnings(do.call(invert_d2H,
+                                      c(args, list(sigma_within = 12))))
+  set.seed(7)
   large_res <- suppressWarnings(do.call(invert_d2H,
                                         c(args, list(sigma_within = 25))))
 
-  # Within-record noise should monotonically widen the predictive SD
-  # at the same posterior draws.
-  expect_lt(mean(base_res$d2h_precip_sd),
-            mean(small_res$d2h_precip_sd))
+  # Within-record noise enters the wax-error draw, so larger
+  # sigma_within widens the per-sample predictive SD monotonically at
+  # the same posterior draws (manuscript Section 4.5.3).
   expect_lt(mean(small_res$d2h_precip_sd),
+            mean(med_res$d2h_precip_sd))
+  expect_lt(mean(med_res$d2h_precip_sd),
             mean(large_res$d2h_precip_sd))
 })
 

@@ -24,7 +24,7 @@ invert_d2h(
   sigma_within_sd = NULL,
   record_id = NULL,
   slope = NULL,
-  interval_type = c("predictive", "fitted")
+  uncertainty_mode = c("absolute", "within_record")
 )
 
 invert_d2H(
@@ -48,7 +48,7 @@ invert_d2H(
   sigma_within_sd = NULL,
   record_id = NULL,
   slope = NULL,
-  interval_type = c("predictive", "fitted")
+  uncertainty_mode = c("absolute", "within_record")
 )
 }
 \arguments{
@@ -116,10 +116,11 @@ build a defensible per-draw override that respects the manuscript's
 simple-model ceiling at alpha = 0.88 (Section 4.5.5). When
 supplied, the override applies uniformly to every input row.}
 
-\item{interval_type}{Character, one of \code{"predictive"} (default) or
-\code{"fitted"}. See \code{?invert_d2h} for details. Use \code{"fitted"} when the
-reconstruction will be passed to \code{detect_change()} or
-\code{assess_claim()}.}
+\item{uncertainty_mode}{Character, one of \code{"absolute"} (default) or
+\code{"within_record"}. See \code{?invert_d2h} for the variance components
+in each mode. Use \code{"within_record"} (with a positive
+\code{sigma_within}) when the reconstruction will be passed to
+\code{detect_change()} or \code{assess_claim()}.}
 
 \item{d2H_wax}{Numeric vector of leaf wax d2H values (per mil)}
 
@@ -140,13 +141,19 @@ If return_full is FALSE, a data frame with columns:
 \item{d2h_precip_mean}{Mean predicted precipitation d2H}
 \item{d2h_precip_median}{Median predicted precipitation d2H}
 \item{d2h_precip_sd}{Standard deviation of predictions}
-\item{d2h_precip_lower}{Lower credible interval bound}
-\item{d2h_precip_upper}{Upper credible interval bound}
+\item{d2h_precip_lower}{Lower bound of the reported interval}
+\item{d2h_precip_upper}{Upper bound of the reported interval}
+\item{prediction_interval_width}{Width of the reported interval
+(upper - lower).}
+\item{uncertainty_mode}{Either \code{"absolute"} (S4.1 Eq. 7; the
+default) or \code{"within_record"} (S4.5.3 substitution with
+\code{sigma_within}).}
 
 If return_full is TRUE, a list with:
 \item{summary}{The summary data frame described above}
 \item{posterior_draws}{Matrix of all posterior draws (n_draws x n_locations)}
-\item{model_info}{Information about the model used}
+\item{model_info}{Information about the model used, including
+the \code{uncertainty_mode} and \code{sigma_within} value used.}
 }
 \description{
 Uses Bayesian posterior draws to invert leaf wax hydrogen isotope values

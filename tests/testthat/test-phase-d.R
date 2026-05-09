@@ -20,13 +20,18 @@
 }
 
 # Helper: build a paired reconstruction with a configurable
-# d2H_precip-space delta between the same two intervals.
+# d2H_precip-space delta between the same two intervals. Synthesises
+# the attrs assess_claim() and detect_change() now require for
+# within-record use (uncertainty_mode + sigma_within); these helper
+# reconstructions stand in for invert_d2H(uncertainty_mode =
+# "within_record", sigma_within = ...).
 .make_reconstruction <- function(record,
                                  baseline_mu_precip = -50,
                                  delta_precip = -40,
                                  sd_per_sample = 5,
                                  n_iter = 800,
-                                 seed = 2) {
+                                 seed = 2,
+                                 sigma_within = 5) {
   set.seed(seed)
   baseline_age <- c(min(record$age), median(record$age))
   is_test <- record$age > median(record$age)
@@ -35,8 +40,13 @@
   for (j in seq_len(nrow(record))) {
     draws[, j] <- rnorm(n_iter, mu[j], sd_per_sample)
   }
-  list(summary = NULL, posterior_draws = draws,
-       model_info = list(model_name = "fake"))
+  rec <- list(summary = NULL, posterior_draws = draws,
+              model_info = list(model_name = "fake",
+                                uncertainty_mode = "within_record",
+                                sigma_within = sigma_within))
+  attr(rec, "leafwax_uncertainty_mode") <- "within_record"
+  attr(rec, "leafwax_sigma_within") <- sigma_within
+  rec
 }
 
 test_that("assess_claim: 5 permil wax shift, no corroboration, lands at L0/L1", {

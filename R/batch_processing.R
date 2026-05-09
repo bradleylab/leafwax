@@ -134,13 +134,16 @@ process_sequential <- function(data, chunks, model, progress, ...) {
 
     }, error = function(e) {
       warning("Error in chunk ", i, ": ", e$message)
-      # Return NA results for failed chunk
+      # Return NA results for failed chunk. Column set must match the
+      # success path so rbind across chunks does not fail.
       chunk_results <- data.frame(
         d2h_precip_mean = rep(NA, nrow(chunk_data)),
         d2h_precip_median = rep(NA, nrow(chunk_data)),
         d2h_precip_sd = rep(NA, nrow(chunk_data)),
         d2h_precip_lower = rep(NA, nrow(chunk_data)),
         d2h_precip_upper = rep(NA, nrow(chunk_data)),
+        prediction_interval_width = rep(NA_real_, nrow(chunk_data)),
+        uncertainty_mode = rep(NA_character_, nrow(chunk_data)),
         model_used = NA,
         .row_id = chunk_data$.row_id
       )
@@ -219,13 +222,16 @@ process_parallel <- function(data, chunks, model, n_cores, progress, ...) {
       chunk_results$.row_id <- chunk_data$.row_id
       chunk_results
     }, error = function(e) {
-      # Return NA results for failed chunk
+      # Return NA results for failed chunk. Column set must match the
+      # success path so rbind across chunks does not fail.
       data.frame(
         d2h_precip_mean = rep(NA, nrow(chunk_data)),
         d2h_precip_median = rep(NA, nrow(chunk_data)),
         d2h_precip_sd = rep(NA, nrow(chunk_data)),
         d2h_precip_lower = rep(NA, nrow(chunk_data)),
         d2h_precip_upper = rep(NA, nrow(chunk_data)),
+        prediction_interval_width = rep(NA_real_, nrow(chunk_data)),
+        uncertainty_mode = rep(NA_character_, nrow(chunk_data)),
         model_used = NA,
         .row_id = chunk_data$.row_id
       )

@@ -108,13 +108,15 @@ estimate_temporal_autocorrelation <- function(d2h_wax, age,
 #' noise at the chosen confidence level.
 #'
 #' @param reconstruction Output of `invert_d2H(..., return_full = TRUE,
-#'   interval_type = "fitted")` on a downcore series. Must contain a
-#'   `posterior_draws` matrix of shape `n_iter x n_samples`. The
-#'   reconstruction must be built with `interval_type = "fitted"`: the
-#'   change-detection threshold formula (and `p_exceed`) is derived
-#'   under the assumption that the global residual SD is not in the
-#'   posterior. Passing a `"predictive"` reconstruction raises an
-#'   error.
+#'   uncertainty_mode = "within_record", sigma_within = ...)` on a
+#'   downcore series. Must contain a `posterior_draws` matrix of shape
+#'   `n_iter x n_samples`. The reconstruction must be built in
+#'   within-record mode with a positive `sigma_within`: the
+#'   change-detection threshold formula and `p_exceed` are derived
+#'   under the within-record substitution where `sigma_within`
+#'   replaces the global residual SD (manuscript Section 4.5.3).
+#'   Passing an absolute-mode reconstruction, or one without a
+#'   recorded `sigma_within`, raises an error.
 #' @param age Numeric vector, length `n_samples`, of sample ages
 #'   matching the reconstruction columns.
 #' @param baseline_interval Length-2 numeric `c(min, max)` defining the
@@ -166,16 +168,38 @@ detect_change <- function(reconstruction,
          "invert_d2H(..., return_full = TRUE) and contain ",
          "$posterior_draws")
   }
-  rec_interval <- attr(reconstruction, "leafwax_interval_type") %||%
-                  reconstruction$model_info$interval_type %||%
-                  NA_character_
-  if (!is.na(rec_interval) && identical(rec_interval, "predictive")) {
-    stop("detect_change requires invert_d2H(..., interval_type = ",
-         "\"fitted\"); the predictive interval includes the global ",
-         "residual sigma, which inflates the change-detection ",
-         "threshold and the posterior p_exceed (manuscript Section ",
-         "4.5.3). Rebuild the reconstruction with ",
-         "interval_type = \"fitted\".")
+  rec_mode <- attr(reconstruction, "leafwax_uncertainty_mode") %||%
+              reconstruction$model_info$uncertainty_mode %||%
+              NA_character_
+  rec_sigma_w <- attr(reconstruction, "leafwax_sigma_within") %||%
+                 reconstruction$model_info$sigma_within %||%
+                 NA_real_
+  if (is.na(rec_mode) || !identical(rec_mode, "within_record")) {
+    stop("detect_change requires invert_d2H(..., ",
+         "uncertainty_mode = \"within_record\", sigma_within = ...); ",
+         "the absolute mode uses the global residual sigma, which ",
+         "miscalibrates the change-detection threshold and the ",
+         "posterior p_exceed (manuscript Section 4.5.3). Rebuild the ",
+         "reconstruction with uncertainty_mode = \"within_record\" ",
+         "and a record-specific sigma_within.")
+  }
+  if (is.na(rec_sigma_w) || rec_sigma_w <= 0) {
+    stop("Reconstruction passed to detect_change has no positive ",
+         "sigma_within recorded. Manuscript Section 4.5.3 requires a ",
+         "record-specific sigma_within for within-record contrasts. ",
+         "Rebuild the reconstruction with a positive sigma_within.")
+  }
+  # Cross-check the reconstruction's sigma_within against the function
+  # arg only when the function arg is itself a valid number; an invalid
+  # arg is handled by the dedicated sigma_within validation below and
+  # should not also surface as a mismatch warning.
+  if (is.numeric(sigma_within) && length(sigma_within) == 1L &&
+      is.finite(sigma_within) && sigma_within >= 0 &&
+      !isTRUE(all.equal(rec_sigma_w, sigma_within, tolerance = 1e-6))) {
+    warning(sprintf(
+      "Reconstruction was built with sigma_within = %g but detect_change was called with sigma_within = %g. The threshold formula will use the detect_change value (%g); the reconstruction posterior carries %g. Re-run invert_d2H with the same sigma_within for consistency.",
+      rec_sigma_w, sigma_within, sigma_within, rec_sigma_w
+    ), call. = FALSE)
   }
   # Re-raise the preview-tier warning at the change-detection layer.
   # Posterior-probability statements (`p_exceed`) are exactly what the
