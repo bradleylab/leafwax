@@ -135,19 +135,19 @@ the routing layer correctly reflects what each fit actually contains.
 | Model | Spatial GP | Elevation | C4 | Vegetation | Interactions |
 |-------|:----------:|:---------:|:--:|:----------:|:------------:|
 | `baseline`                  |   |   |   |   |   |
-| `baseline_sp`               | ✓ |   |   |   |   |
-| `baseline_env`              |   | ✓ |   |   |   |
-| `baseline_env_sp`           | ✓ | ✓ |   |   |   |
-| `baseline_veg`              |   |   | ✓ | ✓ |   |
-| `baseline_veg_sp`           | ✓ |   | ✓ | ✓ |   |
-| `c4_only_sp`                | ✓ |   | ✓ |   |   |
-| `elevation_only_sp`         | ✓ | ✓ |   |   |   |
-| `elevation_c4_sp`           | ✓ | ✓ | ✓ |   |   |
-| `elevation_c4_interact_sp`  | ✓ | ✓ | ✓ |   | ✓ |
-| `full`                      |   |   | ✓ | ✓ | ✓ |
-| `full_sp`                   | ✓ |   | ✓ | ✓ | ✓ |
-| `full_interact`             |   |   | ✓ | ✓ | ✓ |
-| `full_interact_sp`          | ✓ |   | ✓ | ✓ | ✓ |
+| `baseline_sp`               | x |   |   |   |   |
+| `baseline_env`              |   | x |   |   |   |
+| `baseline_env_sp`           | x | x |   |   |   |
+| `baseline_veg`              |   |   | x | x |   |
+| `baseline_veg_sp`           | x |   | x | x |   |
+| `c4_only_sp`                | x |   | x |   |   |
+| `elevation_only_sp`         | x | x |   |   |   |
+| `elevation_c4_sp`           | x | x | x |   |   |
+| `elevation_c4_interact_sp`  | x | x | x |   | x |
+| `full`                      |   |   | x | x | x |
+| `full_sp`                   | x |   | x | x | x |
+| `full_interact`             |   |   | x | x | x |
+| `full_interact_sp`          | x |   | x | x | x |
 
 Spatial models share a single 125-knot Fibonacci-sphere lattice.
 

@@ -43,6 +43,6 @@ if (length(knot_files) > 0) {
   cat("  Knot dimensions:", nrow(knots), "locations ×", ncol(knots), "coords\n")
 }
 
-cat("\n✓ All files accessible and valid!\n")
-cat("✓ Package contains all necessary data (~11MB total)\n")
-cat("✓ No external downloads needed for core functionality\n")
+cat("\nAll files accessible and valid!\n")
+cat("Package contains all necessary data (~11MB total)\n")
+cat("No external downloads needed for core functionality\n")

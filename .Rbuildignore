@@ -3,6 +3,7 @@
 ^\.serena$
 ^\.context$
 ^_pkgdown\.yml$
+^docs$
 ^test_direct\.R$
 ^test_inversion\.R$
 ^README_EXAMPLES\.md$

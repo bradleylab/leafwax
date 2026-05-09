@@ -12,6 +12,7 @@ navbar:
   left:
     - icon: fa-home
       href: index.html
+      aria-label: "Home"
     - text: "Get started"
       href: articles/paleo-record-workflow.html
     - text: "Reference"
@@ -109,13 +110,9 @@ reference:
       - process_parallel
       - process_sequential
 
-  - title: "Math / GP internals"
-    desc: "Numerical kernels and helper functions used by the spatial GP layer. Documented for completeness; not part of the user-facing API."
+  - title: "S3 print methods"
+    desc: "Pretty-printing for the package's own S3 classes."
     contents:
-      - matern32
-      - pair_distances
-      - ls_km_to_std
-      - standardize_coords
       - print.leafwax_posterior
       - print.leafwax_lookup_table
 

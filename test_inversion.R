@@ -67,6 +67,6 @@ if (dir.exists(spatial_dir)) {
   cat("Total spatial metadata:", round(spatial_size / 1024, 1), "KB\n")
 }
 
-cat("\n✓ All tests completed successfully!\n")
-cat("✓ No download prompts appeared\n")
-cat("✓ Data loads directly from package\n")
+cat("\nAll tests completed successfully!\n")
+cat("No download prompts appeared\n")
+cat("Data loads directly from package\n")

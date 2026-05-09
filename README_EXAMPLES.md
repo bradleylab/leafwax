@@ -97,7 +97,7 @@ validation <- validate_model_inputs(
   longitude = -120,
   latitude = 40
 )
-# ✓ All inputs valid for model: baseline_sp
+# All inputs valid for model: baseline_sp
 ```
 
 ## Available Models
