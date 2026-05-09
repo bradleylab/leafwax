@@ -1,5 +1,55 @@
 # leafwax 0.2.2
 
+## Audit follow-up fixes
+
+Pre-merge code audit (Claude correctness + adversarial reviewers, 2026-05-08)
+caught seven additional issues in the runtime-correctness commit. All
+are fixed here.
+
+* **`invert_d2H_ensemble()` multi-site pooling.** The previous pool
+  flattened the per-model `posterior_draws` matrix across BOTH the
+  draw axis AND the site axis, then sampled `n_draws` values from the
+  flattened bag — collapsing multi-site input to one scalar mean
+  shared across all sites. The fix pools per-site, per-draw across
+  models with equal weighting. **Return shape changed** (see Breaking
+  changes below).
+* **`compare_models()` error swallowing.** A user typo in `...` (e.g.
+  `verb = FALSE` for `verbose = FALSE`) would cause every per-model
+  `do.call()` to fail with "unused argument", the per-model `tryCatch`
+  would swallow each failure as a warning, and the function would then
+  abort with the misleading "All models failed". `compare_models()`
+  now validates `...` against `predict_d2h_precip()`'s formals up
+  front and reports unknown argument names with a clear error before
+  the model loop runs.
+* **`compare_models()` `models_used` honesty.** When some models in
+  the requested set fail (e.g. invalid name), the ensemble summary's
+  `models_used` field used to report the originally requested set
+  rather than the models that actually contributed to the ensemble.
+  Now reports `names(model_results)` so partial-failure runs are
+  not silently misreported.
+* **`c4_fraction` length validation.** A length-mismatch with
+  `d2H_wax` previously triggered R's silent vector recycling and ran
+  to completion with corrupted standardised values. Both wrappers
+  (`invert_d2H()` and `predict_d2h_precip()`) now reject mismatched
+  lengths with a clear error.
+* **`c4_fraction` error message clarity.** The "must be in [0, 1]"
+  error now (a) names the offending maximum value, (b) explicitly
+  says "fraction, not a percent", and (c) tells the user to divide
+  by 100 if their inputs are on the percent scale. Aimed at users
+  migrating from the v0.1 `c4_percent` API.
+* **`data_urls.json` consistency.** `base_url_latest` previously
+  pointed at the `main` branch of `bradleylab/leafwax-data` while
+  `manifest_url` was pinned to `v1.0.1`. Aligned both to `v1.0.1`
+  so a future non-no-op `verify_data_integrity()` cannot trip on
+  drift between latest-branch files and a v1.0.1 manifest.
+* **`clear_download_cache()` no longer creates the cache directory
+  before checking that it exists.** Replaced the default
+  `get_cache_dir()` call with `get_cache_dir(create = FALSE)`.
+  Pre-existing cosmetic bug, fixed in passing.
+
+New regression tests in `tests/testthat/test-cleanup-v022.R` lock in
+each of these fixes.
+
 ## Bug fixes (runtime correctness)
 
 * `invert_d2H_ensemble()`: three bugs fixed. (i) Default `models =`
@@ -35,6 +85,17 @@
 
 ## Breaking changes
 
+* `invert_d2H_ensemble()` return shape changed. `posterior_draws` is
+  now an `n_draws x n_sites` matrix (previously: a flat vector of
+  length `n_draws` for single-site, silently corrupted for multi-site).
+  `ensemble_summary` is now a data frame with one row per site
+  (previously: a list of scalars, only correct for single-site input).
+  The list of pooled models is now exposed at the top level as
+  `models_used`; the previous `ensemble_summary$models_used` is gone.
+  Single-site code that read `e$ensemble_summary$mean` continues to
+  work — the data frame has one row, and `$mean` returns its single
+  value. Multi-site code is breaking by definition: callers were
+  reading wrong numbers before this fix.
 * The exported data objects `model_metadata`, `mini_posteriors`, and
   `mini_lookup_table` are removed. They held v0.1 model names and
   were not used by any v10 code path; metadata is now exposed via

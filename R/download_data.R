@@ -406,7 +406,7 @@ clear_download_cache <- function(model_name = NULL,
                                 confirm = TRUE) {
 
   type <- match.arg(type)
-  cache_dir <- get_cache_dir()
+  cache_dir <- get_cache_dir(create = FALSE)
 
   if (!dir.exists(cache_dir)) {
     message("Cache directory does not exist")

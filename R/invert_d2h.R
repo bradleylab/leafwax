@@ -566,9 +566,18 @@ invert_d2H <- function(d2H_wax,
   # validate_inputs(), example_data, and the rest of the user-facing
   # API; convert here at the boundary.
   if (!is.null(c4_fraction)) {
+    n_obs <- length(d2H_wax)
+    if (length(c4_fraction) != n_obs) {
+      stop(sprintf(
+        "c4_fraction has length %d but d2H_wax has length %d; vector lengths must match.",
+        length(c4_fraction), n_obs
+      ))
+    }
     if (any(c4_fraction < 0, na.rm = TRUE) ||
         any(c4_fraction > 1, na.rm = TRUE)) {
-      stop("c4_fraction must be in [0, 1]; got values outside that range.")
+      stop("c4_fraction must be in [0, 1] (a fraction, not a percent). ",
+           "Got values up to ", signif(max(c4_fraction, na.rm = TRUE), 3),
+           ". If your inputs are on the 0-100 percent scale, divide by 100.")
     }
   }
   c4_percent_internal <- if (is.null(c4_fraction)) NULL else c4_fraction * 100

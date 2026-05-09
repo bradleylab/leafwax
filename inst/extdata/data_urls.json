@@ -3,7 +3,7 @@
   "release_tag": "v1.0.1",
   "concept_doi": "10.5281/zenodo.20085465",
   "version_doi": "10.5281/zenodo.20086180",
-  "base_url_latest": "https://raw.githubusercontent.com/bradleylab/leafwax-data/main",
+  "base_url_latest": "https://raw.githubusercontent.com/bradleylab/leafwax-data/v1.0.1",
   "base_url_version": "https://raw.githubusercontent.com/bradleylab/leafwax-data/{version}",
   "manifest_url": "https://raw.githubusercontent.com/bradleylab/leafwax-data/v1.0.1/manifest.json",
   "fallback_urls": [

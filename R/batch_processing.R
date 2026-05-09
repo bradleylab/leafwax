@@ -288,6 +288,29 @@ compare_models <- function(data,
     models <- c("baseline", "baseline_sp", "full_sp")
   }
 
+  # Validate `...` against predict_d2h_precip's formals up front. R's
+  # tryCatch around the per-model loop would otherwise convert an
+  # "unused argument" error from a typo (e.g. `verb = FALSE`) into a
+  # silent per-model warning, which then bubbles up as the misleading
+  # "All models failed" stop. Catching here gives the user the actual
+  # cause. After validation, drop the loop-controlled formals
+  # (data/model/progress/verbose) from extra_args so they cannot be
+  # supplied twice in the do.call below.
+  pdp_formals <- names(formals(predict_d2h_precip))
+  extra_args <- list(...)
+  if (length(extra_args) > 0L) {
+    bad <- setdiff(names(extra_args), pdp_formals)
+    if (length(bad) > 0L) {
+      pass_through <- setdiff(pdp_formals,
+                              c("data", "model", "progress", "verbose"))
+      stop("Unknown argument(s) passed via `...`: ",
+           paste(sQuote(bad), collapse = ", "),
+           ". Valid `...` names for compare_models: ",
+           paste(sQuote(pass_through), collapse = ", "), ".")
+    }
+    extra_args[c("data", "model", "progress", "verbose")] <- NULL
+  }
+
   # Check which models have data available
   available_models <- list_models(check_data = TRUE, verbose = FALSE)
   models_with_data <- models[models %in% available_models$model[
@@ -322,11 +345,8 @@ compare_models <- function(data,
     }
 
     tryCatch({
-      # Filter `...` to drop progress/verbose so the explicit values
-      # below win (and so a caller passing them does not collide with
-      # the formal arguments by partial match).
-      extra_args <- list(...)
-      extra_args[c("progress", "verbose", "model")] <- NULL
+      # `extra_args` was validated above and stripped of the formals
+      # that this loop sets explicitly (data, model, progress, verbose).
       results <- do.call(predict_d2h_precip, c(
         list(data = data, model = model_name,
              progress = FALSE, verbose = FALSE),
@@ -390,7 +410,10 @@ compare_models <- function(data,
     if (is.null(dim(means)))   means   <- matrix(means,   nrow = 1)
     if (is.null(dim(medians))) medians <- matrix(medians, nrow = 1)
 
-    # Compute ensemble statistics
+    # Compute ensemble statistics. `models_used` reports the models
+    # that actually succeeded (`names(model_results)`), not the
+    # originally requested set, so partial-failure runs are not
+    # silently misreported.
     ensemble_results <- data.frame(
       d2h_precip_ensemble_mean = apply(means, 1, summary_fun, na.rm = TRUE),
       d2h_precip_ensemble_median = apply(medians, 1, summary_fun, na.rm = TRUE),
@@ -398,7 +421,7 @@ compare_models <- function(data,
       d2h_precip_ensemble_min = apply(means, 1, min, na.rm = TRUE),
       d2h_precip_ensemble_max = apply(means, 1, max, na.rm = TRUE),
       n_models = apply(means, 1, function(x) sum(!is.na(x))),
-      models_used = paste(models, collapse = ";")
+      models_used = paste(names(model_results), collapse = ";")
     )
 
     return(ensemble_results)

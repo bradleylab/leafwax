@@ -11,7 +11,9 @@ invert_d2H_ensemble(
 )
 }
 \arguments{
-\item{...}{Arguments passed to \code{\link{invert_d2H}}.}
+\item{...}{Arguments passed to \code{\link{invert_d2H}} (e.g.,
+\code{d2H_wax}, \code{d2H_wax_sd}, \code{longitude}, \code{latitude}, optional
+covariates).}
 
 \item{models}{Character vector of v10 model names to include in the
 ensemble. Defaults to three structurally distinct variants:
@@ -21,22 +23,26 @@ ensemble. Defaults to three structurally distinct variants:
 spatial GP, no PFT).}
 
 \item{ensemble_method}{\code{"equal"} (default) pools per-draw
-reconstructions across models with equal weighting and returns a
-single resampled posterior. \code{"all"} returns the per-model results
-without pooling.}
+reconstructions per site across models with equal weighting and
+returns a per-site posterior. \code{"all"} returns the per-model
+results without pooling.}
 }
 \value{
-If \code{ensemble_method = "equal"}, a list with \code{posterior_draws}
-(pooled per-draw reconstructions), \code{ensemble_summary} (point-estimate
-summary statistics), \code{model_results} (the per-model output from
-\code{invert_d2H()} with \code{return_full = TRUE}), and \code{ensemble_method}.
-If \code{ensemble_method = "all"}, only \code{model_results} and
+If \code{ensemble_method = "equal"}, a list with:
+\code{posterior_draws} (an \verb{n_draws x n_sites} matrix of pooled
+per-site, per-draw reconstructions), \code{ensemble_summary} (a
+data frame with one row per site: \code{mean}, \code{median}, \code{sd},
+\code{ci_90_lower}/\code{ci_90_upper}, \code{ci_95_lower}/\code{ci_95_upper},
+\code{n_models_used}), \code{model_results} (the per-model output from
+\code{invert_d2H()} with \code{return_full = TRUE}), \code{models_used} (the
+models actually pooled), and \code{ensemble_method}. If
+\code{ensemble_method = "all"}, only \code{model_results} and
 \code{ensemble_method} are returned.
 }
 \description{
 Runs \code{\link{invert_d2H}} against each model in \code{models} and
-combines the per-draw reconstructions into a single pooled
-posterior. Useful for downstream uncertainty estimates that should
-span structural model uncertainty rather than condition on one
-calibration variant.
+combines the per-draw reconstructions per site, preserving the
+per-site dimension. Useful for downstream uncertainty estimates
+that should span structural model uncertainty rather than condition
+on one calibration variant.
 }
