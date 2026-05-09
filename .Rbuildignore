@@ -4,14 +4,10 @@
 ^\.context$
 ^_pkgdown\.yml$
 ^docs$
-^test_direct\.R$
-^test_inversion\.R$
-^README_EXAMPLES\.md$
-^PLAN_v.*\.md$
+^dev-notes$
 ^tests/_archive_v0\.1\.0$
 ^.*\.Rcheck$
 ^.*\.tar\.gz$
-^vignettes/_archive_v0\.1\.0$
 ^data-raw$
 ^LICENSE\.md$
 ^inst/extdata/posteriors$

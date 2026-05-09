@@ -105,6 +105,116 @@
   before checking that it exists. Replaced the default
   `get_cache_dir()` call with `get_cache_dir(create = FALSE)`.
 
+## Bug fixes (post-review pass)
+
+These fixes resolve issues surfaced by the pre-CRAN review pass.
+
+* `invert_d2H_ensemble()` aborted with
+  "formal argument 'return_full' matched by multiple actual arguments"
+  whenever the caller passed `return_full` (or `model_name`) through
+  `...`. The wrapper now strips both names from `...` before the
+  per-model loop. The function also now warns when models contribute
+  unequal draw counts and pools each model to the median count rather
+  than the first model's count.
+* `process_sequential()` referenced `processing_time` outside the
+  `if (progress) {...}` block where it was assigned, throwing
+  "object 'processing_time' not found" whenever
+  `batch_predict(..., progress = FALSE)` was called.
+* `batch_predict()` aborted with
+  "numbers of columns of arguments do not match" when one chunk
+  errored to the smaller fallback shape and another succeeded with
+  the full schema. The combine step now uses a column-tolerant
+  helper (`.rbind_chunks`) that pads missing columns with NA.
+* `detect_change()` aborted on the same `rbind` mismatch when an
+  empty `test_interval` was paired with `magnitudes`. The empty-
+  interval branch now appends NA magnitude columns so the column set
+  matches populated rows.
+* The "elevation" code path in `invert_d2h()` was unreachable for
+  every v10 model. None of the 14 fitted posteriors carry
+  `beta_elev` columns, so `model$elevation` was never populated and
+  the function unconditionally hit a "knots not found" warning that
+  silently dropped any user-supplied elevation. Removed the dead
+  spline branch; `has_elevation` is now derived from the actual
+  posterior columns and is `FALSE` for every shipped v10 model. The
+  "env" variants instead carry a `beta_precip` term, exposed via
+  `metadata$has_precip`.
+* `validate_inputs()`: the validated PFT vectors were dropped from
+  the returned list when the model used the v10 `has_vegetation`
+  flag (rather than the legacy `has_pft`). The output now honours
+  both names.
+* `download_with_progress()`: the error handler called `close()` on
+  `con_in` / `con_out` unconditionally, raising a secondary error
+  inside the handler when either had not yet been opened. The
+  handler now only closes connections that were actually opened.
+
+## Repo cleanup
+
+* Removed the unreachable lookup-table subsystem
+  (`R/lookup_tables.R`, `R/lookup_integration.R`, the
+  `predict_spatial_mpp()` deprecated stub, and the `use_lookup`
+  argument of `predict_d2h_precip()`). The path was never wired to a
+  shipping data archive; spatial predictions now always go through
+  `predict_spatial_dual_gp()` against the live posterior.
+* Removed `clear_data_cache()`. Use `clear_download_cache()` instead;
+  the two helpers were near-duplicates with no behavioural
+  difference.
+* Removed dead exports: `batch_invert_d2h()`, `monitor_memory()`,
+  `verify_data_integrity()`, `setup_leafwax_data()`,
+  `select_best_model()`, `get_model_recommendations()`. None had
+  callers in the package and several relied on broken legacy paths.
+* Removed the misleading text-progress bar in `predict_d2h_precip()`:
+  it jumped from 0% to 100% in a single step regardless of work
+  done, because the inversion runs in one pass with no per-iteration
+  callback. The `progress` argument is retained but is now a no-op
+  at this layer; chunked progress reporting is still driven by
+  `batch_predict()`.
+
+## Internal cleanup
+
+* `LEAFWAX_DEFAULTS` (in `R/zzz.R`) is now the single source of
+  truth for `leafwax.*` user options. `leafwax_config()` and
+  `leafwax_set_config()` derive their option lists from it, so
+  `suppress_preview_warning` (and any future option) round-trips
+  without manual list maintenance.
+* Capability flags are now derived from the actual posterior columns
+  in `load_posteriors()`. `model_compatibility.R` keeps the
+  name-based view for callers that need expected-schema info without
+  loading the model; the two views agree on what each shipped v10
+  variant contains.
+* `get_cache_info()` now classifies cache files using the v0.2
+  download layout (`posteriors/<model>_posterior.rds`,
+  `spatial_metadata/<model>_knots.rds`, `manifest.json`). The
+  previous regex matched only legacy v0.1 names, so the function
+  silently classified every real cache entry as "other".
+* `load_posteriors()` now warns when it falls back to a freshly
+  generated 125-knot Fibonacci sphere because the model's knot file
+  is missing. The substituted knots are not byte-identical to the
+  v10 fit, so silent substitution is methods drift.
+* `invert_d2h()` warns (was: a print statement) when
+  `model$scaling` is missing and the inversion uses the conservative
+  `PLACEHOLDER_SCALING` defaults — those scales are not the v10
+  fitted ones and reconstructions will not match the published
+  calibration.
+* Magic numbers (analytical default 3 per mil, 125 spatial knots,
+  default C4 percent, default PFT split, placeholder scaling) are
+  promoted to named constants in `R/constants.R`.
+
+## Repo organization
+
+* Untracked `leafwax.Rcheck/` artifacts (the directory is now
+  matched by `*.Rcheck/` in `.gitignore`).
+* Removed `README_EXAMPLES.md`, `test_direct.R`, `test_inversion.R`
+  from the repo root — orphaned scratch artifacts already excluded
+  from the tarball via `.Rbuildignore`.
+* Moved `PLAN_v0.2.0.md` and `PLAN_v0.2.2.md` into `dev-notes/`.
+* Removed the archived v0.1.0 test directory
+  (`tests/_archive_v0.1.0/`).
+* Added `cran-comments.md`.
+* `.Rbuildignore` cleaned of stale entries
+  (`vignettes/_archive_v0.1.0`, `test_*.R`,
+  `README_EXAMPLES.md`, `PLAN_v*.md` — paths that no longer
+  exist or are now covered by directory-level rules).
+
 Regression tests covering these fixes are in
 `tests/testthat/test-cleanup-v022.R`.
 
@@ -150,6 +260,28 @@ Regression tests covering these fixes are in
 * The internal `.download_model_data_v0_1()` and its private helper
   `get_download_files()` are removed (the exported
   `download_model_data()` in `R/download_data.R` is unchanged).
+* `validate_inputs()`'s default `model_name` changed from `"b0b1"` to
+  `"baseline"`. The previous default was a v0.1 name not in the v10
+  registry, so calls that relied on the default would have errored
+  in `get_all_model_metadata()` lookup; the new default is the
+  closest v10 equivalent.
+* `compare_models()`'s NULL-fallback model set changed from v0.1
+  names (`"b0b1"`, `"b0b1_elev"`, `"b0b1_sp"`) to v10
+  (`"baseline"`, `"baseline_sp"`, `"full_sp"`). Same rationale: the
+  old default was unreachable.
+* The lookup-table API is removed (`create_lookup_table()`,
+  `use_lookup_if_available()`, `predict_spatial_mpp()`,
+  `validate_lookup_table()`, `get_spatial_params()`,
+  `cache_all_lookup_tables()`, `benchmark_lookup()`,
+  `generate_global_grid()`, plus the `print.leafwax_lookup_table`
+  method). The path was never wired to a published data archive; no
+  v0.2 caller used it.
+* `predict_d2h_precip()`: removed the `use_lookup` argument (no-op
+  since the lookup-table subsystem is gone).
+* `clear_data_cache()` removed; use `clear_download_cache()`.
+* `batch_invert_d2h()`, `monitor_memory()`, `verify_data_integrity()`,
+  `setup_leafwax_data()`, `select_best_model()`, and
+  `get_model_recommendations()` are removed.
 
 ## Documentation and naming-drift cleanup
 

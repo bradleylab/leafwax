@@ -25,23 +25,26 @@ devtools::install_github("bradleylab/leafwax")
 
 The installed tarball ships a 100-draw "preview" fixture under
 `inst/extdata/posteriors_light/` so the package builds and tests
-without network access. Full 1000-draw posteriors are downloaded
-on first use from
-[`bradleylab/leafwax-data`](https://github.com/bradleylab/leafwax-data)
-v1.0.1 (Zenodo concept DOI
-[10.5281/zenodo.20085465](https://doi.org/10.5281/zenodo.20085465))
-and cached under `tools::R_user_dir("leafwax", "data")`. Inversions
-done against the preview tier emit a loud warning naming the
-function context and the actual draw count; set
-`options(leafwax.suppress_preview_warning = TRUE)` to silence it
-in batch jobs that have already acknowledged the limitation.
+without network access. The preview tier is for code-path
+verification only — tail probabilities and 95% intervals are noisy
+at 100 draws. **For inference, prefetch the full 1000-draw
+posteriors explicitly:**
 
 ```r
-# Pre-fetch full posteriors (optional; download_model_data() is
-# called automatically the first time load_posteriors() is asked
-# for a model whose heavy posteriors are not cached locally)
+# Required before any inferential use. Downloads from
+# bradleylab/leafwax-data v1.0.1 and caches under
+# tools::R_user_dir("leafwax", "data").
 leafwax::download_model_data("baseline_sp")
 ```
+
+Heavy posteriors come from
+[`bradleylab/leafwax-data`](https://github.com/bradleylab/leafwax-data)
+v1.0.1 (Zenodo concept DOI
+[10.5281/zenodo.20085465](https://doi.org/10.5281/zenodo.20085465)).
+Inversions done against the preview tier emit a loud warning
+naming the function context and the actual draw count; set
+`options(leafwax.suppress_preview_warning = TRUE)` to silence it
+in batch jobs that have already acknowledged the limitation.
 
 ## Quick start: single-point inversion
 
@@ -65,21 +68,16 @@ end in `_sp` and are recommended whenever site coordinates are known.
 
 ## Paleo-record workflow
 
-For a downcore series, the workflow combines five functions:
+For a downcore series, the workflow combines four functions. The
+calibration's posterior residual SD (σ<sub>residual</sub>, ≈16 per
+mil for the spatial models) applies uniformly to absolute and
+within-record use; see the manuscript Section 4.5.3 for the
+derivation.
 
 ```r
 library(leafwax)
 
-# 1. Within-record residual SD on a stationarity-defended interval
-sw <- estimate_sigma_within(
-  d2h_wax = record$d2h_wax,
-  age     = record$age,
-  baseline_interval = c(0, 5000),
-  detrend = "linear",
-  ar1_correction = TRUE
-)
-
-# 2. Per-draw local slope at the site, with the simple-model ceiling
+# 1. Per-draw local slope at the site, with the simple-model ceiling
 slope <- local_effective_slope(
   longitude  = -90,
   latitude   = 38,
@@ -87,34 +85,33 @@ slope <- local_effective_slope(
   ceiling    = 0.88
 )
 
-# 3. Inversion with within-record residual + defended slope
+# 2. Inversion with the defended slope
 recon <- invert_d2H(
   d2H_wax    = record$d2h_wax,
   d2H_wax_sd = record$d2h_wax_err,
   longitude  = rep(-90, nrow(record)),
   latitude   = rep( 38, nrow(record)),
   model_name = "baseline_sp",
-  sigma_within = sw$sigma_within,
-  slope        = slope,
-  record_id    = "your_record_id",
-  return_full  = TRUE
+  slope      = slope,
+  record_id  = "your_record_id",
+  return_full = TRUE
 )
 
-# 4. Detection threshold + posterior P(change > magnitude)
+# 3. Detection threshold + posterior P(change > magnitude)
 rho_t <- estimate_temporal_autocorrelation(record$d2h_wax, record$age)
 dc <- detect_change(
   reconstruction    = recon,
   age               = record$age,
   baseline_interval = c(0, 5000),
   test_intervals    = list(post = c(5000, 10000)),
-  sigma_within      = sw$sigma_within,
+  sigma_residual    = 16,
   rho_t             = rho_t,
   beta_eff          = stats::median(slope),
   confidence        = 0.95,
   magnitudes        = c(10, 30, 50)
 )
 
-# 5. Four-level taxonomy verdict on a published claim
+# 4. Four-level taxonomy verdict on a published claim
 verdict <- assess_claim(
   record         = record,
   claim          = list(level = 4, ...),     # see ?assess_claim
@@ -132,8 +129,8 @@ The full sequence on a real Iso2k record is in
 are derived from the posterior parameter names, not the model id, so
 the routing layer correctly reflects what each fit actually contains.
 
-| Model | Spatial GP | Elevation | C4 | Vegetation | Interactions |
-|-------|:----------:|:---------:|:--:|:----------:|:------------:|
+| Model | Spatial GP | Precip | C4 | Vegetation | Interactions |
+|-------|:----------:|:------:|:--:|:----------:|:------------:|
 | `baseline`                  |   |   |   |   |   |
 | `baseline_sp`               | x |   |   |   |   |
 | `baseline_env`              |   | x |   |   |   |
@@ -141,13 +138,22 @@ the routing layer correctly reflects what each fit actually contains.
 | `baseline_veg`              |   |   | x | x |   |
 | `baseline_veg_sp`           | x |   | x | x |   |
 | `c4_only_sp`                | x |   | x |   |   |
-| `elevation_only_sp`         | x | x |   |   |   |
-| `elevation_c4_sp`           | x | x | x |   |   |
-| `elevation_c4_interact_sp`  | x | x | x |   | x |
-| `full`                      |   |   | x | x | x |
-| `full_sp`                   | x |   | x | x | x |
-| `full_interact`             |   |   | x | x | x |
-| `full_interact_sp`          | x |   | x | x | x |
+| `elevation_only_sp`         | x |   |   |   |   |
+| `elevation_c4_sp`           | x |   | x |   |   |
+| `elevation_c4_interact_sp`  | x |   | x |   | x |
+| `full`                      |   | x | x | x | x |
+| `full_sp`                   | x | x | x | x | x |
+| `full_interact`             |   | x | x | x | x |
+| `full_interact_sp`          | x | x | x | x | x |
+
+The "Precip" column flags models that include a fitted
+precipitation-amount coefficient (`beta_precip`). The `_env` and
+`_full*` variants carry it; the `elevation_*` variants do not. The
+v10 fits did not produce `beta_elev` coefficients, so no model in
+the table propagates supplied elevation through the predictor
+linear combination — the historical "elevation_*" naming reflects
+the regional context the variants were designed for, not a fitted
+elevation effect.
 
 Spatial models share a single 125-knot Fibonacci-sphere lattice.
 
@@ -157,7 +163,6 @@ The paleo workflow maps directly to the manuscript:
 
 | Manuscript section | Function |
 |--------------------|----------|
-| 4.5.3 σ<sub>within</sub> obligation | `estimate_sigma_within()` |
 | 4.5.3 detection threshold formula   | `detect_change()` |
 | 4.5.5 local slope ceiling           | `local_effective_slope(..., ceiling = 0.88)` |
 | 4.5.6 four-level claim taxonomy     | `assess_claim()` |
@@ -177,8 +182,8 @@ The paleo workflow maps directly to the manuscript:
 
 ## Help
 
-* Function reference: `?invert_d2H`, `?estimate_sigma_within`,
-  `?local_effective_slope`, `?detect_change`, `?assess_claim`.
+* Function reference: `?invert_d2H`, `?local_effective_slope`,
+  `?detect_change`, `?assess_claim`.
 * Vignette: `vignette("paleo-record-workflow", package = "leafwax")`.
 * Issues: <https://github.com/bradleylab/leafwax/issues>.
 
