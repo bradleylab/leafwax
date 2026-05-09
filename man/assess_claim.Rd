@@ -22,8 +22,7 @@ columns of equal length. \code{d2h_wax_err} is optional; defaults to
 \item{claim}{Named list specifying the claim. Required fields:
 \code{level} (integer 1-4, the level the user is asserting),
 \code{interval_baseline} (length-2 numeric c(min, max) age window),
-\code{interval_test} (length-2 numeric age window),
-\code{sigma_within} (per mil; from \code{estimate_sigma_within()}).
+\code{interval_test} (length-2 numeric age window).
 Optional fields, used by higher levels:
 \code{sigma_analytical} (default 3),
 \code{rho_t} (default 0; from \code{estimate_temporal_autocorrelation()}),
@@ -37,14 +36,8 @@ non-empty + named),
 \code{evapotranspirative_stationary} (each a list with \code{value} (TRUE)
 and a non-empty \code{evidence} string; required at Level 4).}
 
-\item{reconstruction}{Optional output of \code{invert_d2H(..., return_full = TRUE, uncertainty_mode = "within_record", sigma_within = ...)}
-on the record. When NULL and the claim's level is 3 or 4, the
-function runs the inversion itself with \code{uncertainty_mode = "within_record"} and \code{sigma_within = claim$sigma_within}. When
-supplied directly, it must be built in within-record mode with a
-positive \code{sigma_within}: the L3+ contrast formula is derived
-under the within-record substitution where \code{sigma_within}
-replaces the global residual SD (manuscript Section 4.5.3).
-Passing an absolute-mode reconstruction raises an error.}
+\item{reconstruction}{Optional output of \code{invert_d2H(..., return_full = TRUE)} on the record. When NULL and the claim's level is 3 or
+4, the function runs the inversion itself.}
 
 \item{longitude, latitude}{Site coordinates, used only when
 \code{reconstruction} is NULL.}
@@ -73,7 +66,7 @@ reports the highest level a claim survives at. The taxonomy is:
 \itemize{
 \item Level 1: a leaf-wax delta-2-H change occurred between two
 intervals. Defensible when the change exceeds analytical
-uncertainty and the within-record residual SD \code{sigma_within}.
+uncertainty.
 \item Level 2: the wax change is consistent with a directional
 hydroclimate change. Requires corroborating evidence (multi-
 proxy concordance, sedimentological context, or biomarker
@@ -81,9 +74,9 @@ evidence for vegetation stability) supplied via
 \code{corroborating_proxies}.
 \item Level 3: the wax change implies a quantitative
 delta-2-H_precip magnitude. Requires a defended local effective
-slope, a defended \code{sigma_within}, and explicit uncertainty
-propagation through the inversion. When \code{reconstruction} is
-NULL the function calls \code{invert_d2H()} itself.
+slope and explicit uncertainty propagation through the
+inversion. When \code{reconstruction} is NULL the function calls
+\code{invert_d2H()} itself.
 \item Level 4: the magnitude is uniquely attributable to
 precipitation isotope change rather than to vegetation,
 source-water seasonality, or evapotranspirative enrichment.

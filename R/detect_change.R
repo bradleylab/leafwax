@@ -100,23 +100,19 @@ estimate_temporal_autocorrelation <- function(d2h_wax, age,
 #'
 #' \deqn{\mathrm{threshold}_{precip} =
 #'       \frac{z_{\alpha/2}\, \sqrt{2(1 - \rho_t)}\,
-#'             \sqrt{\sigma_{within}^2 + \sigma_{analytical}^2}}
+#'             \sqrt{\sigma_{residual}^2 + \sigma_{analytical}^2}}
 #'            {\beta_{\mathrm{eff}}}}
 #'
 #' The threshold is the smallest difference in `d2H_precip` between two
 #' independent samples that can be distinguished from within-record
-#' noise at the chosen confidence level.
+#' noise at the chosen confidence level. The spatial GP intercept
+#' contributes a constant to every sample in the record and cancels in
+#' the contrast; the same `sigma_residual` from the spatial calibration
+#' applies (manuscript Section 4.5.3).
 #'
-#' @param reconstruction Output of `invert_d2H(..., return_full = TRUE,
-#'   uncertainty_mode = "within_record", sigma_within = ...)` on a
-#'   downcore series. Must contain a `posterior_draws` matrix of shape
-#'   `n_iter x n_samples`. The reconstruction must be built in
-#'   within-record mode with a positive `sigma_within`: the
-#'   change-detection threshold formula and `p_exceed` are derived
-#'   under the within-record substitution where `sigma_within`
-#'   replaces the global residual SD (manuscript Section 4.5.3).
-#'   Passing an absolute-mode reconstruction, or one without a
-#'   recorded `sigma_within`, raises an error.
+#' @param reconstruction Output of `invert_d2H(..., return_full = TRUE)`
+#'   on a downcore series. Must contain a `posterior_draws` matrix of
+#'   shape `n_iter x n_samples`.
 #' @param age Numeric vector, length `n_samples`, of sample ages
 #'   matching the reconstruction columns.
 #' @param baseline_interval Length-2 numeric `c(min, max)` defining the
@@ -125,8 +121,9 @@ estimate_temporal_autocorrelation <- function(d2h_wax, age,
 #'   test window, or a named list of length-2 numerics for multiple
 #'   windows. NULL skips the per-interval probability table and returns
 #'   only the threshold.
-#' @param sigma_within Numeric, required, the within-record residual SD
-#'   in leaf-wax per mil (typically from `estimate_sigma_within()`).
+#' @param sigma_residual Numeric, required, the model's posterior
+#'   residual SD on the leaf-wax per-mil scale (`sigma`, approximately
+#'   16 per mil for the spatial models; see Section 4.5.3).
 #' @param sigma_analytical Numeric, the analytical uncertainty on
 #'   `d2H_wax` measurements in per mil (default 3).
 #' @param rho_t Numeric, lag-1 temporal autocorrelation. Use
@@ -144,7 +141,7 @@ estimate_temporal_autocorrelation <- function(d2h_wax, age,
 #'     \item `threshold` - the detection threshold on `d2H_precip` at
 #'       the requested confidence level.
 #'     \item `formula` - the components used: `z`, `rho_t`,
-#'       `sigma_within`, `sigma_analytical`, `beta_eff`.
+#'       `sigma_residual`, `sigma_analytical`, `beta_eff`.
 #'     \item `intervals` - a data frame with one row per test interval
 #'       reporting the posterior median and CI of `delta` and (if
 #'       `magnitudes` supplied) the posterior probability of exceeding
@@ -155,7 +152,7 @@ detect_change <- function(reconstruction,
                           age,
                           baseline_interval,
                           test_intervals = NULL,
-                          sigma_within,
+                          sigma_residual,
                           sigma_analytical = 3,
                           rho_t = NULL,
                           beta_eff,
@@ -167,39 +164,6 @@ detect_change <- function(reconstruction,
     stop("reconstruction must be the list returned by ",
          "invert_d2H(..., return_full = TRUE) and contain ",
          "$posterior_draws")
-  }
-  rec_mode <- attr(reconstruction, "leafwax_uncertainty_mode") %||%
-              reconstruction$model_info$uncertainty_mode %||%
-              NA_character_
-  rec_sigma_w <- attr(reconstruction, "leafwax_sigma_within") %||%
-                 reconstruction$model_info$sigma_within %||%
-                 NA_real_
-  if (is.na(rec_mode) || !identical(rec_mode, "within_record")) {
-    stop("detect_change requires invert_d2H(..., ",
-         "uncertainty_mode = \"within_record\", sigma_within = ...); ",
-         "the absolute mode uses the global residual sigma, which ",
-         "miscalibrates the change-detection threshold and the ",
-         "posterior p_exceed (manuscript Section 4.5.3). Rebuild the ",
-         "reconstruction with uncertainty_mode = \"within_record\" ",
-         "and a record-specific sigma_within.")
-  }
-  if (is.na(rec_sigma_w) || rec_sigma_w <= 0) {
-    stop("Reconstruction passed to detect_change has no positive ",
-         "sigma_within recorded. Manuscript Section 4.5.3 requires a ",
-         "record-specific sigma_within for within-record contrasts. ",
-         "Rebuild the reconstruction with a positive sigma_within.")
-  }
-  # Cross-check the reconstruction's sigma_within against the function
-  # arg only when the function arg is itself a valid number; an invalid
-  # arg is handled by the dedicated sigma_within validation below and
-  # should not also surface as a mismatch warning.
-  if (is.numeric(sigma_within) && length(sigma_within) == 1L &&
-      is.finite(sigma_within) && sigma_within >= 0 &&
-      !isTRUE(all.equal(rec_sigma_w, sigma_within, tolerance = 1e-6))) {
-    warning(sprintf(
-      "Reconstruction was built with sigma_within = %g but detect_change was called with sigma_within = %g. The threshold formula will use the detect_change value (%g); the reconstruction posterior carries %g. Re-run invert_d2H with the same sigma_within for consistency.",
-      rec_sigma_w, sigma_within, sigma_within, rec_sigma_w
-    ), call. = FALSE)
   }
   # Re-raise the preview-tier warning at the change-detection layer.
   # Posterior-probability statements (`p_exceed`) are exactly what the
@@ -239,10 +203,10 @@ detect_change <- function(reconstruction,
   if (!is.numeric(baseline_interval) || length(baseline_interval) != 2L) {
     stop("baseline_interval must be a numeric vector of length 2: c(min, max)")
   }
-  if (missing(sigma_within) || is.null(sigma_within) ||
-      !is.numeric(sigma_within) || length(sigma_within) != 1L ||
-      !is.finite(sigma_within) || sigma_within < 0) {
-    stop("sigma_within must be a single non-negative numeric value (per mil)")
+  if (missing(sigma_residual) || is.null(sigma_residual) ||
+      !is.numeric(sigma_residual) || length(sigma_residual) != 1L ||
+      !is.finite(sigma_residual) || sigma_residual < 0) {
+    stop("sigma_residual must be a single non-negative numeric value (per mil)")
   }
   if (!is.numeric(sigma_analytical) || length(sigma_analytical) != 1L ||
       !is.finite(sigma_analytical) || sigma_analytical < 0) {
@@ -270,7 +234,7 @@ detect_change <- function(reconstruction,
 
   # --- detection threshold (manuscript Section 4.5.3) -----------------
   z <- stats::qnorm(1 - (1 - confidence) / 2)
-  sigma_combined <- sqrt(sigma_within^2 + sigma_analytical^2)
+  sigma_combined <- sqrt(sigma_residual^2 + sigma_analytical^2)
   threshold_wax    <- z * sqrt(2 * (1 - rho_t)) * sigma_combined
   threshold_precip <- threshold_wax / abs(beta_eff)
 
@@ -360,7 +324,7 @@ detect_change <- function(reconstruction,
       z                 = z,
       confidence        = confidence,
       rho_t             = rho_t,
-      sigma_within      = sigma_within,
+      sigma_residual    = sigma_residual,
       sigma_analytical  = sigma_analytical,
       sigma_combined    = sigma_combined,
       beta_eff          = beta_eff,

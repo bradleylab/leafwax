@@ -64,18 +64,17 @@ A data frame with predictions (or list if return_draws = TRUE):
 \describe{
 \item{d2h_precip_mean}{Mean predicted precipitation d2H}
 \item{d2h_precip_median}{Median predicted precipitation d2H}
-\item{d2h_precip_sd}{Standard deviation of predictions}
-\item{d2h_precip_lower}{Lower bound of the reported interval}
-\item{d2h_precip_upper}{Upper bound of the reported interval}
-\item{prediction_interval_width}{Width of the reported interval}
-\item{uncertainty_mode}{\code{"absolute"} -- single-site posterior
-predictive interval (manuscript supplement Section S4.1,
-Eq. 7). For within-record contrasts, call \code{invert_d2H()}
-directly with \code{uncertainty_mode = "within_record"} and a
-record-specific \code{sigma_within} (see \code{?invert_d2H} and
-\code{detect_change()}).}
+\item{d2h_precip_sd}{Standard deviation of the posterior
+predictive interval}
+\item{d2h_precip_lower}{Lower bound of the credible interval}
+\item{d2h_precip_upper}{Upper bound of the credible interval}
+\item{prediction_interval_width}{Width of the credible interval}
 \item{model_used}{Name of model used for prediction}
 }
+
+The interval is the posterior predictive specified in manuscript
+supplement Section S4.1, Eq. 7 (analytical uncertainty plus the
+model's posterior residual SD).
 }
 \description{
 Main user-facing function for inverting leaf wax hydrogen isotopes to

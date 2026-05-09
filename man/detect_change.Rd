@@ -9,7 +9,7 @@ detect_change(
   age,
   baseline_interval,
   test_intervals = NULL,
-  sigma_within,
+  sigma_residual,
   sigma_analytical = 3,
   rho_t = NULL,
   beta_eff,
@@ -18,15 +18,9 @@ detect_change(
 )
 }
 \arguments{
-\item{reconstruction}{Output of \code{invert_d2H(..., return_full = TRUE, uncertainty_mode = "within_record", sigma_within = ...)} on a
-downcore series. Must contain a \code{posterior_draws} matrix of shape
-\verb{n_iter x n_samples}. The reconstruction must be built in
-within-record mode with a positive \code{sigma_within}: the
-change-detection threshold formula and \code{p_exceed} are derived
-under the within-record substitution where \code{sigma_within}
-replaces the global residual SD (manuscript Section 4.5.3).
-Passing an absolute-mode reconstruction, or one without a
-recorded \code{sigma_within}, raises an error.}
+\item{reconstruction}{Output of \code{invert_d2H(..., return_full = TRUE)}
+on a downcore series. Must contain a \code{posterior_draws} matrix of
+shape \verb{n_iter x n_samples}.}
 
 \item{age}{Numeric vector, length \code{n_samples}, of sample ages
 matching the reconstruction columns.}
@@ -39,8 +33,9 @@ test window, or a named list of length-2 numerics for multiple
 windows. NULL skips the per-interval probability table and returns
 only the threshold.}
 
-\item{sigma_within}{Numeric, required, the within-record residual SD
-in leaf-wax per mil (typically from \code{estimate_sigma_within()}).}
+\item{sigma_residual}{Numeric, required, the model's posterior
+residual SD on the leaf-wax per-mil scale (\code{sigma}, approximately
+16 per mil for the spatial models; see Section 4.5.3).}
 
 \item{sigma_analytical}{Numeric, the analytical uncertainty on
 \code{d2H_wax} measurements in per mil (default 3).}
@@ -64,7 +59,7 @@ A list with elements:
 \item \code{threshold} - the detection threshold on \code{d2H_precip} at
 the requested confidence level.
 \item \code{formula} - the components used: \code{z}, \code{rho_t},
-\code{sigma_within}, \code{sigma_analytical}, \code{beta_eff}.
+\code{sigma_residual}, \code{sigma_analytical}, \code{beta_eff}.
 \item \code{intervals} - a data frame with one row per test interval
 reporting the posterior median and CI of \code{delta} and (if
 \code{magnitudes} supplied) the posterior probability of exceeding
@@ -82,10 +77,13 @@ record 95\\% (or other) detection threshold from manuscript Section
 \details{
 \deqn{\mathrm{threshold}_{precip} =
       \frac{z_{\alpha/2}\, \sqrt{2(1 - \rho_t)}\,
-            \sqrt{\sigma_{within}^2 + \sigma_{analytical}^2}}
+            \sqrt{\sigma_{residual}^2 + \sigma_{analytical}^2}}
            {\beta_{\mathrm{eff}}}}
 
 The threshold is the smallest difference in \code{d2H_precip} between two
 independent samples that can be distinguished from within-record
-noise at the chosen confidence level.
+noise at the chosen confidence level. The spatial GP intercept
+contributes a constant to every sample in the record and cancels in
+the contrast; the same \code{sigma_residual} from the spatial calibration
+applies (manuscript Section 4.5.3).
 }

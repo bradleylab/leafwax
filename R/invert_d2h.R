@@ -27,20 +27,6 @@ NULL
 #' @param return_full Logical whether to return full posterior draws or just summary
 #' @param credible_level Numeric credible interval level (default 0.9)
 #' @param verbose Logical whether to print progress messages
-#' @param sigma_within Numeric, optional within-record residual standard
-#'   deviation in per mil. When supplied, an additional
-#'   `Normal(0, sigma_within)` noise term is added to the inverted
-#'   `d2H_precip` per posterior draw, representing residual variance
-#'   within a single sedimentary record (after spatial structure has
-#'   cancelled). Use `estimate_sigma_within()` to obtain this from a
-#'   stationary baseline interval of the record. Section 4.5.3 of the
-#'   manuscript explains why the global posterior `sigma` overstates
-#'   within-record uncertainty.
-#' @param sigma_within_sd Numeric, optional standard error on
-#'   `sigma_within`. When non-`NULL`, each posterior draw resamples the
-#'   residual SD from `Normal(sigma_within, sigma_within_sd)` (truncated
-#'   at zero), so uncertainty in the within-record SD itself propagates
-#'   into the prediction.
 #' @param record_id Character or numeric, optional record identifier.
 #'   When supplied and constant across all input rows, all rows are
 #'   treated as belonging to the same downcore series: the spatial
@@ -59,56 +45,29 @@ NULL
 #'   build a defensible per-draw override that respects the manuscript's
 #'   simple-model ceiling at alpha = 0.88 (Section 4.5.5). When
 #'   supplied, the override applies uniformly to every input row.
-#' @param uncertainty_mode Character, one of `"absolute"` (default) or
-#'   `"within_record"`. Selects which uncertainty regime from the
-#'   manuscript applies. The two regimes are mutually exclusive:
-#'   `sigma_within` replaces the global posterior residual SD for
-#'   within-record use, it does not add to it.
-#'   \itemize{
-#'     \item `"absolute"` -- **single-site absolute reconstruction
-#'       (manuscript supplement Section S4.1, Eq. 7).** The wax-error
-#'       draw uses analytical uncertainty plus the model's posterior
-#'       residual SD `sigma`. Parameter and spatial uncertainty enter
-#'       through the per-iteration posterior draws. Use whenever you
-#'       are reporting a single-site reconstruction
-#'       ("d2H_precip = X +/- Y at this site"). `sigma_within` MUST
-#'       be `NULL` in this mode -- it is meaningful only for
-#'       within-record contrasts.
-#'     \item `"within_record"` -- **within-record contrast under
-#'       spatial stationarity (manuscript Section 4.5.3).** The
-#'       global residual `sigma` is replaced by the record-specific
-#'       `sigma_within`, which the caller MUST supply. The four
-#'       obligations of Section 4.5.3 apply: (1) `sigma_within`
-#'       estimated from the record (e.g., via
-#'       `estimate_sigma_within()`), not assumed equal to the
-#'       global ~16 per mil; (2) `rho_t` estimated from the record;
-#'       (3) a defended local effective slope; (4) corroboration
-#'       from independent proxies. This is the input expected by
-#'       `detect_change()` and `assess_claim()`.
-#'   }
-#'   The returned object carries
-#'   `attr(., "leafwax_uncertainty_mode")`,
-#'   `attr(., "leafwax_sigma_within")`, and a `uncertainty_mode`
-#'   column so downstream callers can detect a misuse and the
-#'   output is self-describing.
 #'
 #' @return If return_full is FALSE, a data frame with columns:
 #'   \item{d2h_precip_mean}{Mean predicted precipitation d2H}
 #'   \item{d2h_precip_median}{Median predicted precipitation d2H}
-#'   \item{d2h_precip_sd}{Standard deviation of predictions}
-#'   \item{d2h_precip_lower}{Lower bound of the reported interval}
-#'   \item{d2h_precip_upper}{Upper bound of the reported interval}
-#'   \item{prediction_interval_width}{Width of the reported interval
+#'   \item{d2h_precip_sd}{Standard deviation of the posterior
+#'     predictive interval}
+#'   \item{d2h_precip_lower}{Lower bound of the credible interval}
+#'   \item{d2h_precip_upper}{Upper bound of the credible interval}
+#'   \item{prediction_interval_width}{Width of the credible interval
 #'     (upper - lower).}
-#'   \item{uncertainty_mode}{Either `"absolute"` (S4.1 Eq. 7; the
-#'     default) or `"within_record"` (S4.5.3 substitution with
-#'     `sigma_within`).}
+#'
+#'   The interval is the posterior predictive specified in manuscript
+#'   supplement Section S4.1, Eq. 7: the wax-error draw combines
+#'   analytical uncertainty with the model's posterior residual SD
+#'   `sigma`. For within-record change detection, the spatial GP
+#'   intercept's contribution cancels in any contrast computed from
+#'   the returned `posterior_draws` (manuscript Section 4.5.3); the
+#'   same `sigma` applies in both regimes.
 #'
 #'   If return_full is TRUE, a list with:
 #'   \item{summary}{The summary data frame described above}
 #'   \item{posterior_draws}{Matrix of all posterior draws (n_draws x n_locations)}
-#'   \item{model_info}{Information about the model used, including
-#'     the `uncertainty_mode` and `sigma_within` value used.}
+#'   \item{model_info}{Information about the model used.}
 #'   
 #' @export
 #' 
@@ -144,57 +103,13 @@ invert_d2h <- function(d2h_wax, d2h_wax_err = NULL,
                        return_full = FALSE,
                        credible_level = 0.9,
                        verbose = TRUE,
-                       sigma_within = NULL,
-                       sigma_within_sd = NULL,
                        record_id = NULL,
-                       slope = NULL,
-                       uncertainty_mode = c("absolute", "within_record")) {
-
-  uncertainty_mode <- match.arg(uncertainty_mode)
+                       slope = NULL) {
 
   # Input validation
   n_obs <- length(d2h_wax)
   if (length(longitude) != n_obs || length(latitude) != n_obs) {
     stop("All input vectors must have the same length")
-  }
-
-  # sigma_within validation
-  if (!is.null(sigma_within)) {
-    if (!is.numeric(sigma_within) || length(sigma_within) != 1L ||
-        is.na(sigma_within) || sigma_within < 0) {
-      stop("sigma_within must be a single non-negative numeric value (per mil)")
-    }
-  }
-
-  # Mode + sigma_within mutual exclusivity (manuscript Section 4.5.3:
-  # sigma_within REPLACES the global residual SD for within-record use,
-  # rather than being added on top of it).
-  if (identical(uncertainty_mode, "absolute") && !is.null(sigma_within)) {
-    stop("sigma_within is meaningful only for uncertainty_mode = ",
-         "\"within_record\". For absolute single-site reconstruction ",
-         "(manuscript Section S4.1), the global posterior residual SD ",
-         "is used; sigma_within does not apply. To do a within-record ",
-         "contrast, set uncertainty_mode = \"within_record\".")
-  }
-  if (identical(uncertainty_mode, "within_record") &&
-      (is.null(sigma_within) || sigma_within == 0)) {
-    stop("uncertainty_mode = \"within_record\" requires a positive ",
-         "sigma_within (manuscript Section 4.5.3 obligation 1: ",
-         "estimated from the record, not assumed equal to the global ",
-         "~16 per mil). Use estimate_sigma_within() to derive it from ",
-         "a stationary baseline interval, or pass uncertainty_mode = ",
-         "\"absolute\" for a single-site absolute reconstruction.")
-  }
-  add_residual_sigma <- identical(uncertainty_mode, "absolute")
-  use_record_sigma   <- identical(uncertainty_mode, "within_record")
-  if (!is.null(sigma_within_sd)) {
-    if (is.null(sigma_within)) {
-      stop("sigma_within_sd supplied without sigma_within")
-    }
-    if (!is.numeric(sigma_within_sd) || length(sigma_within_sd) != 1L ||
-        is.na(sigma_within_sd) || sigma_within_sd < 0) {
-      stop("sigma_within_sd must be a single non-negative numeric value (per mil)")
-    }
   }
 
   # record_id validation: when supplied, all rows must share
@@ -393,31 +308,6 @@ invert_d2h <- function(d2h_wax, d2h_wax_err = NULL,
 
   c4_std <- (c4_percent - scaling$c4_mean) / scaling$c4_sd
 
-  # Pre-compute the per-draw sigma_within draws. sigma_within is
-  # supplied by the caller in **leaf-wax per-mil units** (the units
-  # estimate_sigma_within() returns), so it must enter the inversion in
-  # wax space and then propagate through beta_oipc_eff like the
-  # measurement uncertainty already does. Convert to standardized wax
-  # units once here; the per-draw value is consumed inside the iter
-  # loop below as additional noise on d2h_wax_with_error.
-  #
-  # When sigma_within_sd is non-NULL, the within-record SD itself
-  # resamples per draw; the absolute value reflects the truncated tail
-  # at zero so the SD stays non-negative. Per-iter (not per-i) draws
-  # keep within-record samples sharing the same SD per draw, which
-  # matches how the posterior already shares parameter draws across
-  # the series.
-  use_sigma_within <- !is.null(sigma_within)
-  if (use_sigma_within) {
-    if (!is.null(sigma_within_sd) && sigma_within_sd > 0) {
-      sigma_w_draws_wax <- abs(rnorm(n_iter, sigma_within, sigma_within_sd))
-    } else {
-      sigma_w_draws_wax <- rep(sigma_within, n_iter)
-    }
-    # Standardize to the wax scale used internally during inversion.
-    sigma_w_draws_std <- sigma_w_draws_wax / scaling$d2H_sd
-  }
-
   # Caller-supplied slope override. Length-1 broadcasts to all draws;
   # length-n_iter is used per draw. The override replaces the
   # model's beta_oipc + slope_GP path entirely and applies uniformly to
@@ -489,30 +379,17 @@ invert_d2h <- function(d2h_wax, d2h_wax_err = NULL,
       beta_oipc_eff <- beta_oipc[iter] + slope_effect[iter, ]
     }
 
-    # Uncertainty propagation. Two manuscript regimes (mutually
-    # exclusive):
-    #   "absolute" (S4.1 Eq. 7): analytical^2 + sigma_residual^2.
-    #     For single-site absolute reconstructions at a new site.
-    #   "within_record" (Section 4.5.3): analytical^2 + sigma_within^2.
-    #     For within-record contrasts under spatial stationarity;
-    #     sigma_within REPLACES the global residual sigma because the
-    #     latter bundles between-site sources of variance the record
-    #     does not carry. sigma_within is record-specific and must be
-    #     supplied by the caller.
-    # Parameter and spatial uncertainty enter through the per-iteration
-    # posterior draws of beta_0, beta_oipc, GP fields, etc. -- they
-    # apply to both modes regardless. detect_change() and
-    # assess_claim() require uncertainty_mode = "within_record" with a
-    # positive sigma_within.
+    # Uncertainty propagation (manuscript supplement Eq. 7): the
+    # wax-error draw combines analytical uncertainty with the model's
+    # posterior residual SD `sigma`. Parameter and spatial uncertainty
+    # enter through the per-iteration posterior draws of beta_0,
+    # beta_oipc, GP fields, etc. For within-record contrasts the
+    # spatial GP intercept's contribution cancels in any difference
+    # between time intervals computed downstream from `posterior_draws`
+    # (manuscript Section 4.5.3); the same sigma applies in both
+    # regimes.
     for (i in 1:n_obs) {
-      if (add_residual_sigma) {
-        var_std <- d2h_wax_err_std[i]^2 + sigma[iter]^2
-      } else {
-        # use_record_sigma path; sigma_w_draws_std is guaranteed to be
-        # populated because the upstream validation rejected
-        # within_record without sigma_within.
-        var_std <- d2h_wax_err_std[i]^2 + sigma_w_draws_std[iter]^2
-      }
+      var_std <- d2h_wax_err_std[i]^2 + sigma[iter]^2
       wax_sd_std <- sqrt(var_std)
       d2h_wax_with_error <- rnorm(1, d2h_wax_std[i], wax_sd_std)
 
@@ -545,24 +422,10 @@ invert_d2h <- function(d2h_wax, d2h_wax_err = NULL,
     d2h_precip_upper = apply(d2h_precip_post, 2, quantile, probs = upper_q)
   )
 
-  # Add interval width and a self-describing uncertainty_mode column.
-  # Under uncertainty_mode = "absolute" the width is a posterior
-  # predictive interval at a new site (manuscript S4.1 Eq. 7); under
-  # "within_record" it is a within-record contrast interval where
-  # sigma_within replaces the global sigma (Section 4.5.3). Downstream
-  # callers should branch on uncertainty_mode, not on column name.
   summary_df$prediction_interval_width <- summary_df$d2h_precip_upper - summary_df$d2h_precip_lower
-  summary_df$uncertainty_mode <- uncertainty_mode
 
   if (verbose) {
-    mode_label <- if (identical(uncertainty_mode, "absolute")) {
-      "absolute single-site (S4.1 Eq. 7; analytical^2 + sigma_residual^2)"
-    } else {
-      sprintf("within-record (Section 4.5.3; analytical^2 + sigma_within^2 with sigma_within = %s per mil)",
-              signif(sigma_within, 3))
-    }
     cat("\nInversion complete:\n")
-    cat("  Uncertainty mode: ", mode_label, "\n", sep = "")
     cat("  Mean prediction range: [",
         round(min(summary_df$d2h_precip_mean), 1), ", ",
         round(max(summary_df$d2h_precip_mean), 1), "] per mil\n", sep = "")
@@ -598,15 +461,9 @@ invert_d2h <- function(d2h_wax, d2h_wax_err = NULL,
       )
     )
     attr(out, "leafwax_tier") <- tier
-    attr(out, "leafwax_uncertainty_mode") <- uncertainty_mode
-    attr(out, "leafwax_sigma_within") <- if (is.null(sigma_within)) NA_real_ else sigma_within
-    out$model_info$uncertainty_mode <- uncertainty_mode
-    out$model_info$sigma_within <- if (is.null(sigma_within)) NA_real_ else sigma_within
     return(out)
   } else {
     attr(summary_df, "leafwax_tier") <- tier
-    attr(summary_df, "leafwax_uncertainty_mode") <- uncertainty_mode
-    attr(summary_df, "leafwax_sigma_within") <- if (is.null(sigma_within)) NA_real_ else sigma_within
     return(summary_df)
   }
 }
@@ -621,11 +478,6 @@ invert_d2h <- function(d2h_wax, d2h_wax_err = NULL,
 #' @param c4_fraction_sd C4 fraction uncertainty (not used, kept for compatibility)
 #' @param model_name Character string specifying which model to use
 #' @param n_posterior_draws Integer number of posterior draws to use
-#' @param uncertainty_mode Character, one of `"absolute"` (default) or
-#'   `"within_record"`. See `?invert_d2h` for the variance components
-#'   in each mode. Use `"within_record"` (with a positive
-#'   `sigma_within`) when the reconstruction will be passed to
-#'   `detect_change()` or `assess_claim()`.
 #' @export
 invert_d2H <- function(d2H_wax,
                       d2H_wax_sd,
@@ -643,13 +495,8 @@ invert_d2H <- function(d2H_wax,
                       return_full = FALSE,
                       credible_level = 0.9,
                       verbose = TRUE,
-                      sigma_within = NULL,
-                      sigma_within_sd = NULL,
                       record_id = NULL,
-                      slope = NULL,
-                      uncertainty_mode = c("absolute", "within_record")) {
-
-  uncertainty_mode <- match.arg(uncertainty_mode)
+                      slope = NULL) {
 
   # The internal invert_d2h() core takes c4_percent (0-100), matching
   # the scale at which scaling_params$c4_mean / c4_sd were estimated.
@@ -688,11 +535,8 @@ invert_d2H <- function(d2H_wax,
     return_full = return_full,
     credible_level = credible_level,
     verbose = verbose,
-    sigma_within = sigma_within,
-    sigma_within_sd = sigma_within_sd,
     record_id = record_id,
-    slope = slope,
-    uncertainty_mode = uncertainty_mode
+    slope = slope
   )
 }
 

@@ -143,7 +143,6 @@ process_sequential <- function(data, chunks, model, progress, ...) {
         d2h_precip_lower = rep(NA, nrow(chunk_data)),
         d2h_precip_upper = rep(NA, nrow(chunk_data)),
         prediction_interval_width = rep(NA_real_, nrow(chunk_data)),
-        uncertainty_mode = rep(NA_character_, nrow(chunk_data)),
         model_used = NA,
         .row_id = chunk_data$.row_id
       )
@@ -231,7 +230,6 @@ process_parallel <- function(data, chunks, model, n_cores, progress, ...) {
         d2h_precip_lower = rep(NA, nrow(chunk_data)),
         d2h_precip_upper = rep(NA, nrow(chunk_data)),
         prediction_interval_width = rep(NA_real_, nrow(chunk_data)),
-        uncertainty_mode = rep(NA_character_, nrow(chunk_data)),
         model_used = NA,
         .row_id = chunk_data$.row_id
       )

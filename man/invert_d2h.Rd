@@ -20,11 +20,8 @@ invert_d2h(
   return_full = FALSE,
   credible_level = 0.9,
   verbose = TRUE,
-  sigma_within = NULL,
-  sigma_within_sd = NULL,
   record_id = NULL,
-  slope = NULL,
-  uncertainty_mode = c("absolute", "within_record")
+  slope = NULL
 )
 
 invert_d2H(
@@ -44,11 +41,8 @@ invert_d2H(
   return_full = FALSE,
   credible_level = 0.9,
   verbose = TRUE,
-  sigma_within = NULL,
-  sigma_within_sd = NULL,
   record_id = NULL,
-  slope = NULL,
-  uncertainty_mode = c("absolute", "within_record")
+  slope = NULL
 )
 }
 \arguments{
@@ -80,22 +74,6 @@ invert_d2H(
 
 \item{verbose}{Logical whether to print progress messages}
 
-\item{sigma_within}{Numeric, optional within-record residual standard
-deviation in per mil. When supplied, an additional
-\code{Normal(0, sigma_within)} noise term is added to the inverted
-\code{d2H_precip} per posterior draw, representing residual variance
-within a single sedimentary record (after spatial structure has
-cancelled). Use \code{estimate_sigma_within()} to obtain this from a
-stationary baseline interval of the record. Section 4.5.3 of the
-manuscript explains why the global posterior \code{sigma} overstates
-within-record uncertainty.}
-
-\item{sigma_within_sd}{Numeric, optional standard error on
-\code{sigma_within}. When non-\code{NULL}, each posterior draw resamples the
-residual SD from \code{Normal(sigma_within, sigma_within_sd)} (truncated
-at zero), so uncertainty in the within-record SD itself propagates
-into the prediction.}
-
 \item{record_id}{Character or numeric, optional record identifier.
 When supplied and constant across all input rows, all rows are
 treated as belonging to the same downcore series: the spatial
@@ -116,12 +94,6 @@ build a defensible per-draw override that respects the manuscript's
 simple-model ceiling at alpha = 0.88 (Section 4.5.5). When
 supplied, the override applies uniformly to every input row.}
 
-\item{uncertainty_mode}{Character, one of \code{"absolute"} (default) or
-\code{"within_record"}. See \code{?invert_d2h} for the variance components
-in each mode. Use \code{"within_record"} (with a positive
-\code{sigma_within}) when the reconstruction will be passed to
-\code{detect_change()} or \code{assess_claim()}.}
-
 \item{d2H_wax}{Numeric vector of leaf wax d2H values (per mil)}
 
 \item{d2H_wax_sd}{Numeric vector of measurement uncertainties (per mil)}
@@ -140,20 +112,25 @@ scale used internally before standardisation.}
 If return_full is FALSE, a data frame with columns:
 \item{d2h_precip_mean}{Mean predicted precipitation d2H}
 \item{d2h_precip_median}{Median predicted precipitation d2H}
-\item{d2h_precip_sd}{Standard deviation of predictions}
-\item{d2h_precip_lower}{Lower bound of the reported interval}
-\item{d2h_precip_upper}{Upper bound of the reported interval}
-\item{prediction_interval_width}{Width of the reported interval
+\item{d2h_precip_sd}{Standard deviation of the posterior
+predictive interval}
+\item{d2h_precip_lower}{Lower bound of the credible interval}
+\item{d2h_precip_upper}{Upper bound of the credible interval}
+\item{prediction_interval_width}{Width of the credible interval
 (upper - lower).}
-\item{uncertainty_mode}{Either \code{"absolute"} (S4.1 Eq. 7; the
-default) or \code{"within_record"} (S4.5.3 substitution with
-\code{sigma_within}).}
+
+The interval is the posterior predictive specified in manuscript
+supplement Section S4.1, Eq. 7: the wax-error draw combines
+analytical uncertainty with the model's posterior residual SD
+\code{sigma}. For within-record change detection, the spatial GP
+intercept's contribution cancels in any contrast computed from
+the returned \code{posterior_draws} (manuscript Section 4.5.3); the
+same \code{sigma} applies in both regimes.
 
 If return_full is TRUE, a list with:
 \item{summary}{The summary data frame described above}
 \item{posterior_draws}{Matrix of all posterior draws (n_draws x n_locations)}
-\item{model_info}{Information about the model used, including
-the \code{uncertainty_mode} and \code{sigma_within} value used.}
+\item{model_info}{Information about the model used.}
 }
 \description{
 Uses Bayesian posterior draws to invert leaf wax hydrogen isotope values

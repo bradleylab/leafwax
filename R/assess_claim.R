@@ -11,7 +11,7 @@
 #' \itemize{
 #'   \item Level 1: a leaf-wax delta-2-H change occurred between two
 #'     intervals. Defensible when the change exceeds analytical
-#'     uncertainty and the within-record residual SD `sigma_within`.
+#'     uncertainty.
 #'   \item Level 2: the wax change is consistent with a directional
 #'     hydroclimate change. Requires corroborating evidence (multi-
 #'     proxy concordance, sedimentological context, or biomarker
@@ -19,9 +19,9 @@
 #'     `corroborating_proxies`.
 #'   \item Level 3: the wax change implies a quantitative
 #'     delta-2-H_precip magnitude. Requires a defended local effective
-#'     slope, a defended `sigma_within`, and explicit uncertainty
-#'     propagation through the inversion. When `reconstruction` is
-#'     NULL the function calls `invert_d2H()` itself.
+#'     slope and explicit uncertainty propagation through the
+#'     inversion. When `reconstruction` is NULL the function calls
+#'     `invert_d2H()` itself.
 #'   \item Level 4: the magnitude is uniquely attributable to
 #'     precipitation isotope change rather than to vegetation,
 #'     source-water seasonality, or evapotranspirative enrichment.
@@ -39,8 +39,7 @@
 #' @param claim Named list specifying the claim. Required fields:
 #'   `level` (integer 1-4, the level the user is asserting),
 #'   `interval_baseline` (length-2 numeric c(min, max) age window),
-#'   `interval_test` (length-2 numeric age window),
-#'   `sigma_within` (per mil; from `estimate_sigma_within()`).
+#'   `interval_test` (length-2 numeric age window).
 #'   Optional fields, used by higher levels:
 #'   `sigma_analytical` (default 3),
 #'   `rho_t` (default 0; from `estimate_temporal_autocorrelation()`),
@@ -54,15 +53,8 @@
 #'   `evapotranspirative_stationary` (each a list with `value` (TRUE)
 #'     and a non-empty `evidence` string; required at Level 4).
 #' @param reconstruction Optional output of `invert_d2H(..., return_full
-#'   = TRUE, uncertainty_mode = "within_record", sigma_within = ...)`
-#'   on the record. When NULL and the claim's level is 3 or 4, the
-#'   function runs the inversion itself with `uncertainty_mode =
-#'   "within_record"` and `sigma_within = claim$sigma_within`. When
-#'   supplied directly, it must be built in within-record mode with a
-#'   positive `sigma_within`: the L3+ contrast formula is derived
-#'   under the within-record substitution where `sigma_within`
-#'   replaces the global residual SD (manuscript Section 4.5.3).
-#'   Passing an absolute-mode reconstruction raises an error.
+#'   = TRUE)` on the record. When NULL and the claim's level is 3 or
+#'   4, the function runs the inversion itself.
 #' @param longitude,latitude Site coordinates, used only when
 #'   `reconstruction` is NULL.
 #' @param model_name Model to use when running the inversion (default
@@ -113,8 +105,7 @@ assess_claim <- function(record,
       !isTRUE(claim$level %in% 1:4)) {
     stop("claim$level must be one of 1, 2, 3, 4")
   }
-  required <- c("level", "interval_baseline", "interval_test",
-                "sigma_within")
+  required <- c("level", "interval_baseline", "interval_test")
   missing_req <- setdiff(required, names(claim))
   if (length(missing_req) > 0L) {
     stop("claim is missing required fields: ",
@@ -126,11 +117,6 @@ assess_claim <- function(record,
       length(claim$interval_test) != 2L) {
     stop("claim$interval_baseline and claim$interval_test must each ",
          "be length-2 numeric vectors c(min, max)")
-  }
-  if (!is.numeric(claim$sigma_within) ||
-      length(claim$sigma_within) != 1L ||
-      !is.finite(claim$sigma_within) || claim$sigma_within < 0) {
-    stop("claim$sigma_within must be a single non-negative numeric value")
   }
 
   # Defaults for optional fields, with finite-scalar validation. Each
@@ -173,10 +159,15 @@ assess_claim <- function(record,
 
   delta_wax <- mean(d2h_wax[test_idx]) - mean(d2h_wax[base_idx])
 
-  # --- Level 1: wax change exceeds noise -----------------------------
+  # --- Level 1: wax change exceeds analytical noise ------------------
+  # Manuscript Section 4.5.3: L1 is defensible whenever the change
+  # exceeds analytical uncertainty. The mean-of-n_b vs mean-of-n_t
+  # contrast variance is sigma_a^2 * (1/n_b + 1/n_t), scaled by
+  # 2(1-rho_t) for autocorrelation; the per-sample formula here gives
+  # the same threshold for n_b = n_t = 1 and is a conservative ceiling
+  # for larger samples.
   z <- stats::qnorm(1 - (1 - conf) / 2)
-  threshold_wax <- z * sqrt(2 * (1 - rho_t)) *
-                   sqrt(claim$sigma_within^2 + sigma_a^2)
+  threshold_wax <- z * sqrt(2 * (1 - rho_t)) * sigma_a
   l1_passed  <- abs(delta_wax) > threshold_wax
   l1_summary <- sprintf(
     "delta_wax = %.2f permil; %d%% threshold = %.2f permil (%s)",
@@ -186,7 +177,6 @@ assess_claim <- function(record,
   l1_details <- list(
     delta_wax            = delta_wax,
     threshold_wax        = threshold_wax,
-    sigma_within         = claim$sigma_within,
     sigma_analytical     = sigma_a,
     rho_t                = rho_t,
     n_baseline           = length(base_idx),
@@ -232,7 +222,7 @@ assess_claim <- function(record,
     corroborating_proxies = cor_p
   )
 
-  # --- Level 3: defended slope + sigma_within + propagated inversion --
+  # --- Level 3: defended slope + propagated inversion ----------------
   l3_missing <- character(0)
   beta_eff <- claim$beta_eff
   if (is.null(beta_eff) || !is.numeric(beta_eff) ||
@@ -268,11 +258,9 @@ assess_claim <- function(record,
           longitude  = rep(longitude, n_obs),
           latitude   = rep(latitude,  n_obs),
           model_name = model_name,
-          sigma_within = claim$sigma_within,
           slope        = beta_eff,
           return_full  = TRUE,
           verbose      = FALSE,
-          uncertainty_mode = "within_record",
           ...
         ),
         warning = function(w) {
@@ -286,35 +274,6 @@ assess_claim <- function(record,
     if (is.null(reconstruction$posterior_draws)) {
       stop("reconstruction must be invert_d2H(..., return_full = TRUE) ",
            "and contain $posterior_draws")
-    }
-    rec_mode <- attr(reconstruction, "leafwax_uncertainty_mode") %||%
-                reconstruction$model_info$uncertainty_mode %||%
-                NA_character_
-    rec_sigma_w <- attr(reconstruction, "leafwax_sigma_within") %||%
-                   reconstruction$model_info$sigma_within %||%
-                   NA_real_
-    if (is.na(rec_mode) || !identical(rec_mode, "within_record")) {
-      stop("assess_claim L3+ requires invert_d2H(..., ",
-           "uncertainty_mode = \"within_record\", sigma_within = ...); ",
-           "the absolute mode uses the global residual sigma, which ",
-           "miscalibrates within-record p_exceed (manuscript Section ",
-           "4.5.3). Rebuild the reconstruction with ",
-           "uncertainty_mode = \"within_record\" and a record-specific ",
-           "sigma_within, or omit `reconstruction` and let ",
-           "assess_claim build it internally.")
-    }
-    if (is.na(rec_sigma_w) || rec_sigma_w <= 0) {
-      stop("Reconstruction passed to assess_claim L3+ has no ",
-           "sigma_within recorded. Manuscript Section 4.5.3 requires ",
-           "a record-specific sigma_within for within-record use. ",
-           "Rebuild the reconstruction with a positive sigma_within.")
-    }
-    if (!is.na(rec_sigma_w) && !is.null(claim$sigma_within) &&
-        !isTRUE(all.equal(rec_sigma_w, claim$sigma_within,
-                          tolerance = 1e-6))) {
-      warning(sprintf(
-        "Reconstruction sigma_within (%g) differs from claim$sigma_within (%g); using the reconstruction value for posterior contrasts and the claim value only for the L3 threshold formula.",
-        rec_sigma_w, claim$sigma_within), call. = FALSE)
     }
     # Re-emit the preview-tier warning at the inferential layer using
     # the *reconstruction's* own model name — the user-supplied
