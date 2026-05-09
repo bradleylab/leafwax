@@ -153,100 +153,6 @@ list_cached_models <- function(data_type = NULL, verbose = TRUE) {
   return(models)
 }
 
-#' Clear model data cache
-#'
-#' Removes cached model data files to free up disk space.
-#'
-#' @param model_name Model to clear (NULL for all)
-#' @param data_type Type of data to clear (NULL for all)
-#' @param confirm Logical, whether to ask for confirmation
-#' @return Logical indicating success
-#' @export
-#' @examples
-#' \dontrun{
-#' # Clear cache for specific model
-#' clear_data_cache("baseline_sp")
-#'
-#' # Clear all full datasets
-#' clear_data_cache(data_type = "full")
-#' }
-clear_data_cache <- function(model_name = NULL,
-                            data_type = NULL,
-                            confirm = TRUE) {
-
-  cache_dir <- get_cache_dir(create = FALSE)
-
-  if (!dir.exists(cache_dir)) {
-    message("No cache directory found")
-    return(TRUE)
-  }
-
-  # Get list of files to remove
-  files_to_remove <- character(0)
-
-  if (is.null(model_name)) {
-    # Clear all models
-    if (is.null(data_type)) {
-      # Clear everything
-      files_to_remove <- list.files(cache_dir, recursive = TRUE, full.names = TRUE)
-    } else {
-      # Clear specific data type for all models
-      models <- list_cached_models(verbose = FALSE)
-      for (model in models) {
-        files <- get_cache_files(model, data_type, cache_dir)
-        files_to_remove <- c(files_to_remove, files)
-      }
-    }
-  } else {
-    # Clear specific model
-    files_to_remove <- get_cache_files(model_name, data_type, cache_dir)
-  }
-
-  if (length(files_to_remove) == 0) {
-    message("No files to remove")
-    return(TRUE)
-  }
-
-  # Calculate size
-  total_size <- sum(file.info(files_to_remove)$size, na.rm = TRUE)
-  size_mb <- round(total_size / 1024^2, 1)
-
-  cat("Files to remove:", length(files_to_remove), "\n")
-  cat("Total size:", size_mb, "MB\n")
-
-  if (confirm && interactive()) {
-    response <- readline("Proceed with deletion? (y/n): ")
-    if (tolower(response) != "y") {
-      message("Cancelled")
-      return(FALSE)
-    }
-  }
-
-  # Remove files
-  success <- TRUE
-  for (file in files_to_remove) {
-    if (file.exists(file)) {
-      tryCatch({
-        file.remove(file)
-        cat("Removed:", basename(file), "\n")
-      }, error = function(e) {
-        warning("Failed to remove ", file, ": ", e$message)
-        success <- FALSE
-      })
-    }
-  }
-
-  # Clean up empty directories
-  subdirs <- list.dirs(cache_dir, recursive = TRUE, full.names = TRUE)
-  for (dir in rev(subdirs)) {
-    if (length(list.files(dir)) == 0 && dir != cache_dir) {
-      unlink(dir, recursive = FALSE)
-    }
-  }
-
-  return(success)
-}
-
 #' Get cache files for a model
 #'
 #' Internal helper that returns the cached file paths for a model.
@@ -308,16 +214,16 @@ get_cache_info <- function(by_model = FALSE, by_type = FALSE) {
   file_info$path <- all_files
   file_info$name <- basename(all_files)
 
-  # Add model name
-  file_info$model <- gsub("_(metadata|2000draws|complete|grid)\\.rds$", "",
-                          file_info$name)
+  # Classify cache files using the v0.2 download layout. download_data
+  # writes posteriors as posteriors/<model>_posterior.rds and
+  # spatial-knot fixtures as spatial_metadata/<model>_knots.rds.
+  # The package's manifest lands at the cache root as manifest.json.
+  file_info$model <- gsub("_(posterior|knots)\\.rds$", "", file_info$name)
 
-  # Add data type
-  file_info$type <- ifelse(grepl("metadata", file_info$name), "metadata",
-                           ifelse(grepl("2000draws", file_info$name), "standard",
-                                 ifelse(grepl("complete", file_info$name), "full",
-                                       ifelse(grepl("grid", file_info$name), "spatial",
-                                             "other"))))
+  file_info$type <- ifelse(grepl("_posterior\\.rds$", file_info$name), "posterior",
+                    ifelse(grepl("_knots\\.rds$",     file_info$name), "spatial",
+                    ifelse(file_info$name == "manifest.json",          "manifest",
+                                                                         "other")))
 
   # Calculate sizes in MB
   file_info$size_mb <- round(file_info$size / 1024^2, 2)
@@ -353,71 +259,3 @@ get_cache_info <- function(by_model = FALSE, by_type = FALSE) {
   }
 }
 
-#' Setup leafwax data management
-#'
-#' Interactive setup wizard for configuring leafwax data management options.
-#'
-#' @param reset Logical, whether to reset to defaults
-#' @export
-#' @examples
-#' \dontrun{
-#' # Run interactive setup
-#' setup_leafwax_data()
-#' }
-setup_leafwax_data <- function(reset = FALSE) {
-
-  if (reset) {
-    options(leafwax.cache_dir = NULL)
-    options(leafwax.data_url = NULL)
-    options(leafwax.auto_download = NULL)
-    message("leafwax data options reset to defaults")
-    return(invisible())
-  }
-
-  if (!interactive()) {
-    stop("This function must be run interactively")
-  }
-
-  cat("=== leafwax Data Management Setup ===\n\n")
-
-  # Cache directory
-  current_cache <- getOption("leafwax.cache_dir", get_data_path(FALSE))
-  cat("Current cache directory:", current_cache, "\n")
-  response <- readline("Enter new cache directory (or press Enter to keep current): ")
-
-  if (nzchar(response)) {
-    options(leafwax.cache_dir = response)
-    cat("Cache directory set to:", response, "\n")
-  }
-
-  # Auto-download
-  current_auto <- getOption("leafwax.auto_download", TRUE)
-  cat("\nCurrent auto-download setting:", current_auto, "\n")
-  response <- readline("Enable automatic downloads? (y/n, Enter to keep current): ")
-
-  if (nzchar(response)) {
-    options(leafwax.auto_download = tolower(response) == "y")
-    cat("Auto-download set to:", tolower(response) == "y", "\n")
-  }
-
-  # Data URL
-  current_url <- getOption("leafwax.data_url",
-                          "https://github.com/leafwax-models/data/releases/download/v1.0.0/")
-  cat("\nCurrent data URL:", current_url, "\n")
-  response <- readline("Enter new data URL (or press Enter to keep current): ")
-
-  if (nzchar(response)) {
-    options(leafwax.data_url = response)
-    cat("Data URL set to:", response, "\n")
-  }
-
-  cat("\n=== Setup Complete ===\n")
-  cat("Settings are stored for this R session only.\n")
-  cat("To make permanent, add the following to your .Rprofile:\n\n")
-
-  cat("options(leafwax.cache_dir = \"", getOption("leafwax.cache_dir"), "\")\n", sep = "")
-  cat("options(leafwax.auto_download = ", getOption("leafwax.auto_download"), ")\n", sep = "")
-  cat("options(leafwax.data_url = \"", getOption("leafwax.data_url"), "\")\n", sep = "")
-
-  invisible()
-}

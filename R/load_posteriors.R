@@ -6,7 +6,7 @@
 #' @return Matrix with columns "lon" and "lat" in degrees
 #' @keywords internal
 #' @export
-generate_fibonacci_sphere <- function(n_points = 125) {
+generate_fibonacci_sphere <- function(n_points = N_SPATIAL_KNOTS) {
   golden_angle <- pi * (3.0 - sqrt(5.0))
   knot_coords <- matrix(NA, n_points, 2)
 
@@ -89,7 +89,7 @@ resolve_posterior_file <- function(model_name) {
 #'    visible at the call that actually matters.
 #'
 #' For inference, run [download_model_data()] once to populate the
-#' cache and then call `load_posteriors()` again — the cache tier wins
+#' cache and then call `load_posteriors()` again -- the cache tier wins
 #' over the preview tier and no further downloads are needed.
 #'
 #' @param model_name Character string specifying the model name.
@@ -157,14 +157,19 @@ load_posteriors <- function(model_name, n_draws = NULL, verbose = TRUE) {
   # without the substrings the older regex looked for. Spatial / interaction
   # flags still come from the name (those are unambiguous in the v10 set).
   param_names <- names(draws)
+  # Capability flags are derived from actual posterior columns. Earlier
+  # versions also matched the model NAME (e.g. "env", "elevation") but
+  # the v10 fits never produced beta_elev coefficients — the model
+  # names are historical and several "elevation_*" variants encode no
+  # elevation effect at all. Trust the columns, not the name.
   metadata <- list(
     model_name = model_name,
     n_draws = nrow(draws),
     n_parameters = ncol(draws),
     parameters = param_names,
     tier = loc$tier,
-    has_elevation = any(grepl("^beta_elev", param_names)) ||
-                    grepl("(env|elevation|elev)", model_name),
+    has_elevation = any(grepl("^beta_elev", param_names)),
+    has_precip    = any(grepl("^beta_precip", param_names)),
     has_c4        = any(grepl("^beta_c4", param_names)) ||
                     any(grepl("oipc.*c4|c4.*oipc", param_names, ignore.case = TRUE)),
     has_pft       = any(grepl("^beta_(tree|shrub|grass)", param_names)),
@@ -194,7 +199,15 @@ load_posteriors <- function(model_name, n_draws = NULL, verbose = TRUE) {
     if (file.exists(knot_file) && knot_file != "") {
       spatial <- list(knot_locs = readRDS(knot_file))
     } else {
-      spatial <- list(knot_locs = generate_fibonacci_sphere(125))
+      # The knot locations used at prediction time MUST match those
+      # used at fit time. A freshly generated Fibonacci sphere has
+      # globally similar geometry but is not byte-identical to the
+      # v10 knot file, so silent substitution is methods drift.
+      warning("Knot file not found for model '", model_name,
+              "'; falling back to a fresh ", N_SPATIAL_KNOTS,
+              "-knot Fibonacci sphere. Spatial predictions will not ",
+              "exactly reproduce the v10 fit.", call. = FALSE)
+      spatial <- list(knot_locs = generate_fibonacci_sphere(N_SPATIAL_KNOTS))
     }
 
     if (verbose) {

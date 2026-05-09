@@ -17,7 +17,6 @@ predict_d2h_precip(
   pft_grass = NULL,
   model = "auto",
   n_draws = NULL,
-  use_lookup = TRUE,
   credible_level = 0.9,
   return_draws = FALSE,
   progress = TRUE,
@@ -48,8 +47,6 @@ predict_d2h_precip(
 \item{model}{Character string specifying model, or "auto" for automatic selection}
 
 \item{n_draws}{Integer number of posterior draws (NULL for all)}
-
-\item{use_lookup}{Logical whether to use lookup tables for spatial models}
 
 \item{credible_level}{Numeric credible interval level (default 0.9)}
 

@@ -3,7 +3,7 @@
 #
 # Phase C of the v0.2.0 paleo-record workflow. Implements the within-
 # record change-detection threshold from manuscript Section 4.5.3 and
-# computes the posterior probability that ΔδD_precip between two
+# computes the posterior probability that delta-d2H_precip between two
 # stratigraphic intervals exceeds a user-supplied magnitude.
 
 #' Estimate lag-1 temporal autocorrelation
@@ -275,7 +275,7 @@ detect_change <- function(reconstruction,
           "test_interval '%s' contains no samples; reporting NA",
           names(test_intervals)[k]
         ))
-        rows[[k]] <- data.frame(
+        empty_row <- data.frame(
           interval     = names(test_intervals)[k],
           n_baseline   = length(base_idx),
           n_test       = 0L,
@@ -285,6 +285,15 @@ detect_change <- function(reconstruction,
           delta_upper  = NA_real_,
           stringsAsFactors = FALSE
         )
+        # Pad magnitude columns with NA so the column set matches
+        # populated rows; otherwise rbind across mixed empty + non-empty
+        # intervals fails when magnitudes is supplied.
+        if (!is.null(magnitudes)) {
+          for (m in magnitudes) {
+            empty_row[[sprintf("p_abs_delta_gt_%g", m)]] <- NA_real_
+          }
+        }
+        rows[[k]] <- empty_row
         next
       }
       mu_base <- if (length(base_idx) == 1L) draws[, base_idx]

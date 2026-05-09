@@ -4,18 +4,14 @@
 \alias{get_data_url}
 \title{Get data download URLs}
 \usage{
-get_data_url(
-  model_name,
-  version = "latest",
-  data_type = c("posteriors", "both", "lookup")
-)
+get_data_url(model_name, version = "latest", data_type = c("posteriors"))
 }
 \arguments{
 \item{model_name}{Character string specifying the model name}
 
 \item{version}{Version tag (e.g., "v1.0.0" or "latest")}
 
-\item{data_type}{Type of data: "posteriors", "lookup", or "both"}
+\item{data_type}{Type of data (only "posteriors" is currently supported)}
 }
 \value{
 List of download URLs and filenames

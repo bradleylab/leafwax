@@ -26,7 +26,7 @@ invert_d2h(
 
 invert_d2H(
   d2H_wax,
-  d2H_wax_sd,
+  d2H_wax_sd = NULL,
   longitude,
   latitude,
   elevation = NULL,

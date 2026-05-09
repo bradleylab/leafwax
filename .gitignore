@@ -7,8 +7,8 @@
 .Rproj.user/
 *.Rproj
 
-# Build output
-.Rcheck/
+# Build output (R CMD check artifacts; matches *.Rcheck/)
+*.Rcheck/
 
 # Package tarballs
 *.tar.gz

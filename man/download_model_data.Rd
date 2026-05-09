@@ -7,7 +7,7 @@
 download_model_data(
   model_name,
   version = "latest",
-  data_type = c("posteriors", "both", "lookup"),
+  data_type = c("posteriors"),
   cache_dir = NULL,
   overwrite = FALSE,
   verify = TRUE,
@@ -19,7 +19,7 @@ download_model_data(
 
 \item{version}{Version tag to download (default "latest")}
 
-\item{data_type}{Type of data to download: "posteriors", "lookup", or "both"}
+\item{data_type}{Type of data to download (only "posteriors" is currently supported)}
 
 \item{cache_dir}{Directory to save files (default uses get_cache_dir())}
 

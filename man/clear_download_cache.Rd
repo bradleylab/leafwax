@@ -6,14 +6,14 @@
 \usage{
 clear_download_cache(
   model_name = NULL,
-  type = c("all", "posteriors", "lookup"),
+  type = c("all", "posteriors"),
   confirm = TRUE
 )
 }
 \arguments{
 \item{model_name}{Model name to clear (NULL for all)}
 
-\item{type}{Type of data to clear: "all", "posteriors", "lookup"}
+\item{type}{Type of data to clear: "all" or "posteriors"}
 
 \item{confirm}{Whether to ask for confirmation}
 }

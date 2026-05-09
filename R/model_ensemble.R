@@ -55,12 +55,20 @@ invert_d2H_ensemble <- function(...,
 
   # invert_d2H() defaults to return_full = FALSE (a summary data frame
   # with no $posterior_draws slot). The ensemble pool requires per-draw
-  # reconstructions, so force return_full = TRUE here.
+  # reconstructions, so force return_full = TRUE here. Strip any
+  # caller-supplied return_full / model_name from `...` first — both
+  # are controlled by this function and a duplicate via `...` would
+  # error with "matched by multiple actual arguments".
+  extra_args <- list(...)
+  extra_args[c("return_full", "model_name")] <- NULL
+
   results <- list()
   for (model in models) {
     cat("Running model:", model, "\n")
-    results[[model]] <- invert_d2H(..., model_name = model,
-                                   return_full = TRUE)
+    results[[model]] <- do.call(invert_d2H, c(
+      extra_args,
+      list(model_name = model, return_full = TRUE)
+    ))
   }
 
   if (ensemble_method == "all") {
@@ -95,11 +103,19 @@ invert_d2H_ensemble <- function(...,
   # resampling biases the pool toward the model with the most draws
   # (e.g., a 1000-draw heavy posterior contributes 10x more samples
   # than a 100-draw preview-tier model). Instead, resample each model
-  # to a uniform `per_model` count first, then concatenate. Total pool
-  # size matches the first model's draw count so the output dimension
-  # is unchanged from a single-model run.
+  # to a uniform `per_model` count first, then concatenate. The total
+  # pool size matches the median draw count across models, so a single
+  # outlier (one preview-tier model in a heavy ensemble) does not
+  # silently shrink the pool to its fixture size.
   k <- length(draws_list)
-  n_target <- n_draws_per_model[[1]]
+  if (length(unique(n_draws_per_model)) != 1L) {
+    warning(sprintf(
+      "Ensemble models have unequal draw counts (%s); pooling each to the median (%d) before equal-weight combination. Mixed-tier ensembles can lose draws relative to a uniform-tier run.",
+      paste(n_draws_per_model, collapse = ", "),
+      stats::median(n_draws_per_model)
+    ), call. = FALSE)
+  }
+  n_target <- as.integer(stats::median(n_draws_per_model))
   per_model <- floor(n_target / k)
   remainder <- n_target - per_model * k
   pooled <- matrix(NA_real_, nrow = n_target, ncol = n_sites)

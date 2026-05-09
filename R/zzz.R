@@ -33,41 +33,42 @@ warn_preview_tier <- function(model_name, n_draws, context = NULL) {
           call. = FALSE)
 }
 
+# Single source of truth for the package's user-configurable options.
+# .onLoad seeds defaults; leafwax_config() and leafwax_set_config()
+# enumerate the same names without duplication.
+LEAFWAX_DEFAULTS <- list(
+  # Default data URL for downloading model data. Points at the
+  # bradleylab/leafwax-data archive, pinned to release v1.0.1.
+  # Concept DOI: 10.5281/zenodo.20085465.
+  data_url = "https://raw.githubusercontent.com/bradleylab/leafwax-data/v1.0.1",
+
+  # Default cache directory (NULL means use rappdirs default)
+  cache_dir = NULL,
+
+  # Whether to automatically download missing data
+  auto_download = FALSE,
+
+  # Default timeout for downloads (in seconds)
+  download_timeout = 300,
+
+  # Whether to show progress messages
+  verbose = TRUE,
+
+  # Default data type to load
+  default_data_type = "standard",
+
+  # Suppress the warning emitted when the preview-tier (100-draw
+  # fixture) posteriors are loaded. Set to TRUE in batch jobs that
+  # have already acknowledged the limitation.
+  suppress_preview_warning = FALSE
+)
+
 .onLoad <- function(libname, pkgname) {
-  # Set default options if not already set
   op <- options()
-
-  op.leafwax <- list(
-    # Default data URL for downloading model data. Points at the
-    # bradleylab/leafwax-data archive, pinned to release v1.0.1.
-    # Concept DOI: 10.5281/zenodo.20085465.
-    leafwax.data_url = "https://raw.githubusercontent.com/bradleylab/leafwax-data/v1.0.1",
-
-    # Default cache directory (NULL means use rappdirs default)
-    leafwax.cache_dir = NULL,
-
-    # Whether to automatically download missing data
-    leafwax.auto_download = FALSE,
-
-    # Default timeout for downloads (in seconds)
-    leafwax.download_timeout = 300,
-
-    # Whether to show progress messages
-    leafwax.verbose = TRUE,
-
-    # Default data type to load ("minimal", "standard", or "full")
-    leafwax.default_data_type = "standard",
-
-    # Suppress the warning emitted when the preview-tier (100-draw
-    # fixture) posteriors are loaded. Set to TRUE in batch jobs that
-    # have already acknowledged the limitation.
-    leafwax.suppress_preview_warning = FALSE
-  )
-
-  # Only set options that haven't been set by user
+  op.leafwax <- setNames(LEAFWAX_DEFAULTS,
+                         paste0("leafwax.", names(LEAFWAX_DEFAULTS)))
   toset <- !(names(op.leafwax) %in% names(op))
   if (any(toset)) options(op.leafwax[toset])
-
   invisible()
 }
 
@@ -80,11 +81,8 @@ warn_preview_tier <- function(model_name, n_draws, context = NULL) {
     packageStartupMessage(
       "Welcome to leafwax!\n",
       "This appears to be your first time using the package.\n",
-      "Model data can be downloaded on demand using:\n",
-      "  download_model_data(model_name, data_type)\n",
-      "Or configure auto-download:\n",
-      "  options(leafwax.auto_download = TRUE)\n",
-      "Run setup_leafwax_data() for interactive setup."
+      "Pre-fetch full posterior data with:\n",
+      "  download_model_data(\"<model_name>\")"
     )
   } else if (has_cache && interactive()) {
     # Show cache status
@@ -117,13 +115,10 @@ warn_preview_tier <- function(model_name, n_draws, context = NULL) {
 #' leafwax_config("auto_download")
 #' }
 leafwax_config <- function(option = NULL) {
-  all_options <- list(
-    data_url = getOption("leafwax.data_url"),
-    cache_dir = getOption("leafwax.cache_dir"),
-    auto_download = getOption("leafwax.auto_download"),
-    download_timeout = getOption("leafwax.download_timeout"),
-    verbose = getOption("leafwax.verbose"),
-    default_data_type = getOption("leafwax.default_data_type")
+  all_options <- setNames(
+    lapply(names(LEAFWAX_DEFAULTS),
+           function(n) getOption(paste0("leafwax.", n))),
+    names(LEAFWAX_DEFAULTS)
   )
 
   if (!is.null(option)) {
@@ -161,8 +156,7 @@ leafwax_config <- function(option = NULL) {
 leafwax_set_config <- function(..., persist = TRUE) {
   args <- list(...)
 
-  valid_options <- c("data_url", "cache_dir", "auto_download",
-                    "download_timeout", "verbose", "default_data_type")
+  valid_options <- names(LEAFWAX_DEFAULTS)
 
   # Check for invalid options
   invalid <- setdiff(names(args), valid_options)

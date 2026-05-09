@@ -182,35 +182,3 @@ predict_spatial_dual_gp <- function(coords_new, knot_coords, draws, scaling) {
   )
 }
 
-#' Legacy single-GP predictor -- DEPRECATED.
-#'
-#' Retained as a stub that calls `predict_one_gp_mpp` with a corrected
-#' Matern 3/2 kernel. The original implementation used an exponential
-#' kernel, did not standardize coordinates, and was incompatible with v10
-#' fits. New code should use `predict_spatial_dual_gp()`.
-#'
-#' @param coords_std numeric, already-standardized (lon, lat) of the
-#'   prediction site. Treated as a length-2 vector.
-#' @param knot_coords matrix(n_knots, 2) of knot (lon, lat).
-#' @param z_spatial_draws matrix(n_draws, n_knots) of standardized GP
-#'   knot effects.
-#' @param ls_gp_draws numeric(n_draws), GP length scale in caller-provided
-#'   units (assumed already standardized for the legacy code path).
-#' @param sigma_gp_draws numeric(n_draws), GP marginal SD draws.
-#' @return matrix(n_draws, 1) of predicted GP values at the site.
-#' @keywords internal
-#' @export
-predict_spatial_mpp <- function(coords_std, knot_coords, z_spatial_draws,
-                                ls_gp_draws, sigma_gp_draws) {
-  warning("predict_spatial_mpp is deprecated; use predict_spatial_dual_gp.")
-  # Caller passes already-standardized coords. Fake a scaling that is
-  # the identity transform so predict_one_gp_mpp does not re-standardize.
-  identity_scaling <- list(lon_mean = 0, lon_sd = 1, lat_mean = 0, lat_sd = 1)
-  # ls_gp_draws is in caller's units; we pass it through with coord_scale_km
-  # set so ls_km_to_std() is the identity. mean(c(1,1)) * 111 = 111, so we
-  # multiply by 111 to cancel.
-  predict_one_gp_mpp(matrix(coords_std, ncol = 2, byrow = TRUE),
-                     knot_coords, z_spatial_draws,
-                     sigma_gp_draws, ls_gp_draws * 111,
-                     identity_scaling)
-}

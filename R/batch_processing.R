@@ -1,5 +1,21 @@
 # R/batch_processing.R - Functions for batch processing with progress indicators
 
+# Column-tolerant rbind for chunked batch results. Pads any chunk
+# missing columns with NA so a successful + errored chunk mix can be
+# combined without aborting. Returns a single data frame with the union
+# of all input columns.
+.rbind_chunks <- function(chunks) {
+  chunks <- Filter(Negate(is.null), chunks)
+  if (length(chunks) == 0L) return(data.frame())
+  all_cols <- unique(unlist(lapply(chunks, names), use.names = FALSE))
+  padded <- lapply(chunks, function(d) {
+    missing_cols <- setdiff(all_cols, names(d))
+    for (col in missing_cols) d[[col]] <- NA
+    d[, all_cols, drop = FALSE]
+  })
+  do.call(rbind, padded)
+}
+
 #' Batch predict precipitation d2H for multiple sites
 #'
 #' Processes multiple sites with progress indicators and optional parallelization.
@@ -69,8 +85,10 @@ batch_predict <- function(data,
     results <- process_sequential(data, chunks, model, progress, ...)
   }
 
-  # Combine results
-  combined_results <- do.call(rbind, results)
+  # Combine results. Use a column-tolerant rbind so a chunk that hit the
+  # error-fallback path (smaller column set) does not abort the overall
+  # batch with "numbers of columns of arguments do not match".
+  combined_results <- .rbind_chunks(results)
 
   # Add diagnostics if requested
   if (return_diagnostics) {
@@ -154,9 +172,10 @@ process_sequential <- function(data, chunks, model, progress, ...) {
     }
   }
 
+  processing_time <- as.numeric(Sys.time() - start_time, units = "secs")
+
   if (progress) {
     close(pb)
-    processing_time <- as.numeric(Sys.time() - start_time, units = "secs")
     cat(sprintf("\nCompleted in %.1f seconds (%.1f sites/sec)\n",
                 processing_time,
                 nrow(data) / processing_time))
@@ -315,10 +334,11 @@ compare_models <- function(data,
     extra_args[c("data", "model", "progress", "verbose")] <- NULL
   }
 
-  # Check which models have data available
-  available_models <- list_models(check_data = TRUE, verbose = FALSE)
-  models_with_data <- models[models %in% available_models$model[
-    available_models$data_status != "Not available"
+  # Check which models have data available. Bind to a local name that
+  # does NOT shadow the exported available_models() function.
+  available_df <- list_models(check_data = TRUE, verbose = FALSE)
+  models_with_data <- models[models %in% available_df$model[
+    available_df$data_status != "Not available"
   ]]
 
   if (length(models_with_data) == 0) {
@@ -432,32 +452,3 @@ compare_models <- function(data,
   }
 }
 
-#' Monitor memory usage during batch processing
-#'
-#' Utility function to track memory usage during large batch operations.
-#'
-#' @param message Optional message to print with memory info
-#' @return List with memory statistics
-#' @export
-monitor_memory <- function(message = NULL) {
-
-  if (!is.null(message)) {
-    cat(message, "\n")
-  }
-
-  # Get memory info
-  mem_used <- as.numeric(utils::object.size(ls(envir = .GlobalEnv))) / 1024^2
-  gc_info <- gc()
-
-  mem_stats <- list(
-    used_mb = mem_used,
-    gc_used_mb = sum(gc_info[, 2]),
-    gc_max_mb = sum(gc_info[, 6])
-  )
-
-  cat(sprintf("Memory: %.1f MB used, %.1f MB after gc\n",
-              mem_stats$used_mb,
-              mem_stats$gc_used_mb))
-
-  return(invisible(mem_stats))
-}

@@ -43,7 +43,7 @@ visible at the call that actually matters.
 }
 
 For inference, run \code{\link[=download_model_data]{download_model_data()}} once to populate the
-cache and then call \code{load_posteriors()} again — the cache tier wins
+cache and then call \code{load_posteriors()} again -- the cache tier wins
 over the preview tier and no further downloads are needed.
 }
 \examples{

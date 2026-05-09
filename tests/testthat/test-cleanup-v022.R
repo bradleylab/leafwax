@@ -198,54 +198,261 @@ test_that("predict_d2h_precip rejects c4_fraction with wrong length", {
   )
 })
 
-test_that("invert_d2H_ensemble pools models with equal weight when draw counts differ", {
-  # Audit P2 (codex): the previous concatenate-then-resample path gave
-  # models with more draws a proportionally larger share of the pool.
-  # Synthetic check: build three fake draws_list members with very
-  # different lengths and very different means; the equal-weight pool
-  # mean should sit at the midpoint regardless of length skew.
-  k <- 3
-  n_target <- 999  # divisible by 3 to avoid remainder-handling noise
-  per_model <- n_target %/% k
-
-  draws_a <- matrix(rnorm(1000, mean = -10), ncol = 1)
-  draws_b <- matrix(rnorm(100,  mean =   0), ncol = 1)
-  draws_c <- matrix(rnorm(50,   mean =  10), ncol = 1)
-  draws_list <- list(draws_a, draws_b, draws_c)
-
-  set.seed(7L)
-  bag_unequal <- sample(unlist(lapply(draws_list, c)),
-                        size = n_target, replace = TRUE)
-  set.seed(7L)
-  bag_equal <- unlist(lapply(draws_list, function(m) {
-    sample(m[, 1], size = per_model, replace = TRUE)
-  }))
-
-  # The equal-weight pool's mean should be near 0 (midpoint of
-  # -10 / 0 / +10). The unequal pool's mean is dominated by draws_a
-  # and lands near -8.5.
-  expect_lt(abs(mean(bag_equal)), 1)
-  expect_lt(mean(bag_unequal), -3)
+test_that("invert_d2H_ensemble pool size matches first model's draw count", {
+  # Lock in equal-weight pooling: the pool size should equal
+  # nrow(first model's posterior_draws), not k * draws-per-model and
+  # not the sum of per-model draws. This rules out the dominant
+  # regression class for the audit-P2 fix (the pre-fix concatenate-
+  # then-resample path produced a different pool dim). Mixed-tier
+  # weighting cannot be exercised through the public API without
+  # mocking, so the dimension contract is the testable surface.
+  set.seed(11)
+  res <- suppressWarnings(invert_d2H_ensemble(
+    d2H_wax = -150, d2H_wax_sd = 3,
+    longitude = -90, latitude = 38,
+    verbose = FALSE
+  ))
+  expect_equal(
+    nrow(res$posterior_draws),
+    nrow(res$model_results[[1]]$posterior_draws)
+  )
+  expect_equal(ncol(res$posterior_draws), 1L)
 })
 
-test_that("check_data_cache reads the v0.2 posteriors/<model>_posterior.rds layout", {
-  # Audit P2 (codex): previously check_data_cache looked for
-  # metadata/<model>_metadata.rds + posteriors/<model>_2000draws.rds
-  # which the v0.2 download path never writes. The shape test below
-  # verifies that the *file path* check_data_cache now expects matches
-  # the path download_model_data actually writes (kept in sync inside
-  # the package; we replicate the layout in a tempdir here so the
-  # test is independent of get_cache_dir()).
-  tmp_cache <- tempfile("leafwax_cache_")
-  on.exit(unlink(tmp_cache, recursive = TRUE), add = TRUE)
-  dir.create(file.path(tmp_cache, "posteriors"), recursive = TRUE)
-  expected_path <- file.path(tmp_cache, "posteriors",
-                             "cache_test_model_posterior.rds")
-  saveRDS(list(stub = TRUE), expected_path)
-  expect_true(file.exists(expected_path))
+test_that("invert_d2H_ensemble accepts return_full in ... without double-arg error", {
+  # Audit (codex P2): the inner invert_d2H() call hard-codes
+  # return_full = TRUE; if the caller passed return_full via `...` (a
+  # reasonable mistake because `...` forwards to invert_d2H), R errored
+  # with "formal argument 'return_full' matched by multiple actual
+  # arguments". The wrapper now strips return_full / model_name from
+  # `...` before the loop.
+  set.seed(11)
+  expect_error(
+    suppressWarnings(invert_d2H_ensemble(
+      d2H_wax = -150, d2H_wax_sd = 3,
+      longitude = -90, latitude = 38,
+      return_full = FALSE,
+      verbose = FALSE
+    )),
+    NA
+  )
 })
 
-test_that("list_cached_models reads the v0.2 posteriors directory layout", {
+test_that("invert_d2H wide PI regression at the test-fixture site (d2H=-130, lon=-90, lat=45)", {
+  # Headline contract of the c11263f -> c5cc4cf -> b201d82 arc: the
+  # reported interval is the full posterior predictive (parameter +
+  # measurement + sigma_residual), not a fitted-value credible
+  # interval. Pre-v0.2.2 the same call returned ~6 per mil 90% CI;
+  # post-fix it returns ~80 per mil. The intermediate test that
+  # asserted this magnitude was deleted with test-interval-type.R; this
+  # test resurrects the regression at the same fixture site.
+  set.seed(42)
+  out <- suppressMessages(suppressWarnings(invert_d2H(
+    d2H_wax = -130, d2H_wax_sd = 3,
+    longitude = -90, latitude = 45,
+    model_name = "baseline",
+    verbose = FALSE
+  )))
+  expect_s3_class(out, "data.frame")
+  expect_true("prediction_interval_width" %in% names(out))
+  expect_gt(out$prediction_interval_width, 50)
+  expect_lt(out$prediction_interval_width, 200)
+})
+
+test_that("batch_predict with progress=FALSE does not error on processing_time", {
+  # process_sequential() previously assigned processing_time only inside
+  # `if (progress) { ... }` but referenced it unconditionally below the
+  # block. progress = FALSE triggered "object 'processing_time' not
+  # found" mid-batch.
+  data <- data.frame(
+    d2h_wax = rep(-150, 12),
+    longitude = rep(-90, 12),
+    latitude = rep(38, 12)
+  )
+  expect_error(
+    suppressWarnings(suppressMessages(batch_predict(
+      data, model = "baseline", chunk_size = 4, progress = FALSE
+    ))),
+    NA
+  )
+})
+
+test_that(".rbind_chunks pads missing columns with NA across mixed chunks", {
+  # Lock in the column-tolerant rbind that batch_predict relies on when
+  # a chunk's predict_d2h_precip() succeeded (full schema) and another
+  # hit the error fallback (smaller schema). Pre-fix the do.call(rbind,
+  # ...) at the outer combine step errored with "numbers of columns of
+  # arguments do not match".
+  ok    <- data.frame(a = 1, b = 2, c = 3)
+  short <- data.frame(a = 4, c = 6)
+  combined <- leafwax:::.rbind_chunks(list(ok, short))
+  expect_setequal(names(combined), c("a", "b", "c"))
+  expect_equal(nrow(combined), 2L)
+  expect_true(is.na(combined$b[2]))
+})
+
+test_that("detect_change with empty test_interval and magnitudes does not error on rbind", {
+  # Empty-interval branch previously emitted a 7-column row while the
+  # populated branch emitted 7 + length(magnitudes) columns; rbind
+  # across mixed empty + non-empty intervals errored when magnitudes
+  # was supplied.
+  draws <- matrix(rnorm(40 * 4, mean = -50, sd = 5), nrow = 40, ncol = 4)
+  rec <- list(
+    posterior_draws = draws,
+    model_info = list(model_name = "baseline", tier = "unknown")
+  )
+  res <- suppressWarnings(detect_change(
+    reconstruction = rec,
+    age = c(1, 2, 3, 4),
+    baseline_interval = c(1, 2),
+    test_intervals = list(populated = c(3, 4), empty = c(99, 100)),
+    sigma_residual = 16,
+    beta_eff = 0.5,
+    magnitudes = c(5, 10)
+  ))
+  expect_s3_class(res$intervals, "data.frame")
+  expect_equal(nrow(res$intervals), 2L)
+  expect_true("p_abs_delta_gt_5" %in% names(res$intervals))
+  expect_true(is.na(res$intervals$p_abs_delta_gt_5[
+    res$intervals$interval == "empty"]))
+})
+
+test_that("clear_download_cache against a nonexistent cache does not create it", {
+  # Audit follow-up: clear_download_cache previously created the cache
+  # directory before checking that it existed, leaving an empty dir on
+  # disk after the user explicitly asked to wipe.
+  tmp_cache <- tempfile("leafwax_cache_no_precreate_")
+  expect_false(dir.exists(tmp_cache))
+  old_opt <- getOption("leafwax.cache_dir")
+  options(leafwax.cache_dir = tmp_cache)
+  on.exit({
+    options(leafwax.cache_dir = old_opt)
+    if (dir.exists(tmp_cache)) unlink(tmp_cache, recursive = TRUE)
+  }, add = TRUE)
+  suppressMessages(clear_download_cache(confirm = FALSE))
+  expect_false(dir.exists(tmp_cache))
+})
+
+test_that("invert_d2H_ensemble rejects unknown model names with a clear error", {
+  # Audit P-ii: the previous validation read available_models()$model
+  # but available_models() is a character vector; the subset was always
+  # NULL and the validation silently passed bad names through.
+  expect_error(
+    suppressWarnings(invert_d2H_ensemble(
+      d2H_wax = -150, d2H_wax_sd = 3,
+      longitude = -90, latitude = 38,
+      models = c("full_sp", "this_model_does_not_exist"),
+      verbose = FALSE
+    )),
+    "Invalid models.*this_model_does_not_exist"
+  )
+})
+
+test_that("compare_models with verbose=FALSE does not partial-match into predict_d2h_precip", {
+  # Audit follow-up: compare_models takes its own `verbose` arg; if
+  # `verbose` was forwarded via ... R's partial matching could collide
+  # with predict_d2h_precip's `verbose` formal. The current signature
+  # takes verbose explicitly and drops it from extra_args.
+  data <- data.frame(
+    d2h_wax = c(-150, -120),
+    longitude = c(-90, -100),
+    latitude = c(38, 40)
+  )
+  expect_error(
+    suppressWarnings(suppressMessages(compare_models(
+      data, models = c("baseline", "baseline_sp"),
+      progress = FALSE
+    ))),
+    NA
+  )
+})
+
+test_that("invert_d2H with c4_fraction = NULL emits no spurious capability warning", {
+  # Audit follow-up: an unconditional c4_fraction * 100 conversion
+  # turned NULL into numeric(0), which triggered a "C4 percent provided
+  # but model X does not include C4 effects" warning even though the
+  # caller had passed nothing. NULL must stay NULL through the
+  # wrapper.
+  warns <- character(0)
+  res <- withCallingHandlers(
+    suppressMessages(invert_d2H(
+      d2H_wax = -150, d2H_wax_sd = 3,
+      longitude = -90, latitude = 38,
+      c4_fraction = NULL,
+      model_name = "baseline",
+      verbose = FALSE
+    )),
+    warning = function(w) {
+      warns <<- c(warns, conditionMessage(w))
+      invokeRestart("muffleWarning")
+    }
+  )
+  spurious <- grepl("C4 percent provided", warns)
+  expect_false(any(spurious),
+               info = paste("Got C4-percent warning(s):",
+                            paste(warns[spurious], collapse = " | ")))
+  expect_s3_class(res, "data.frame")
+})
+
+test_that("invert_d2H_ensemble preserves order across all multi-site outputs (audit P1, strengthened)", {
+  # Original test only checked m[1] < m[3] for three sites. With the
+  # per-site flatten bug pre-fix, the function returned a single scalar
+  # broadcast across all sites (so m[1] == m[2] == m[3]). Now that the
+  # function preserves per-site identity, all three site means should
+  # be distinct AND monotonically ordered with d2H_wax.
+  set.seed(13)
+  res <- suppressWarnings(invert_d2H_ensemble(
+    d2H_wax = c(-160, -130, -100), d2H_wax_sd = c(3, 3, 3),
+    longitude = c(-90, -100, -110), latitude = c(38, 35, 40),
+    verbose = FALSE
+  ))
+  m <- res$ensemble_summary$mean
+  expect_equal(length(unique(m)), 3L)
+  expect_equal(order(m), order(c(-160, -130, -100)))
+})
+
+test_that("leafwax_set_config / leafwax_config recognise suppress_preview_warning", {
+  # Pre-fix the option list was hard-coded in two places (config and
+  # set_config) and missing suppress_preview_warning, even though
+  # .onLoad seeded it. Driving both off LEAFWAX_DEFAULTS makes the
+  # option round-trip end-to-end.
+  current <- getOption("leafwax.suppress_preview_warning")
+  on.exit(options(leafwax.suppress_preview_warning = current), add = TRUE)
+  expect_silent(suppressMessages(
+    leafwax_set_config(suppress_preview_warning = TRUE, persist = FALSE)
+  ))
+  cfg <- leafwax_config()
+  expect_true("suppress_preview_warning" %in% names(cfg))
+  expect_true(cfg$suppress_preview_warning)
+})
+
+test_that("invert_d2H supplied elevation with v10 models warns and ignores (no spline)", {
+  # v10 fits did not produce beta_elev coefficients (load_posteriors
+  # sets has_elevation only when those columns exist). Supplying
+  # elevation should warn that the model does not include elevation
+  # effects and proceed; pre-fix the unreachable spline branch in
+  # invert_d2h hit a separate "Elevation knots not found" warning that
+  # implied a metadata gap rather than the actual situation.
+  expect_warning(
+    suppressMessages(invert_d2H(
+      d2H_wax = -150, d2H_wax_sd = 3,
+      longitude = -90, latitude = 38,
+      elevation = 1000,
+      model_name = "elevation_only_sp",
+      verbose = FALSE
+    )),
+    "elevation_only_sp.*does not include elevation"
+  )
+})
+
+test_that("list_cached_models / check_data_cache read the v0.2 posteriors directory layout", {
+  # Lock in the 8d6b748 fix: the cache helpers previously looked for
+  # v0.1 file-name patterns (metadata/<model>_metadata.rds and
+  # posteriors/<model>_2000draws.rds) but download_model_data() writes
+  # to posteriors/<model>_posterior.rds, so cached models were
+  # invisible to list_cached_models() and check_data_cache(). This test
+  # exercises the actual exported functions, redirecting the cache via
+  # options(leafwax.cache_dir = tmp).
   tmp_cache <- tempfile("leafwax_cache_")
   dir.create(file.path(tmp_cache, "posteriors"), recursive = TRUE)
   saveRDS(list(stub = TRUE),
@@ -253,11 +460,18 @@ test_that("list_cached_models reads the v0.2 posteriors directory layout", {
   saveRDS(list(stub = TRUE),
           file.path(tmp_cache, "posteriors", "model_b_posterior.rds"))
 
-  files <- list.files(file.path(tmp_cache, "posteriors"),
-                      pattern = "_posterior\\.rds$")
-  models <- gsub("_posterior\\.rds$", "", files)
+  old_opt <- getOption("leafwax.cache_dir")
+  options(leafwax.cache_dir = tmp_cache)
+  on.exit({
+    options(leafwax.cache_dir = old_opt)
+    unlink(tmp_cache, recursive = TRUE)
+  }, add = TRUE)
+
+  models <- list_cached_models(verbose = FALSE)
   expect_setequal(models, c("model_a", "model_b"))
-  unlink(tmp_cache, recursive = TRUE)
+  expect_true(check_data_cache("model_a", verbose = FALSE))
+  expect_true(check_data_cache("model_b", verbose = FALSE))
+  expect_false(check_data_cache("model_c", verbose = FALSE))
 })
 
 test_that("get_data_manifest returns NULL with warning when manifest unreachable", {

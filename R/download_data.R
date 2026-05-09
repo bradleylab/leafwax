@@ -7,7 +7,7 @@
 #'
 #' @param model_name Character string specifying the model name
 #' @param version Version tag to download (default "latest")
-#' @param data_type Type of data to download: "posteriors", "lookup", or "both"
+#' @param data_type Type of data to download (only "posteriors" is currently supported)
 #' @param cache_dir Directory to save files (default uses get_cache_dir())
 #' @param overwrite Logical whether to overwrite existing files
 #' @param verify Logical whether to verify file integrity with checksums
@@ -25,7 +25,7 @@
 #' }
 download_model_data <- function(model_name,
                                version = "latest",
-                               data_type = c("posteriors", "both", "lookup"),
+                               data_type = c("posteriors"),
                                cache_dir = NULL,
                                overwrite = FALSE,
                                verify = TRUE,
@@ -106,7 +106,7 @@ download_model_data <- function(model_name,
 #'
 #' @param model_name Character string specifying the model name
 #' @param version Version tag (e.g., "v1.0.0" or "latest")
-#' @param data_type Type of data: "posteriors", "lookup", or "both"
+#' @param data_type Type of data (only "posteriors" is currently supported)
 #'
 #' @return List of download URLs and filenames
 #' @export
@@ -119,7 +119,7 @@ download_model_data <- function(model_name,
 #' urls <- get_data_url("baseline_sp", "v1.0.1")
 #' }
 get_data_url <- function(model_name, version = "latest",
-                        data_type = c("posteriors", "both", "lookup")) {
+                        data_type = c("posteriors")) {
 
   data_type <- match.arg(data_type)
 
@@ -149,79 +149,7 @@ get_data_url <- function(model_name, version = "latest",
     )
   }
 
-  if (data_type %in% c("both", "lookup")) {
-    # Pre-computed spatial lookup tables are not yet shipped in the
-    # leafwax-data v1.0.0 release; the URL is left in place for
-    # forward compatibility but the request will 404 today.
-    urls[[length(urls) + 1]] <- list(
-      url = paste0(base_url, "/lookup_tables/", model_name, "_lookup.rds"),
-      filename = paste0("lookup_tables/", model_name, "_lookup.rds")
-    )
-  }
-
   return(urls)
-}
-
-#' Verify data integrity
-#'
-#' Verifies the integrity of downloaded files using checksums.
-#'
-#' @param filepath Path to the file to verify
-#' @param model_name Model name for looking up expected checksum
-#' @param filename Filename for looking up expected checksum
-#'
-#' @return Logical indicating whether the file is valid
-#' @export
-verify_data_integrity <- function(filepath, model_name = NULL, filename = NULL) {
-
-  if (!file.exists(filepath)) {
-    warning("File does not exist: ", filepath)
-    return(FALSE)
-  }
-
-  # Calculate file checksum
-  file_checksum <- tools::md5sum(filepath)
-
-  # Load expected checksums. A NULL manifest means get_data_manifest()
-  # could not reach the manifest and there is no cached copy on disk;
-  # treat that as "checksum verification skipped" with a warning, not
-  # "no checksum required".
-  manifest <- get_data_manifest()
-  if (is.null(manifest)) {
-    warning("Skipping checksum verification: no manifest available.",
-            call. = FALSE)
-    return(TRUE)
-  }
-
-  # Find expected checksum
-  if (!is.null(filename)) {
-    expected <- manifest$files[[filename]]$checksum
-  } else if (!is.null(model_name)) {
-    # Try to find by model name pattern
-    matching <- grep(model_name, names(manifest$files), value = TRUE)
-    if (length(matching) > 0) {
-      expected <- manifest$files[[matching[1]]]$checksum
-    } else {
-      expected <- NULL
-    }
-  } else {
-    # Try to match by filename from path
-    fname <- basename(filepath)
-    expected <- manifest$files[[fname]]$checksum
-  }
-
-  if (is.null(expected)) {
-    warning("No checksum found in manifest for file")
-    return(TRUE)  # Allow file if no checksum available
-  }
-
-  # Compare checksums
-  if (as.character(file_checksum) != expected) {
-    warning("Checksum mismatch! File may be corrupted.")
-    return(FALSE)
-  }
-
-  return(TRUE)
 }
 
 #' Download file with progress bar
@@ -256,14 +184,20 @@ download_with_progress <- function(url, destfile, verbose = TRUE) {
     # Set up progress bar
     pb <- utils::txtProgressBar(min = 0, max = file_size, style = 3)
 
-    # Download in chunks
-    con_in <- url(url, "rb")
-    con_out <- file(temp_file, "wb")
-
+    # Open connections lazily and track them so the error handler can
+    # only close what was actually opened. Pre-fix the handler called
+    # close() on con_out unconditionally, which raised a secondary
+    # error and masked the original download failure when url() opened
+    # but file() had not yet been reached.
+    con_in <- NULL
+    con_out <- NULL
     bytes_downloaded <- 0
     chunk_size <- 65536  # 64KB chunks
 
     tryCatch({
+      con_in  <- url(url, "rb")
+      con_out <- file(temp_file, "wb")
+
       while (TRUE) {
         chunk <- readBin(con_in, "raw", chunk_size)
         if (length(chunk) == 0) break
@@ -274,8 +208,8 @@ download_with_progress <- function(url, destfile, verbose = TRUE) {
         utils::setTxtProgressBar(pb, bytes_downloaded)
       }
 
-      close(con_in)
-      close(con_out)
+      close(con_in);  con_in  <- NULL
+      close(con_out); con_out <- NULL
       close(pb)
 
       # Move temp file to destination
@@ -285,9 +219,9 @@ download_with_progress <- function(url, destfile, verbose = TRUE) {
       return(TRUE)
 
     }, error = function(e) {
-      close(con_in)
-      close(con_out)
-      close(pb)
+      if (!is.null(con_in))  try(close(con_in),  silent = TRUE)
+      if (!is.null(con_out)) try(close(con_out), silent = TRUE)
+      try(close(pb), silent = TRUE)
       if (file.exists(temp_file)) file.remove(temp_file)
       warning("Download failed: ", e$message)
       return(FALSE)
@@ -388,7 +322,7 @@ get_data_manifest <- function() {
 #' Removes downloaded model data from the local cache.
 #'
 #' @param model_name Model name to clear (NULL for all)
-#' @param type Type of data to clear: "all", "posteriors", "lookup"
+#' @param type Type of data to clear: "all" or "posteriors"
 #' @param confirm Whether to ask for confirmation
 #'
 #' @return Invisible NULL
@@ -402,7 +336,7 @@ get_data_manifest <- function() {
 #' clear_download_cache(confirm = FALSE)
 #' }
 clear_download_cache <- function(model_name = NULL,
-                                type = c("all", "posteriors", "lookup"),
+                                type = c("all", "posteriors"),
                                 confirm = TRUE) {
 
   type <- match.arg(type)
@@ -427,12 +361,6 @@ clear_download_cache <- function(model_name = NULL,
                         list.files(file.path(cache_dir, "posteriors"),
                                  pattern = pattern, full.names = TRUE),
                         list.files(file.path(cache_dir, "metadata"),
-                                 pattern = pattern, full.names = TRUE))
-  }
-
-  if (type %in% c("all", "lookup")) {
-    files_to_remove <- c(files_to_remove,
-                        list.files(file.path(cache_dir, "lookup_tables"),
                                  pattern = pattern, full.names = TRUE))
   }
 

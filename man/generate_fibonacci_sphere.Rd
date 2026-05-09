@@ -4,7 +4,7 @@
 \alias{generate_fibonacci_sphere}
 \title{Generate Fibonacci sphere points}
 \usage{
-generate_fibonacci_sphere(n_points = 125)
+generate_fibonacci_sphere(n_points = N_SPATIAL_KNOTS)
 }
 \arguments{
 \item{n_points}{Number of points to generate}

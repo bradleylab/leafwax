@@ -141,10 +141,12 @@ invert_d2h <- function(d2h_wax, d2h_wax_err = NULL,
     }
   }
   
-  # Set default uncertainty if not provided
+  # Set default uncertainty if not provided. DEFAULT_WAX_ERR_PERMIL is
+  # 3 per mil, the typical GC-IRMS analytical uncertainty for delta-2-H_wax.
   if (is.null(d2h_wax_err)) {
-    d2h_wax_err <- rep(3.0, n_obs)
-    if (verbose) cat("Using default measurement uncertainty of 3 per mil\n")
+    d2h_wax_err <- rep(DEFAULT_WAX_ERR_PERMIL, n_obs)
+    if (verbose) cat("Using default measurement uncertainty of ",
+                     DEFAULT_WAX_ERR_PERMIL, " per mil\n", sep = "")
   }
   
   # Load the model. Suppress the inner preview-tier warning here and
@@ -178,12 +180,14 @@ invert_d2h <- function(d2h_wax, d2h_wax_err = NULL,
     pft_tree <- pft_shrub <- pft_grass <- NULL
   }
   
-  # Set defaults for missing predictors
+  # Set defaults for missing predictors. Values come from constants.R
+  # so the policy lives in one place rather than as a row of magic
+  # numbers here.
   if (is.null(elevation)) elevation <- rep(0, n_obs)
-  if (is.null(c4_percent)) c4_percent <- rep(25, n_obs)
-  if (is.null(pft_tree)) pft_tree <- rep(0.33, n_obs)
-  if (is.null(pft_shrub)) pft_shrub <- rep(0.33, n_obs)
-  if (is.null(pft_grass)) pft_grass <- rep(0.34, n_obs)
+  if (is.null(c4_percent)) c4_percent <- rep(DEFAULT_C4_PERCENT, n_obs)
+  if (is.null(pft_tree))   pft_tree   <- rep(DEFAULT_PFT_TREE,  n_obs)
+  if (is.null(pft_shrub))  pft_shrub  <- rep(DEFAULT_PFT_SHRUB, n_obs)
+  if (is.null(pft_grass))  pft_grass  <- rep(DEFAULT_PFT_GRASS, n_obs)
   
   # Normalize PFT if needed
   pft_sum <- pft_tree + pft_shrub + pft_grass
@@ -200,18 +204,17 @@ invert_d2h <- function(d2h_wax, d2h_wax_err = NULL,
   # Initialize posterior prediction matrix
   d2h_precip_post <- matrix(NA, nrow = n_iter, ncol = n_obs)
 
-  # Initialize scaling early so the elevation and spatial blocks below can
-  # reference it. Defaults are used when model$scaling is NULL.
+  # Initialize scaling early so the elevation and spatial blocks below
+  # can reference it. PLACEHOLDER_SCALING (constants.R) is used when
+  # model$scaling is NULL — these are conservative round numbers, not
+  # the v10 fitted scales, intended only to keep the inversion
+  # numerically stable while we warn the user.
   if (is.null(model$scaling)) {
-    scaling <- list(
-      d2H_mean = -200, d2H_sd = 50,
-      oipc_mean = -50, oipc_sd = 50,
-      c4_mean = 25,   c4_sd = 25,
-      lon_mean = 0,   lon_sd = 90,
-      lat_mean = 0,   lat_sd = 45,
-      elev_mean = 1000, elev_sd = 1000
-    )
-    if (verbose) cat("  Using default scaling parameters (model lacks scaling data)\n")
+    scaling <- PLACEHOLDER_SCALING
+    warning("Model lacks scaling_params.rds; using PLACEHOLDER_SCALING. ",
+            "Reconstructions will not match the v10 fit. Run ",
+            "download_model_data(\"", model_name,
+            "\") to fetch the calibrated scales.", call. = FALSE)
   } else {
     scaling <- model$scaling
   }
@@ -240,47 +243,12 @@ invert_d2h <- function(d2h_wax, d2h_wax_err = NULL,
     if (!is.null(veg_params$beta_grass)) beta_grass <- veg_params$beta_grass
   }
   
-  # Get elevation parameters if applicable
+  # Elevation effect placeholder. v10 did not fit any beta_elev
+  # coefficients (load_posteriors() sets has_elevation only when those
+  # columns exist), so this stays at zero. Kept as an explicit term in
+  # the linear predictor below for clarity and to leave a hook for
+  # future model variants that do include elevation.
   elev_effect <- matrix(0, nrow = n_iter, ncol = n_obs)
-  if (model_meta$has_elevation) {
-    elev_params <- model$get_elevation_params()
-    if (!is.null(elev_params)) {
-      beta_elev_spline <- elev_params$coefficients
-      
-      # Check if we have elevation knots
-      if (!is.null(model$elevation) && !is.null(model$elevation$knots)) {
-        elev_knots <- model$elevation$knots
-        
-        # Standardize elevation using same scaling as in model fitting
-        elev_mean_km <- scaling$elev_mean / 1000
-        elev_sd_km <- scaling$elev_sd / 1000
-        elevation_std <- (elevation / 1000 - elev_mean_km) / elev_sd_km
-        
-        # Compute elevation effect for each location
-        for (i in 1:n_obs) {
-          elev_val <- elevation_std[i]
-          
-          # Simple linear interpolation between knots
-          if (elev_val <= elev_knots[1]) {
-            elev_effect[, i] <- beta_elev_spline[, 1]
-          } else if (elev_val >= elev_knots[length(elev_knots)]) {
-            elev_effect[, i] <- beta_elev_spline[, ncol(beta_elev_spline)]
-          } else {
-            # Find knot interval
-            for (k in 1:(length(elev_knots) - 1)) {
-              if (elev_val >= elev_knots[k] && elev_val <= elev_knots[k + 1]) {
-                w <- (elev_val - elev_knots[k]) / (elev_knots[k + 1] - elev_knots[k])
-                elev_effect[, i] <- (1 - w) * beta_elev_spline[, k] + w * beta_elev_spline[, k + 1]
-                break
-              }
-            }
-          }
-        }
-      } else {
-        warning("Elevation knots not found in model metadata. Elevation effects will be ignored.")
-      }
-    }
-  }
   
   # Get dual-GP spatial effects (intercept and slope) at the prediction
   # site(s). v10 uses a Matern 3/2 kernel in standardized 2D coordinate
@@ -480,7 +448,7 @@ invert_d2h <- function(d2h_wax, d2h_wax_err = NULL,
 #' @param n_posterior_draws Integer number of posterior draws to use
 #' @export
 invert_d2H <- function(d2H_wax,
-                      d2H_wax_sd,
+                      d2H_wax_sd = NULL,
                       longitude,
                       latitude,
                       elevation = NULL,
@@ -538,47 +506,6 @@ invert_d2H <- function(d2H_wax,
     record_id = record_id,
     slope = slope
   )
-}
-
-#' Batch inversion for multiple samples
-#' 
-#' Convenience function to invert multiple samples with different models
-#' and compare results.
-#' 
-#' @param data Data frame with columns matching invert_d2h arguments
-#' @param models Character vector of model names to use
-#' @param ... Additional arguments passed to invert_d2h
-#' 
-#' @return List of results from each model
-#' @export
-batch_invert_d2h <- function(data, models = c("baseline", "baseline_sp"), ...) {
-  
-  results <- list()
-  
-  for (model in models) {
-    cat("\nRunning model:", model, "\n")
-    
-    # Handle missing columns gracefully
-    args <- list(
-      d2h_wax = data$d2h_wax,
-      d2h_wax_err = if ("d2h_wax_err" %in% names(data)) data$d2h_wax_err else NULL,
-      longitude = data$longitude,
-      latitude = data$latitude,
-      elevation = if ("elevation" %in% names(data)) data$elevation else NULL,
-      c4_percent = if ("c4_percent" %in% names(data)) data$c4_percent else NULL,
-      pft_tree = if ("pft_tree" %in% names(data)) data$pft_tree else NULL,
-      pft_shrub = if ("pft_shrub" %in% names(data)) data$pft_shrub else NULL,
-      pft_grass = if ("pft_grass" %in% names(data)) data$pft_grass else NULL,
-      model_name = model
-    )
-    
-    # Add any additional arguments
-    args <- c(args, list(...))
-    
-    results[[model]] <- do.call(invert_d2h, args)
-  }
-  
-  return(results)
 }
 
 #' Detect model capabilities from model name

@@ -18,7 +18,6 @@
 #' @param pft_grass Numeric vector of grass PFT fraction (optional)
 #' @param model Character string specifying model, or "auto" for automatic selection
 #' @param n_draws Integer number of posterior draws (NULL for all)
-#' @param use_lookup Logical whether to use lookup tables for spatial models
 #' @param credible_level Numeric credible interval level (default 0.9)
 #' @param return_draws Logical whether to return full posterior draws
 #' @param progress Logical whether to show progress bar for batch processing
@@ -79,7 +78,6 @@ predict_d2h_precip <- function(data = NULL,
                               pft_grass = NULL,
                               model = "auto",
                               n_draws = NULL,
-                              use_lookup = TRUE,
                               credible_level = 0.9,
                               return_draws = FALSE,
                               progress = TRUE,
@@ -151,32 +149,6 @@ predict_d2h_precip <- function(data = NULL,
     }
   }
 
-  # Use lookup tables for spatial models if available and requested
-  lookup_table <- NULL
-  if (use_lookup && grepl("_sp", model)) {
-    if (verbose) cat("Checking for cached lookup table...\n")
-    lookup_result <- use_lookup_if_available(
-      model_name = model,
-      longitude = longitude,
-      latitude = latitude,
-      method = "bilinear"
-    )
-
-    if (!is.null(lookup_result)) {
-      lookup_table <- lookup_result$lookup_table
-      if (verbose) cat("Using pre-computed lookup table\n")
-    } else if (verbose) {
-      cat("No lookup table found, will compute spatial effects directly\n")
-    }
-  }
-
-  # Show progress bar for large datasets
-  if (progress && n_obs > 10) {
-    pb <- txtProgressBar(min = 0, max = n_obs, style = 3)
-  } else {
-    pb <- NULL
-  }
-
   # Convert c4 from public-API fraction (0-1) to internal percent
   # (0-100). NULL must stay NULL so the model-capability check inside
   # invert_d2h() does not see a length-0 vector and warn spuriously.
@@ -216,11 +188,6 @@ predict_d2h_precip <- function(data = NULL,
       verbose = FALSE  # We handle verbosity here
     )
 
-    if (!is.null(pb)) {
-      setTxtProgressBar(pb, n_obs)
-      close(pb)
-    }
-
     # Add model information to results
     if (!return_draws) {
       results$model_used <- model
@@ -235,14 +202,10 @@ predict_d2h_precip <- function(data = NULL,
     return(results)
 
   }, error = function(e) {
-    if (!is.null(pb)) close(pb)
-
     # Provide helpful error message
     if (grepl("not found|not available", e$message)) {
       message("\nModel data not available. To download:")
-      message("  download_model_data('", model, "', 'standard')")
-      message("\nOr enable auto-download:")
-      message("  options(leafwax.auto_download = TRUE)")
+      message("  download_model_data('", model, "')")
     }
 
     stop(e)
@@ -596,9 +559,12 @@ validate_inputs <- function(d2h_wax, longitude, latitude,
     model_name = model_name
   )
 
-  if (model_info$has_elevation) validated$elevation <- elevation
-  if (model_info$has_c4) validated$c4_fraction <- c4_fraction
-  if (model_info$has_pft) {
+  if (isTRUE(model_info$has_elevation)) validated$elevation <- elevation
+  if (isTRUE(model_info$has_c4)) validated$c4_fraction <- c4_fraction
+  # v10 metadata uses has_vegetation in place of has_pft; honour both so
+  # PFT vectors aren't silently dropped from the validated list when a
+  # caller passes a v10 metadata object.
+  if (has_pft_flag) {
     validated$pft_tree <- pft_tree
     validated$pft_shrub <- pft_shrub
     validated$pft_grass <- pft_grass
