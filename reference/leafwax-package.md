@@ -1,16 +1,17 @@
 # leafwax: Bayesian Calibration of Leaf Wax Hydrogen Isotope Reconstructions
 
 The leafwax package provides tools for probabilistic inversion of leaf
-wax hydrogen isotope measurements (δ2H) to reconstruct precipitation
-isotope values. It implements hierarchical Bayesian models that account
-for multiple sources of uncertainty including measurement error,
-biological fractionation, and spatial correlation in isotope patterns.
+wax hydrogen isotope measurements (delta-2-H) to reconstruct
+precipitation isotope values. It implements hierarchical Bayesian models
+that account for multiple sources of uncertainty including measurement
+error, biological fractionation, and spatial correlation in isotope
+patterns.
 
 ## Main Functions
 
-- [`invert_d2h`](https://bradleylab.github.io/leafwax/reference/invert_d2h.md):
+- [`invert_d2H`](https://bradleylab.github.io/leafwax/reference/invert_d2h.md):
 
-  Perform Bayesian inversion of leaf wax δ2H to precipitation δ2H
+  Bayesian inversion of leaf wax delta2H to precipitation delta2H
 
 - [`available_models`](https://bradleylab.github.io/leafwax/reference/available_models.md):
 
@@ -28,21 +29,24 @@ biological fractionation, and spatial correlation in isotope patterns.
 
   Validate inputs for a specific model
 
-- [`get_model_recommendations`](https://bradleylab.github.io/leafwax/reference/get_model_recommendations.md):
-
-  Get model recommendations based on available data
-
 ## Available Models
 
-The package includes 14 calibration models with different capabilities:
+The package includes 14 calibration models with different capabilities.
+The v10 fits include precipitation amount (`baseline_env*` and `full*`
+variants), C4 abundance, and PFT cover; none of the v10 variants carry a
+fitted elevation coefficient despite the historical "elevation\_\*"
+naming. Capability flags exposed by
+[`get_model_parameters()`](https://bradleylab.github.io/leafwax/reference/get_model_parameters.md)
+are derived from each model's posterior columns at load time.
 
 - **Basic models**: baseline, baseline_sp
 
-- **Elevation models**: baseline_env, baseline_env_sp, elevation_only_sp
+- **Precipitation models**: baseline_env, baseline_env_sp
 
 - **Vegetation models**: baseline_veg, baseline_veg_sp, c4_only_sp
 
-- **Combined models**: elevation_c4_sp, elevation_c4_interact_sp
+- **Combined spatial models**: elevation_only_sp, elevation_c4_sp,
+  elevation_c4_interact_sp
 
 - **Full models**: full, full_sp, full_interact, full_interact_sp
 
@@ -51,19 +55,14 @@ on a Fibonacci sphere lattice for improved uncertainty quantification.
 
 ## Model Selection
 
-Choose models based on available ancillary data:
-
-- Use `baseline` for simple applications with only location data
-
-- Use `baseline_env` when elevation data is available
-
-- Use `baseline_veg` when vegetation (PFT) data is available
-
-- Use spatial models (\_sp) for better uncertainty quantification
-
-- Use
-  [`get_model_recommendations()`](https://bradleylab.github.io/leafwax/reference/get_model_recommendations.md)
-  for automated model selection
+Pass `model = "auto"` to
+[`predict_d2h_precip()`](https://bradleylab.github.io/leafwax/reference/predict_d2h_precip.md)
+to let
+[`select_best_model_from_flags()`](https://bradleylab.github.io/leafwax/reference/select_best_model_from_flags.md)
+choose a model based on which covariates the caller has supplied;
+otherwise pick a model name from
+[`available_models()`](https://bradleylab.github.io/leafwax/reference/available_models.md)
+explicitly.
 
 ## Key Features
 
@@ -74,8 +73,6 @@ Choose models based on available ancillary data:
 - Spatial correlation via Gaussian processes
 
 - Automatic handling of missing covariates
-
-- Comprehensive model validation and recommendations
 
 ## References
 
@@ -91,11 +88,16 @@ photosynthesizing organisms. Annual Review of Earth and Planetary
 Sciences, 40, 221-249.
 [doi:10.1146/annurev-earth-042711-105535](https://doi.org/10.1146/annurev-earth-042711-105535)
 
+Bradley, A. (2026). leafwax v10 model posteriors. Zenodo concept DOI
+[doi:10.5281/zenodo.20085465](https://doi.org/10.5281/zenodo.20085465) .
+
 ## See also
 
 Useful links:
 
 - <https://github.com/bradleylab/leafwax>
+
+- <https://bradleylab.github.io/leafwax>
 
 - Report bugs at <https://github.com/bradleylab/leafwax/issues>
 
@@ -119,28 +121,23 @@ print(models)
 #> [13] "full"                     "full_sp"                 
 
 # Simple single-location inversion
-result <- invert_d2h(
-  d2h_wax = -150,
+result <- invert_d2H(
+  d2H_wax = -150,
+  d2H_wax_sd = 3,
   longitude = -120,
   latitude = 40,
-  model = "baseline"
+  model_name = "baseline"
 )
-#> Using default measurement uncertainty of 3 per mil
 #> Loading model: baseline 
-#> Loading model: baseline 
-#>   Loaded 1000 draws, 17 parameters
+#> Loading model: baseline
+#>   Loaded 100 draws, 17 parameters
 #>   Loaded standardization parameters (20 fields)
 #> Performing inversion for 1 locations
 #> Computing predictions...
 #> 
 #> Inversion complete:
-#>   Mean prediction range: [-34, -34] per mil
-#>   Mean uncertainty (SD): 4.1 per mil
-#>   Mean 90% CI width: 13.2 per mil
-
-# Get model recommendations based on available data
-recommendations <- get_model_recommendations(
-  has_elevation = TRUE,
-  prefer_spatial = TRUE
-)
+#>   Mean prediction range: [-33.3, -33.3] per mil
+#>   Mean uncertainty (SD): 26.8 per mil
+#>   Mean 90% width: 90.2 per mil
+#> Warning: leafwax preview posteriors in use (invert_d2H): 100 draws of 'baseline'. Tail probabilities and 95% credible intervals are unstable at this sample size; not suitable for inference. Run download_model_data("baseline") for the full posterior.
 ```

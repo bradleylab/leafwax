@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">leafwax</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.2.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.2.2</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -15,7 +15,7 @@
     </button>
 
     <div id="navbar" class="collapse navbar-collapse ms-3">
-      <ul class="navbar-nav me-auto"><li class="nav-item"><a class="nav-link" href="../index.html"><span class="fa fa-home"></span></a></li>
+      <ul class="navbar-nav me-auto"><li class="nav-item"><a class="nav-link" href="../index.html" aria-label="Home"><span class="fa fa-home"></span></a></li>
 <li class="nav-item"><a class="nav-link" href="../articles/paleo-record-workflow.html">Get started</a></li>
 <li class="active nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">News</a></li>
@@ -57,7 +57,7 @@
       </dl></div><div class="section level2">
       <h2 id="paleo-record-workflow">Paleo-record workflow<a class="anchor" aria-label="anchor" href="#paleo-record-workflow"></a></h2>
 
-      <div class="section-desc"><p>Within-record sigma_within, slope, change detection, claim taxonomy.</p></div>
+      <div class="section-desc"><p>Local slope, change detection, claim taxonomy.</p></div>
 
       <dl></dl></div><div class="section level2">
 
@@ -65,13 +65,6 @@
 
 
       <dl><dt>
-
-          <code><a href="estimate_sigma_within.html">estimate_sigma_within()</a></code>
-
-        </dt>
-        <dd>Estimate the within-record residual SD of a leaf-wax record</dd>
-
-        <dt>
 
           <code><a href="local_effective_slope.html">local_effective_slope()</a></code>
 
@@ -145,20 +138,6 @@
 
         <dt>
 
-          <code><a href="load_model_posteriors.html">load_model_posteriors()</a></code>
-
-        </dt>
-        <dd>Load model posteriors from package data</dd>
-
-        <dt>
-
-          <code><a href="select_best_model.html">select_best_model()</a></code>
-
-        </dt>
-        <dd>Select best model based on available data</dd>
-
-        <dt>
-
           <code><a href="select_best_model_from_flags.html">select_best_model_from_flags()</a></code>
 
         </dt>
@@ -179,17 +158,10 @@
 
         </dt>
         <dd>Example leaf wax hydrogen isotope data</dd>
-
-        <dt>
-
-          <code><a href="model_metadata.html">model_metadata</a></code>
-
-        </dt>
-        <dd>Model metadata for the v10 calibration models</dd>
       </dl></div><div class="section level2">
-      <h2 id="lower-level-legacy-helpers">Lower-level / legacy helpers<a class="anchor" aria-label="anchor" href="#lower-level-legacy-helpers"></a></h2>
+      <h2 id="lower-level-helpers">Lower-level helpers<a class="anchor" aria-label="anchor" href="#lower-level-helpers"></a></h2>
 
-      <div class="section-desc"><p>Internal-style exports retained from v0.1.0 (data caching, lookup tables, batch processing, validation) and the lower-level invert_d2h() function. Most users will not call these directly.</p></div>
+      <div class="section-desc"><p>Internal-style exports (data caching, batch processing, validation) and the lower-level invert_d2h() function. Most users will not call these directly.</p></div>
 
       <dl></dl></div><div class="section level2">
 
@@ -202,13 +174,6 @@
 
         </dt>
         <dd>Invert leaf wax d2H to precipitation d2H</dd>
-
-        <dt>
-
-          <code><a href="batch_invert_d2h.html">batch_invert_d2h()</a></code>
-
-        </dt>
-        <dd>Batch inversion for multiple samples</dd>
 
         <dt>
 
@@ -240,24 +205,10 @@
 
         <dt>
 
-          <code><a href="validate_lookup_table.html">validate_lookup_table()</a></code>
-
-        </dt>
-        <dd>Validate lookup table</dd>
-
-        <dt>
-
           <code><a href="get_model_parameters.html">get_model_parameters()</a></code>
 
         </dt>
         <dd>Get model parameters</dd>
-
-        <dt>
-
-          <code><a href="get_model_recommendations.html">get_model_recommendations()</a></code>
-
-        </dt>
-        <dd>Get model recommendations based on available data</dd>
 
         <dt>
 
@@ -289,20 +240,6 @@
 
         <dt>
 
-          <code><a href="monitor_memory.html">monitor_memory()</a></code>
-
-        </dt>
-        <dd>Monitor memory usage during batch processing</dd>
-
-        <dt>
-
-          <code><a href="benchmark_lookup.html">benchmark_lookup()</a></code>
-
-        </dt>
-        <dd>Benchmark lookup table vs direct computation</dd>
-
-        <dt>
-
           <code><a href="compare_models.html">compare_models()</a></code>
 
         </dt>
@@ -310,59 +247,10 @@
 
         <dt>
 
-          <code><a href="create_lookup_table.html">create_lookup_table()</a></code>
-
-        </dt>
-        <dd>Create lookup table for spatial parameters</dd>
-
-        <dt>
-
-          <code><a href="create_regional_lookup.html">create_regional_lookup()</a></code>
-
-        </dt>
-        <dd>Create optimized lookup table for region</dd>
-
-        <dt>
-
-          <code><a href="cache_all_lookup_tables.html">cache_all_lookup_tables()</a></code>
-
-        </dt>
-        <dd>Cache all lookup tables for available spatial models</dd>
-
-        <dt>
-
-          <code><a href="use_lookup_if_available.html">use_lookup_if_available()</a></code>
-
-        </dt>
-        <dd>Use lookup table in inversion (if available)</dd>
-
-        <dt>
-
-          <code><a href="get_spatial_params.html">get_spatial_params()</a></code>
-
-        </dt>
-        <dd>Get spatial parameters from lookup table</dd>
-
-        <dt>
-
           <code><a href="generate_fibonacci_sphere.html">generate_fibonacci_sphere()</a></code>
 
         </dt>
         <dd>Generate Fibonacci sphere points</dd>
-
-        <dt>
-
-          <code><a href="generate_global_grid.html">generate_global_grid()</a></code>
-
-        </dt>
-        <dd>Generate global 1x1 degree grid</dd>
-
-        <dt>
-
-          <code><a href="predict_spatial_mpp.html">predict_spatial_mpp()</a></code>
-
-        </dt>
-        <dd>Legacy single-GP predictor – DEPRECATED.</dd>
 
         <dt>
 
@@ -391,13 +279,6 @@
 
         </dt>
         <dd>Check if model data exists in cache</dd>
-
-        <dt>
-
-          <code><a href="clear_data_cache.html">clear_data_cache()</a></code>
-
-        </dt>
-        <dd>Clear model data cache</dd>
 
         <dt>
 
@@ -443,27 +324,6 @@
 
         <dt>
 
-          <code><a href="setup_leafwax_data.html">setup_leafwax_data()</a></code>
-
-        </dt>
-        <dd>Setup leafwax data management</dd>
-
-        <dt>
-
-          <code><a href="verify_data_integrity.html">verify_data_integrity()</a></code>
-
-        </dt>
-        <dd>Verify data integrity</dd>
-
-        <dt>
-
-          <code><a href="check_model_data.html">check_model_data()</a></code>
-
-        </dt>
-        <dd>Check if model data exists locally</dd>
-
-        <dt>
-
           <code><a href="download_with_progress.html">download_with_progress()</a></code>
 
         </dt>
@@ -492,20 +352,6 @@
 
         <dt>
 
-          <code><a href="get_download_files.html">get_download_files()</a></code>
-
-        </dt>
-        <dd>Get list of files to download for a model</dd>
-
-        <dt>
-
-          <code><a href="get_model_size_estimate.html">get_model_size_estimate()</a></code>
-
-        </dt>
-        <dd>Get estimated download size for a model</dd>
-
-        <dt>
-
           <code><a href="get_url_config.html">get_url_config()</a></code>
 
         </dt>
@@ -524,17 +370,10 @@
 
         </dt>
         <dd>Process chunks sequentially with progress bar</dd>
-
-        <dt>
-
-          <code><a href="use_example_data.html">use_example_data()</a></code>
-
-        </dt>
-        <dd>Use lightweight example data</dd>
       </dl></div><div class="section level2">
-      <h2 id="math-gp-internals">Math / GP internals<a class="anchor" aria-label="anchor" href="#math-gp-internals"></a></h2>
+      <h2 id="s-print-methods">S3 print methods<a class="anchor" aria-label="anchor" href="#s-print-methods"></a></h2>
 
-      <div class="section-desc"><p>Numerical kernels and helper functions used by the spatial GP layer. Documented for completeness; not part of the user-facing API.</p></div>
+      <div class="section-desc"><p>Pretty-printing for the package’s own S3 classes.</p></div>
 
       <dl></dl></div><div class="section level2">
 
@@ -543,45 +382,10 @@
 
       <dl><dt>
 
-          <code><a href="matern32.html">matern32()</a></code>
-
-        </dt>
-        <dd>Matern 3/2 covariance: k(d) = sigma^2 * (1 + sqrt(3)*d/rho) * exp(-sqrt(3)*d/rho)</dd>
-
-        <dt>
-
-          <code><a href="pair_distances.html">pair_distances()</a></code>
-
-        </dt>
-        <dd>Pairwise Euclidean distances between two coordinate matrices.</dd>
-
-        <dt>
-
-          <code><a href="ls_km_to_std.html">ls_km_to_std()</a></code>
-
-        </dt>
-        <dd>Convert ls in km to standardized-coordinate units, matching the v10 Stan model's <code>coord_scale_km = mean(coord_scaling) * 111.0</code> formula.</dd>
-
-        <dt>
-
-          <code><a href="standardize_coords.html">standardize_coords()</a></code>
-
-        </dt>
-        <dd>Standardize a coord matrix using the scaling parameters.</dd>
-
-        <dt>
-
           <code><a href="print.leafwax_posterior.html">print(<i>&lt;leafwax_posterior&gt;</i>)</a></code>
 
         </dt>
         <dd>Print method for leafwax_posterior</dd>
-
-        <dt>
-
-          <code><a href="print.leafwax_lookup_table.html">print(<i>&lt;leafwax_lookup_table&gt;</i>)</a></code>
-
-        </dt>
-        <dd>Print method for lookup tables</dd>
       </dl></div><div class="section level2">
       <h2 id="package">Package<a class="anchor" aria-label="anchor" href="#package"></a></h2>
 
@@ -598,20 +402,6 @@
 
         </dt>
         <dd>leafwax: Bayesian Calibration of Leaf Wax Hydrogen Isotope Reconstructions</dd>
-
-        <dt>
-
-          <code><a href="mini_lookup_table.html">mini_lookup_table</a></code>
-
-        </dt>
-        <dd>Mini lookup table</dd>
-
-        <dt>
-
-          <code><a href="mini_posteriors.html">mini_posteriors</a></code>
-
-        </dt>
-        <dd>Mini posterior draws</dd>
       </dl></div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>

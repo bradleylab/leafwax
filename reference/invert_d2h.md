@@ -22,15 +22,13 @@ invert_d2h(
   return_full = FALSE,
   credible_level = 0.9,
   verbose = TRUE,
-  sigma_within = NULL,
-  sigma_within_sd = NULL,
   record_id = NULL,
   slope = NULL
 )
 
 invert_d2H(
   d2H_wax,
-  d2H_wax_sd,
+  d2H_wax_sd = NULL,
   longitude,
   latitude,
   elevation = NULL,
@@ -45,8 +43,6 @@ invert_d2H(
   return_full = FALSE,
   credible_level = 0.9,
   verbose = TRUE,
-  sigma_within = NULL,
-  sigma_within_sd = NULL,
   record_id = NULL,
   slope = NULL
 )
@@ -110,26 +106,6 @@ invert_d2H(
 
   Logical whether to print progress messages
 
-- sigma_within:
-
-  Numeric, optional within-record residual standard deviation in per
-  mil. When supplied, an additional `Normal(0, sigma_within)` noise term
-  is added to the inverted `d2H_precip` per posterior draw, representing
-  residual variance within a single sedimentary record (after spatial
-  structure has cancelled). Use
-  [`estimate_sigma_within()`](https://bradleylab.github.io/leafwax/reference/estimate_sigma_within.md)
-  to obtain this from a stationary baseline interval of the record.
-  Section 4.5.3 of the manuscript explains why the global posterior
-  `sigma` overstates within-record uncertainty.
-
-- sigma_within_sd:
-
-  Numeric, optional standard error on `sigma_within`. When non-`NULL`,
-  each posterior draw resamples the residual SD from
-  `Normal(sigma_within, sigma_within_sd)` (truncated at zero), so
-  uncertainty in the within-record SD itself propagates into the
-  prediction.
-
 - record_id:
 
   Character or numeric, optional record identifier. When supplied and
@@ -167,7 +143,9 @@ invert_d2H(
 
 - c4_fraction:
 
-  Numeric vector of C4 vegetation percentage (0-100)
+  Numeric vector of C4 vegetation cover as a fraction in `[0, 1]`. The
+  wrapper converts to the percent (0-100) scale used internally before
+  standardisation.
 
 - c4_fraction_sd:
 
@@ -191,15 +169,26 @@ If return_full is FALSE, a data frame with columns:
 
 - d2h_precip_sd:
 
-  Standard deviation of predictions
+  Standard deviation of the posterior predictive interval
 
 - d2h_precip_lower:
 
-  Lower credible interval bound
+  Lower bound of the credible interval
 
 - d2h_precip_upper:
 
-  Upper credible interval bound
+  Upper bound of the credible interval
+
+- prediction_interval_width:
+
+  Width of the credible interval (upper - lower).
+
+The interval is the posterior predictive specified in manuscript
+supplement Section S4.1, Eq. 7: the wax-error draw combines analytical
+uncertainty with the model's posterior residual SD `sigma`. For
+within-record change detection, the spatial GP intercept's contribution
+cancels in any contrast computed from the returned `posterior_draws`
+(manuscript Section 4.5.3); the same `sigma` applies in both regimes.
 
 If return_full is TRUE, a list with:
 
@@ -213,7 +202,7 @@ If return_full is TRUE, a list with:
 
 - model_info:
 
-  Information about the model used
+  Information about the model used.
 
 ## Examples
 

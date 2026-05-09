@@ -5,11 +5,7 @@ Constructs download URLs for model data from GitHub releases.
 ## Usage
 
 ``` r
-get_data_url(
-  model_name,
-  version = "latest",
-  data_type = c("both", "posteriors", "lookup")
-)
+get_data_url(model_name, version = "latest", data_type = c("posteriors"))
 ```
 
 ## Arguments
@@ -24,7 +20,7 @@ get_data_url(
 
 - data_type:
 
-  Type of data: "posteriors", "lookup", or "both"
+  Type of data (only "posteriors" is currently supported)
 
 ## Value
 
@@ -35,9 +31,9 @@ List of download URLs and filenames
 ``` r
 if (FALSE) { # \dontrun{
 # Get URLs for latest version
-urls <- get_data_url("b0b1_sp", "latest")
+urls <- get_data_url("baseline_sp", "latest")
 
 # Get URLs for specific version
-urls <- get_data_url("b0b1_sp", "v1.0.0")
+urls <- get_data_url("baseline_sp", "v1.0.1")
 } # }
 ```

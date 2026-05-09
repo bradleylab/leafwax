@@ -7,7 +7,7 @@ Removes downloaded model data from the local cache.
 ``` r
 clear_download_cache(
   model_name = NULL,
-  type = c("all", "posteriors", "lookup"),
+  type = c("all", "posteriors"),
   confirm = TRUE
 )
 ```
@@ -20,7 +20,7 @@ clear_download_cache(
 
 - type:
 
-  Type of data to clear: "all", "posteriors", "lookup"
+  Type of data to clear: "all" or "posteriors"
 
 - confirm:
 
@@ -35,7 +35,7 @@ Invisible NULL
 ``` r
 if (FALSE) { # \dontrun{
 # Clear cache for specific model
-clear_download_cache("b0b1_sp")
+clear_download_cache("baseline_sp")
 
 # Clear all cached data
 clear_download_cache(confirm = FALSE)

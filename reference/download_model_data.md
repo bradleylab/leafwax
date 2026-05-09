@@ -9,7 +9,7 @@ with progress tracking and integrity verification.
 download_model_data(
   model_name,
   version = "latest",
-  data_type = c("both", "posteriors", "lookup"),
+  data_type = c("posteriors"),
   cache_dir = NULL,
   overwrite = FALSE,
   verify = TRUE,
@@ -29,7 +29,7 @@ download_model_data(
 
 - data_type:
 
-  Type of data to download: "posteriors", "lookup", or "both"
+  Type of data to download (only "posteriors" is currently supported)
 
 - cache_dir:
 
@@ -56,9 +56,9 @@ Logical indicating success
 ``` r
 if (FALSE) { # \dontrun{
 # Download latest data for a model
-download_model_data("b0b1_sp", version = "latest")
+download_model_data("baseline_sp", version = "latest")
 
 # Download specific version
-download_model_data("b0b1_elev", version = "v1.0.0")
+download_model_data("baseline_env", version = "v1.0.1")
 } # }
 ```

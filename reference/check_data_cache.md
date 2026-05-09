@@ -1,6 +1,8 @@
 # Check if model data exists in cache
 
-Checks whether the specified model data files exist in the local cache.
+Checks whether the heavy posterior file for a model is present in the
+user cache populated by
+[`download_model_data()`](https://bradleylab.github.io/leafwax/reference/download_model_data.md).
 
 ## Usage
 
@@ -16,25 +18,27 @@ check_data_cache(
 
 - model_name:
 
-  Character string specifying the model name
+  Character string specifying the model name.
 
 - data_type:
 
-  Type of data to check: "minimal", "standard", or "full"
+  Retained for API compatibility. The v0.2 download layout ships a
+  single posterior file per model (`posteriors/<model>_posterior.rds`)
+  so all values check the same path; the argument is accepted but
+  otherwise ignored.
 
 - verbose:
 
-  Logical, whether to print status messages
+  Logical, whether to print status messages.
 
 ## Value
 
-Logical indicating whether the data exists
+Logical indicating whether the cached posterior file exists.
 
 ## Examples
 
 ``` r
 if (FALSE) { # \dontrun{
-# Check if standard data exists for a model
-exists <- check_data_cache("b0b1_sp", "standard")
+exists <- check_data_cache("baseline_sp")
 } # }
 ```

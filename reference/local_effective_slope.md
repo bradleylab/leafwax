@@ -94,9 +94,10 @@ s <- local_effective_slope(
   model_name = "baseline_sp",
   n_draws = 200
 )
+#> Warning: leafwax preview posteriors in use: 100 draws of 'baseline_sp'. Tail probabilities and 95% credible intervals are unstable at this sample size; not suitable for inference. Run download_model_data("baseline_sp") for the full posterior.
 summary(s)
 #>    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
-#>  0.3503  0.5562  0.6124  0.6189  0.6793  0.8733 
+#>  0.3927  0.5540  0.6020  0.6110  0.6820  0.8342 
 
 # Override with a defended local slope
 s_fixed <- local_effective_slope(
@@ -104,6 +105,7 @@ s_fixed <- local_effective_slope(
   model_name = "baseline_sp",
   override = 0.55, ceiling = 0.88
 )
+#> Warning: leafwax preview posteriors in use: 100 draws of 'baseline_sp'. Tail probabilities and 95% credible intervals are unstable at this sample size; not suitable for inference. Run download_model_data("baseline_sp") for the full posterior.
 
 # Pass through to the inversion. The slope vector and the
 # inversion's posterior must use the same n_draws: pair
@@ -116,25 +118,25 @@ invert_d2H(d2H_wax = -180, d2H_wax_sd = 3,
            n_posterior_draws = 200,
            slope = s)
 #> Loading model: baseline_sp 
-#> Loading model: baseline_sp 
-#>   Loaded 1000 draws, 271 parameters
-#>   Subsampled to 200 draws (deterministic stratified)
+#> Loading model: baseline_sp
+#>   Loaded 100 draws, 271 parameters
 #>   Loaded 125 spatial knots
 #>   Loaded standardization parameters (20 fields)
 #> Performing inversion for 1 locations
 #>   Computing dual-GP spatial effects (Matern 3/2)...
-#>   Using slope override (range: 0.350 to 0.873) instead of the model's site-specific slope.
+#>   Using slope override (range: 0.393 to 0.834) instead of the model's site-specific slope.
 #> Computing predictions...
 #> 
 #> Inversion complete:
-#>   Mean prediction range: [-58.5, -58.5] per mil
-#>   Mean uncertainty (SD): 6.7 per mil
-#>   Mean 90% CI width: 21.6 per mil
+#>   Mean prediction range: [-56.7, -56.7] per mil
+#>   Mean uncertainty (SD): 26 per mil
+#>   Mean 90% width: 88.3 per mil
+#> Warning: leafwax preview posteriors in use (invert_d2H): 100 draws of 'baseline_sp'. Tail probabilities and 95% credible intervals are unstable at this sample size; not suitable for inference. Run download_model_data("baseline_sp") for the full posterior.
 #>   longitude latitude elevation d2h_wax d2h_wax_err d2h_precip_mean
-#> 1       -90       38         0    -180           3       -58.46658
+#> 1       -90       38         0    -180           3       -56.68282
 #>   d2h_precip_median d2h_precip_sd d2h_precip_lower d2h_precip_upper
-#> 1         -58.51641      6.678374        -69.79661        -48.16367
+#> 1         -57.60734      26.01051        -105.0963        -16.82198
 #>   prediction_interval_width
-#> 1                  21.63295
+#> 1                  88.27435
 # }
 ```

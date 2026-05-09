@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">leafwax</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.2.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.2.2</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -15,7 +15,7 @@
     </button>
 
     <div id="navbar" class="collapse navbar-collapse ms-3">
-      <ul class="navbar-nav me-auto"><li class="nav-item"><a class="nav-link" href="../index.html"><span class="fa fa-home"></span></a></li>
+      <ul class="navbar-nav me-auto"><li class="nav-item"><a class="nav-link" href="../index.html" aria-label="Home"><span class="fa fa-home"></span></a></li>
 <li class="nav-item"><a class="nav-link" href="../articles/paleo-record-workflow.html">Get started</a></li>
 <li class="nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
 <li class="active nav-item"><a class="nav-link" href="../news/index.html">News</a></li>
@@ -32,6 +32,157 @@
       <small>Source: <a href="https://github.com/bradleylab/leafwax/blob/master/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.2.2" id="leafwax-022">leafwax 0.2.2<a class="anchor" aria-label="anchor" href="#leafwax-022"></a></h2>
+<div class="section level3">
+<h3 id="bug-fixes-runtime-correctness-0-2-2">Bug fixes (runtime correctness)<a class="anchor" aria-label="anchor" href="#bug-fixes-runtime-correctness-0-2-2"></a></h3>
+<ul><li>
+<code><a href="../reference/invert_d2h.html">invert_d2H()</a></code> and <code><a href="../reference/invert_d2h.html">invert_d2h()</a></code>: the reported credible interval did not include the model’s posterior residual SD <code>sigma</code>, so the reported <code>prediction_interval_width</code> was the wrong quantity for single-site reconstruction. At a typical site this gave intervals roughly an order of magnitude narrower than the manuscript’s per-site uncertainties. The wax-error draw now follows manuscript supplement Section S4.1 Eq. 7: <code>analytical^2 + sigma_residual^2</code> combined in quadrature, with parameter and spatial uncertainty carried through the per-iteration posterior draws. This applies uniformly to absolute single-point reconstruction and to within-record contrasts; the spatial GP intercept’s contribution cancels in any contrast computed from the returned <code>posterior_draws</code> (manuscript Section 4.5.3).</li>
+<li>
+<code><a href="../reference/detect_change.html">detect_change()</a></code>: the threshold-formula argument is renamed from <code>sigma_within</code> to <code>sigma_residual</code> to match the manuscript’s framework. Pass the model’s posterior <code>sigma</code> (approximately 16 per mil for the spatial models). The function no longer requires the reconstruction to be built in any special mode.</li>
+<li>
+<code><a href="../reference/assess_claim.html">assess_claim()</a></code>: dropped the <code>claim$sigma_within</code> field. The L1 threshold uses analytical uncertainty alone (manuscript Section 4.5.3); L3 still uses the inversion’s posterior_draws but no longer requires a separate within-record SD.</li>
+<li>Removed <code>estimate_sigma_within()</code>. Within-record uncertainty in this framework comes from the calibration’s <code>sigma_residual</code> combined with the spatial GP intercept’s cancellation in a contrast; there is no separate record-specific SD to estimate.</li>
+<li>
+<code><a href="../reference/invert_d2H_ensemble.html">invert_d2H_ensemble()</a></code>: rewritten to fix multiple bugs in the default-args path. The previous default <code>models =</code> argument used v0.1 names that are not in the v10 registry; replaced with <code>c("full_sp", "full_interact_sp", "elevation_c4_interact_sp")</code>. Validation accessed <code>available_models()$model</code>, but <code><a href="../reference/available_models.html">available_models()</a></code> returns a character vector, so the subset was always <code>NULL</code> and validation silently skipped; now reads the vector directly. The inner <code><a href="../reference/invert_d2h.html">invert_d2H()</a></code> call did not pass <code>return_full = TRUE</code>, so the pooling step downstream read <code>$posterior_draws</code> from a summary data frame and got <code>NULL</code>; now forces <code>return_full = TRUE</code>. The pooling step itself flattened the per-model <code>posterior_draws</code> matrix across BOTH the draw and site axes, collapsing multi-site input to one scalar mean shared across all sites; now pools per-site, per-draw across models. The pool also previously concatenated all per-model draws and then sampled, which gave models with more draws (e.g. 1000-draw heavy tier vs. 100-draw preview tier) a proportionally larger share of the “equal” pool; now resamples each model to a uniform <code>n_target / k</code> draws first and concatenates. <strong>Return shape changed</strong> (see Breaking changes below).</li>
+<li>
+<code><a href="../reference/compare_models.html">compare_models()</a></code>: default <code>models =</code> argument referenced v0.1 names; replaced with <code>c("baseline", "baseline_sp", "full_sp")</code>. Several latent failures also blocked the default invocation. A <code>verbose</code> partial-match conflict when forwarding <code>...</code> to <code><a href="../reference/predict_d2h_precip.html">predict_d2h_precip()</a></code> was producing <code>formal argument "verbose" matched by multiple actual arguments</code>; switched to <code><a href="https://rdrr.io/r/base/do.call.html" class="external-link">do.call()</a></code> with a filtered extra-args list. Single-row input made the per-model means a length-N vector with <code>NULL</code> <code><a href="https://rdrr.io/r/base/dim.html" class="external-link">dim()</a></code>, tripping the row-wise <code><a href="https://rdrr.io/r/base/apply.html" class="external-link">apply()</a></code>; coerced to a 1xN matrix in that case. The per-model column rename for <code>return_all = TRUE</code> was being applied unconditionally and broke the ensemble-summary path; now only applied on the <code>return_all = TRUE</code> path. A user typo in <code>...</code> (e.g. <code>verb = FALSE</code>) used to cause every per-model <code><a href="https://rdrr.io/r/base/do.call.html" class="external-link">do.call()</a></code> to fail with “unused argument”, the per-model <code>tryCatch</code> would swallow each failure as a warning, and the function would abort with the misleading “All models failed”; <code><a href="../reference/compare_models.html">compare_models()</a></code> now validates <code>...</code> against <code><a href="../reference/predict_d2h_precip.html">predict_d2h_precip()</a></code>’s formals up front and reports unknown argument names with a clear error before the model loop runs. The <code>models_used</code> field of the returned ensemble summary used to report the originally requested set rather than the models that actually contributed; now reports <code>names(model_results)</code> so partial-failure runs are not silently misreported.</li>
+<li>
+<code><a href="../reference/predict_d2h_precip.html">predict_d2h_precip()</a></code> and <code><a href="../reference/invert_d2h.html">invert_d2H()</a></code>: the <code>c4_fraction * 100</code> conversion was unconditional, so a <code>NULL</code> input became <code>numeric(0)</code> and tripped a spurious capability-mismatch warning inside the core inversion. Both wrappers now keep <code>NULL</code> as <code>NULL</code>. They also now reject vector-length mismatches between <code>c4_fraction</code> and <code>d2H_wax</code> (was: silent R recycling with a generic warning) and validate that user inputs lie in <code>[0, 1]</code>. The out-of-range error names the offending maximum value and tells the caller to divide by 100 if the input is on the percent scale.</li>
+<li>
+<code><a href="../reference/get_data_manifest.html">get_data_manifest()</a></code>: previously returned <code>list(files = list())</code> on download failure, which downstream <code>verify_data_integrity()</code> read as “no checksums available, allow the file.” Now returns <code>NULL</code> with a <code><a href="https://rdrr.io/r/base/warning.html" class="external-link">warning()</a></code>; <code>verify_data_integrity()</code> treats <code>NULL</code> as “verification skipped” and warns explicitly.</li>
+<li>
+<code><a href="../reference/check_data_cache.html">check_data_cache()</a></code>, <code><a href="../reference/list_cached_models.html">list_cached_models()</a></code>, and <code><a href="../reference/get_cache_files.html">get_cache_files()</a></code>: <code><a href="../reference/download_model_data.html">download_model_data()</a></code> writes a single posterior file per model at <code>posteriors/&lt;model&gt;_posterior.rds</code>, but these three helpers were still looking for the v0.1 layout (<code>metadata/&lt;model&gt;_metadata.rds</code>, <code>posteriors/&lt;model&gt;_2000draws.rds</code>, and <code>posteriors_full/&lt;model&gt;_complete.rds</code>). After any successful download they reported the model as absent. The three helpers now read the canonical v0.2 layout. The <code>data_type</code> argument of <code><a href="../reference/check_data_cache.html">check_data_cache()</a></code> is retained for API compatibility but is now a no-op.</li>
+<li>
+<code>data_urls.json</code>: <code>base_url_latest</code> previously pointed at the <code>main</code> branch of <code>bradleylab/leafwax-data</code> while <code>manifest_url</code> was pinned to <code>v1.0.1</code>. Aligned both to <code>v1.0.1</code> so a future non-no-op <code>verify_data_integrity()</code> cannot trip on drift between latest-branch files and a v1.0.1 manifest.</li>
+<li>
+<code><a href="../reference/clear_download_cache.html">clear_download_cache()</a></code> no longer creates the cache directory before checking that it exists. Replaced the default <code><a href="../reference/get_cache_dir.html">get_cache_dir()</a></code> call with <code>get_cache_dir(create = FALSE)</code>.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="bug-fixes-post-review-pass-0-2-2">Bug fixes (post-review pass)<a class="anchor" aria-label="anchor" href="#bug-fixes-post-review-pass-0-2-2"></a></h3>
+<p>These fixes resolve issues surfaced by the pre-CRAN review pass.</p>
+<ul><li>
+<code><a href="../reference/invert_d2H_ensemble.html">invert_d2H_ensemble()</a></code> aborted with “formal argument ‘return_full’ matched by multiple actual arguments” whenever the caller passed <code>return_full</code> (or <code>model_name</code>) through <code>...</code>. The wrapper now strips both names from <code>...</code> before the per-model loop. The function also now warns when models contribute unequal draw counts and pools each model to the median count rather than the first model’s count.</li>
+<li>
+<code><a href="../reference/process_sequential.html">process_sequential()</a></code> referenced <code>processing_time</code> outside the <code>if (progress) {...}</code> block where it was assigned, throwing “object ‘processing_time’ not found” whenever <code>batch_predict(..., progress = FALSE)</code> was called.</li>
+<li>
+<code><a href="../reference/batch_predict.html">batch_predict()</a></code> aborted with “numbers of columns of arguments do not match” when one chunk errored to the smaller fallback shape and another succeeded with the full schema. The combine step now uses a column-tolerant helper (<code>.rbind_chunks</code>) that pads missing columns with NA.</li>
+<li>
+<code><a href="../reference/detect_change.html">detect_change()</a></code> aborted on the same <code>rbind</code> mismatch when an empty <code>test_interval</code> was paired with <code>magnitudes</code>. The empty- interval branch now appends NA magnitude columns so the column set matches populated rows.</li>
+<li>The “elevation” code path in <code><a href="../reference/invert_d2h.html">invert_d2h()</a></code> was unreachable for every v10 model. None of the 14 fitted posteriors carry <code>beta_elev</code> columns, so <code>model$elevation</code> was never populated and the function unconditionally hit a “knots not found” warning that silently dropped any user-supplied elevation. Removed the dead spline branch; <code>has_elevation</code> is now derived from the actual posterior columns and is <code>FALSE</code> for every shipped v10 model. The “env” variants instead carry a <code>beta_precip</code> term, exposed via <code>metadata$has_precip</code>.</li>
+<li>
+<code><a href="../reference/validate_inputs.html">validate_inputs()</a></code>: the validated PFT vectors were dropped from the returned list when the model used the v10 <code>has_vegetation</code> flag (rather than the legacy <code>has_pft</code>). The output now honours both names.</li>
+<li>
+<code><a href="../reference/download_with_progress.html">download_with_progress()</a></code>: the error handler called <code><a href="https://rdrr.io/r/base/connections.html" class="external-link">close()</a></code> on <code>con_in</code> / <code>con_out</code> unconditionally, raising a secondary error inside the handler when either had not yet been opened. The handler now only closes connections that were actually opened.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="repo-cleanup-0-2-2">Repo cleanup<a class="anchor" aria-label="anchor" href="#repo-cleanup-0-2-2"></a></h3>
+<ul><li>Removed the unreachable lookup-table subsystem (<code>R/lookup_tables.R</code>, <code>R/lookup_integration.R</code>, the <code>predict_spatial_mpp()</code> deprecated stub, and the <code>use_lookup</code> argument of <code><a href="../reference/predict_d2h_precip.html">predict_d2h_precip()</a></code>). The path was never wired to a shipping data archive; spatial predictions now always go through <code><a href="../reference/predict_spatial_dual_gp.html">predict_spatial_dual_gp()</a></code> against the live posterior.</li>
+<li>Removed <code>clear_data_cache()</code>. Use <code><a href="../reference/clear_download_cache.html">clear_download_cache()</a></code> instead; the two helpers were near-duplicates with no behavioural difference.</li>
+<li>Removed dead exports: <code>batch_invert_d2h()</code>, <code>monitor_memory()</code>, <code>verify_data_integrity()</code>, <code>setup_leafwax_data()</code>, <code>select_best_model()</code>, <code>get_model_recommendations()</code>. None had callers in the package and several relied on broken legacy paths.</li>
+<li>Removed the misleading text-progress bar in <code><a href="../reference/predict_d2h_precip.html">predict_d2h_precip()</a></code>: it jumped from 0% to 100% in a single step regardless of work done, because the inversion runs in one pass with no per-iteration callback. The <code>progress</code> argument is retained but is now a no-op at this layer; chunked progress reporting is still driven by <code><a href="../reference/batch_predict.html">batch_predict()</a></code>.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="internal-cleanup-0-2-2">Internal cleanup<a class="anchor" aria-label="anchor" href="#internal-cleanup-0-2-2"></a></h3>
+<ul><li>
+<code>LEAFWAX_DEFAULTS</code> (in <code>R/zzz.R</code>) is now the single source of truth for <code>leafwax.*</code> user options. <code><a href="../reference/leafwax_config.html">leafwax_config()</a></code> and <code><a href="../reference/leafwax_set_config.html">leafwax_set_config()</a></code> derive their option lists from it, so <code>suppress_preview_warning</code> (and any future option) round-trips without manual list maintenance.</li>
+<li>Capability flags are now derived from the actual posterior columns in <code><a href="../reference/load_posteriors.html">load_posteriors()</a></code>. <code>model_compatibility.R</code> keeps the name-based view for callers that need expected-schema info without loading the model; the two views agree on what each shipped v10 variant contains.</li>
+<li>
+<code><a href="../reference/get_cache_info.html">get_cache_info()</a></code> now classifies cache files using the v0.2 download layout (<code>posteriors/&lt;model&gt;_posterior.rds</code>, <code>spatial_metadata/&lt;model&gt;_knots.rds</code>, <code>manifest.json</code>). The previous regex matched only legacy v0.1 names, so the function silently classified every real cache entry as “other”.</li>
+<li>
+<code><a href="../reference/load_posteriors.html">load_posteriors()</a></code> now warns when it falls back to a freshly generated 125-knot Fibonacci sphere because the model’s knot file is missing. The substituted knots are not byte-identical to the v10 fit, so silent substitution is methods drift.</li>
+<li>
+<code><a href="../reference/invert_d2h.html">invert_d2h()</a></code> warns (was: a print statement) when <code>model$scaling</code> is missing and the inversion uses the conservative <code>PLACEHOLDER_SCALING</code> defaults — those scales are not the v10 fitted ones and reconstructions will not match the published calibration.</li>
+<li>Magic numbers (analytical default 3 per mil, 125 spatial knots, default C4 percent, default PFT split, placeholder scaling) are promoted to named constants in <code>R/constants.R</code>.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="repo-organization-0-2-2">Repo organization<a class="anchor" aria-label="anchor" href="#repo-organization-0-2-2"></a></h3>
+<ul><li>Untracked <code>leafwax.Rcheck/</code> artifacts (the directory is now matched by <code>*.Rcheck/</code> in <code>.gitignore</code>).</li>
+<li>Removed <code>README_EXAMPLES.md</code>, <code>test_direct.R</code>, <code>test_inversion.R</code> from the repo root — orphaned scratch artifacts already excluded from the tarball via <code>.Rbuildignore</code>.</li>
+<li>Moved <code>PLAN_v0.2.0.md</code> and <code>PLAN_v0.2.2.md</code> into <code>dev-notes/</code>.</li>
+<li>Removed the archived v0.1.0 test directory (<code>tests/_archive_v0.1.0/</code>).</li>
+<li>Added <code>cran-comments.md</code>.</li>
+<li>
+<code>.Rbuildignore</code> cleaned of stale entries (<code>vignettes/_archive_v0.1.0</code>, <code>test_*.R</code>, <code>README_EXAMPLES.md</code>, <code>PLAN_v*.md</code> — paths that no longer exist or are now covered by directory-level rules).</li>
+</ul><p>Regression tests covering these fixes are in <code>tests/testthat/test-cleanup-v022.R</code>.</p>
+</div>
+<div class="section level3">
+<h3 id="breaking-changes-0-2-2">Breaking changes<a class="anchor" aria-label="anchor" href="#breaking-changes-0-2-2"></a></h3>
+<ul><li>
+<code><a href="../reference/invert_d2h.html">invert_d2H()</a></code> reported intervals are now wider (the posterior predictive includes the residual <code>sigma</code>). The point estimate (<code>d2h_precip_mean</code>, <code>d2h_precip_median</code>) is unchanged; <code>d2h_precip_sd</code>, <code>d2h_precip_lower</code>, <code>d2h_precip_upper</code>, and <code>prediction_interval_width</code> are wider.</li>
+<li>
+<code><a href="../reference/invert_d2h.html">invert_d2H()</a></code> and <code><a href="../reference/invert_d2h.html">invert_d2h()</a></code>: removed <code>sigma_within</code> and <code>sigma_within_sd</code> arguments. The function applies the calibration’s <code>sigma_residual</code> directly.</li>
+<li>
+<code><a href="../reference/detect_change.html">detect_change()</a></code>: renamed argument <code>sigma_within</code> to <code>sigma_residual</code>.</li>
+<li>
+<code><a href="../reference/assess_claim.html">assess_claim()</a></code>: removed required <code>claim$sigma_within</code> field.</li>
+<li>
+<code>estimate_sigma_within()</code> is removed.</li>
+<li>
+<code><a href="../reference/invert_d2H_ensemble.html">invert_d2H_ensemble()</a></code> return shape changed. <code>posterior_draws</code> is now an <code>n_draws x n_sites</code> matrix (previously: a flat vector of length <code>n_draws</code> for single-site, silently corrupted for multi-site). <code>ensemble_summary</code> is now a data frame with one row per site (previously: a list of scalars, only correct for single-site input). The list of pooled models is now exposed at the top level as <code>models_used</code>; the previous <code>ensemble_summary$models_used</code> is gone. Single-site code that read <code>e$ensemble_summary$mean</code> continues to work — the data frame has one row, and <code>$mean</code> returns its single value. Multi-site code is breaking by definition: callers were reading wrong numbers before this fix.</li>
+<li>The exported data objects <code>model_metadata</code>, <code>mini_posteriors</code>, and <code>mini_lookup_table</code> are removed. They held v0.1 model names and were not used by any v10 code path; metadata is now exposed via <code><a href="../reference/get_all_model_metadata.html">get_all_model_metadata()</a></code> and posteriors via <code><a href="../reference/load_posteriors.html">load_posteriors()</a></code> (with the lazy-load resolver). Users still calling <code>data(model_metadata)</code> will see “data set not found” and should switch to <code><a href="../reference/get_all_model_metadata.html">get_all_model_metadata()</a></code>.</li>
+<li>The legacy v0.1 helpers <code>load_model_posteriors()</code>, <code>check_model_data()</code>, <code>use_example_data()</code>, and <code>get_model_size_estimate()</code> are removed. New code should call <code><a href="../reference/load_posteriors.html">load_posteriors()</a></code>, <code><a href="../reference/check_data_cache.html">check_data_cache()</a></code>, and the lazy-load download path. The synthetic-data fallback inside <code>use_example_data()</code> is also gone; missing posteriors now produce an explicit error instead of fabricated draws.</li>
+<li>The internal <code>.download_model_data_v0_1()</code> and its private helper <code>get_download_files()</code> are removed (the exported <code><a href="../reference/download_model_data.html">download_model_data()</a></code> in <code>R/download_data.R</code> is unchanged).</li>
+<li>
+<code><a href="../reference/validate_inputs.html">validate_inputs()</a></code>’s default <code>model_name</code> changed from <code>"b0b1"</code> to <code>"baseline"</code>. The previous default was a v0.1 name not in the v10 registry, so calls that relied on the default would have errored in <code><a href="../reference/get_all_model_metadata.html">get_all_model_metadata()</a></code> lookup; the new default is the closest v10 equivalent.</li>
+<li>
+<code><a href="../reference/compare_models.html">compare_models()</a></code>’s NULL-fallback model set changed from v0.1 names (<code>"b0b1"</code>, <code>"b0b1_elev"</code>, <code>"b0b1_sp"</code>) to v10 (<code>"baseline"</code>, <code>"baseline_sp"</code>, <code>"full_sp"</code>). Same rationale: the old default was unreachable.</li>
+<li>The lookup-table API is removed (<code>create_lookup_table()</code>, <code>use_lookup_if_available()</code>, <code>predict_spatial_mpp()</code>, <code>validate_lookup_table()</code>, <code>get_spatial_params()</code>, <code>cache_all_lookup_tables()</code>, <code>benchmark_lookup()</code>, <code>generate_global_grid()</code>, plus the <code>print.leafwax_lookup_table</code> method). The path was never wired to a published data archive; no v0.2 caller used it.</li>
+<li>
+<code><a href="../reference/predict_d2h_precip.html">predict_d2h_precip()</a></code>: removed the <code>use_lookup</code> argument (no-op since the lookup-table subsystem is gone).</li>
+<li>
+<code>clear_data_cache()</code> removed; use <code><a href="../reference/clear_download_cache.html">clear_download_cache()</a></code>.</li>
+<li>
+<code>batch_invert_d2h()</code>, <code>monitor_memory()</code>, <code>verify_data_integrity()</code>, <code>setup_leafwax_data()</code>, <code>select_best_model()</code>, and <code>get_model_recommendations()</code> are removed.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="documentation-and-naming-drift-cleanup-0-2-2">Documentation and naming-drift cleanup<a class="anchor" aria-label="anchor" href="#documentation-and-naming-drift-cleanup-0-2-2"></a></h3>
+<ul><li>All exported <code>\dontrun{}</code> and runnable examples now reference v10 model names (<code>baseline</code>, <code>baseline_sp</code>, <code>baseline_env</code>, …) instead of the v0.1 <code>b0b1_*</code> names. The v0.1 names are not available in the v10 model registry; the prior examples would have produced “model not found” errors if a user tried to run them.</li>
+<li>
+<code>R/leafwax-package.R</code> runnable example now passes <code>model_name =</code> rather than relying on R’s partial-argument matching of <code>model =</code>.</li>
+<li>
+<code>curlGetHeaders</code> qualified as <code><a href="https://rdrr.io/r/base/curlGetHeaders.html" class="external-link">base::curlGetHeaders</a></code> at the call site (it is a base function, not a <code>utils</code> export).</li>
+<li>
+<code><a href="../reference/get_url_config.html">get_url_config()</a></code> fallback substitutes the real <code>bradleylab</code> GitHub organization instead of a <code>[YOUR-USERNAME]</code> placeholder. The fallback only fires for broken installs where <code>data_urls.json</code> is missing from <code>inst/extdata/</code>.</li>
+<li>
+<code>inst/extdata/model_info.json</code> description for <code>c4_fraction</code> rewritten to match the actual contract (fraction <code>[0, 1]</code> on the public API, converted to percent internally).</li>
+<li>Drafting-history breadcrumbs (“Phase A”, “Phase B”, “Codex P2 on Phase B”) are removed from in-source comments. Substantive content is preserved.</li>
+<li>
+<code>inst/examples/</code> (four v0.1 example scripts) and <code>data-raw/{copy_posteriors,prepare_external_data,prepare_external_data_quick,prepare_package_data,_legacy_extract_spatial_metadata_120knot}.R</code>
+<ul><li>
+<code>data-raw/upload_instructions.md</code> + <code>data-raw/README.md</code> removed. The v10 vignette <code>paleo-record-workflow.Rmd</code> is now the canonical end-to-end example.</li>
+</ul></li>
+<li>
+<code>README.md</code> rewritten to describe the lazy-load architecture: <code>inst/extdata/posteriors_light/</code> ships in the tarball and full posteriors are downloaded from <code>bradleylab/leafwax-data</code> v1.0.1 (Zenodo) on first use, instead of the prior text claiming the package shipped ~10 MB of posteriors directly.</li>
+<li>
+<code>.Rbuildignore</code> widened from <code>^PLAN_v0\.2\.0\.md$</code> to <code>^PLAN_v.*\.md$</code> so future PLAN files are auto-excluded; the now-obsolete <code>^inst/examples$</code> line is removed.</li>
+<li>
+<code>_pkgdown.yml</code> reference index pruned: the deleted v0.1 helpers, the three deleted data exports, and the “legacy” framing on the lower-level helpers section are removed.</li>
+<li>
+<code>tests/testthat/helper-data.R</code> pruned to just the <code>leafwax.suppress_preview_warning</code> option setter; the <code>b0b1</code>-default mock helpers (<code>create_mock_metadata</code>, <code>create_mock_posteriors</code>, <code>create_mock_lookup_table</code>, <code>create_test_data</code>, <code>skip_on_cran_and_ci</code>, <code>model_available</code>) were dead code, not called by any test file.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="tests-0-2-2">Tests<a class="anchor" aria-label="anchor" href="#tests-0-2-2"></a></h3>
+<ul><li>New regression test file <code>tests/testthat/test-cleanup-v022.R</code> locks in: ensemble runs on default args; <code><a href="../reference/compare_models.html">compare_models()</a></code> runs on default args (single site, multiple sites, <code>return_all = TRUE</code>); <code>c4_fraction</code> round-trip from <code><a href="../reference/invert_d2h.html">invert_d2H()</a></code> to <code><a href="../reference/invert_d2h.html">invert_d2h()</a></code> produces consistent reconstructions; out-of-range <code>c4_fraction</code> is rejected at both wrapper entry points; <code><a href="../reference/get_data_manifest.html">get_data_manifest()</a></code> returns <code>NULL</code> on download failure rather than a silently-empty list.</li>
+</ul></div>
+</div>
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.2.1" id="leafwax-021">leafwax 0.2.1<a class="anchor" aria-label="anchor" href="#leafwax-021"></a></h2>
+<div class="section level3">
+<h3 id="cran-preparation-0-2-1">CRAN preparation<a class="anchor" aria-label="anchor" href="#cran-preparation-0-2-1"></a></h3>
+<ul><li>Three-tier posterior resolver wired up: <code><a href="../reference/load_posteriors.html">load_posteriors()</a></code> and <code><a href="../reference/available_models.html">available_models()</a></code> look in heavy posteriors → user cache → preview fixture, in that order. Heavy posteriors are now excluded from the built tarball (~11 MB → ~1.6 MB).</li>
+<li>
+<code>inst/extdata/posteriors_light/</code> is regenerated as a true 100-draw stratified subsample of the heavy posteriors with the full column set (the prior version dropped per-knot z columns and silently broke spatial inversion). The script that produces it is at <code>data-raw/regenerate_posteriors_light.R</code>.</li>
+<li>The preview tier is treated as a fixture: <code><a href="../reference/load_posteriors.html">load_posteriors()</a></code>, <code><a href="../reference/invert_d2h.html">invert_d2H()</a></code>, <code><a href="../reference/assess_claim.html">assess_claim()</a></code>, and <code><a href="../reference/detect_change.html">detect_change()</a></code> warn loudly whenever it is in use, naming the function context and the actual draw count after thinning. Set <code>options(leafwax.suppress_preview_warning = TRUE)</code> to silence the warning in batch jobs that have already acknowledged the limitation.</li>
+<li>
+<code><a href="../reference/download_model_data.html">download_model_data()</a></code> now writes <code>&lt;model&gt;_posterior.rds</code> (singular) to match what <code><a href="../reference/load_posteriors.html">load_posteriors()</a></code> reads, and points at the bradleylab/leafwax-data archive (concept DOI 10.5281/zenodo.20085465; v1.0.1 version DOI 10.5281/zenodo.20086180). Per-tag raw GitHub URLs are used for direct downloads; Zenodo holds the durable archive.</li>
+<li>
+<code>jsonlite</code> moved from <code>Suggests</code> to <code>Imports</code> (used unconditionally).</li>
+<li>
+<code>DESCRIPTION</code> <code>Title</code> reworded to drop the <code>d2H</code> abbreviation.</li>
+<li>Internal helpers (<code><a href="../reference/generate_fibonacci_sphere.html">generate_fibonacci_sphere()</a></code>, <code><a href="../reference/predict_spatial_dual_gp.html">predict_spatial_dual_gp()</a></code>, <code>predict_spatial_mpp()</code>, the four math primitives in <code>spatial_interpolation.R</code>, the legacy v0.1 <code>load_model_posteriors()</code>) are now flagged as internal in the help index.</li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.2.0" id="leafwax-020">leafwax 0.2.0<a class="anchor" aria-label="anchor" href="#leafwax-020"></a></h2>
 <div class="section level3">

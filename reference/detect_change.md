@@ -15,7 +15,7 @@ detect_change(
   age,
   baseline_interval,
   test_intervals = NULL,
-  sigma_within,
+  sigma_residual,
   sigma_analytical = 3,
   rho_t = NULL,
   beta_eff,
@@ -47,11 +47,11 @@ detect_change(
   list of length-2 numerics for multiple windows. NULL skips the
   per-interval probability table and returns only the threshold.
 
-- sigma_within:
+- sigma_residual:
 
-  Numeric, required, the within-record residual SD in leaf-wax per mil
-  (typically from
-  [`estimate_sigma_within()`](https://bradleylab.github.io/leafwax/reference/estimate_sigma_within.md)).
+  Numeric, required, the model's posterior residual SD on the leaf-wax
+  per-mil scale (`sigma`, approximately 16 per mil for the spatial
+  models; see Section 4.5.3).
 
 - sigma_analytical:
 
@@ -87,7 +87,7 @@ A list with elements:
 - `threshold` - the detection threshold on `d2H_precip` at the requested
   confidence level.
 
-- `formula` - the components used: `z`, `rho_t`, `sigma_within`,
+- `formula` - the components used: `z`, `rho_t`, `sigma_residual`,
   `sigma_analytical`, `beta_eff`.
 
 - `intervals` - a data frame with one row per test interval reporting
@@ -97,9 +97,12 @@ A list with elements:
 ## Details
 
 \$\$\mathrm{threshold}\_{precip} = \frac{z\_{\alpha/2}\\ \sqrt{2(1 -
-\rho_t)}\\ \sqrt{\sigma\_{within}^2 + \sigma\_{analytical}^2}}
+\rho_t)}\\ \sqrt{\sigma\_{residual}^2 + \sigma\_{analytical}^2}}
 {\beta\_{\mathrm{eff}}}\$\$
 
 The threshold is the smallest difference in `d2H_precip` between two
 independent samples that can be distinguished from within-record noise
-at the chosen confidence level.
+at the chosen confidence level. The spatial GP intercept contributes a
+constant to every sample in the record and cancels in the contrast; the
+same `sigma_residual` from the spatial calibration applies (manuscript
+Section 4.5.3).

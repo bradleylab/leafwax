@@ -20,7 +20,6 @@ predict_d2h_precip(
   pft_grass = NULL,
   model = "auto",
   n_draws = NULL,
-  use_lookup = TRUE,
   credible_level = 0.9,
   return_draws = FALSE,
   progress = TRUE,
@@ -78,10 +77,6 @@ predict_d2h_precip(
 
   Integer number of posterior draws (NULL for all)
 
-- use_lookup:
-
-  Logical whether to use lookup tables for spatial models
-
 - credible_level:
 
   Numeric credible interval level (default 0.9)
@@ -112,19 +107,27 @@ A data frame with predictions (or list if return_draws = TRUE):
 
 - d2h_precip_sd:
 
-  Standard deviation of predictions
+  Standard deviation of the posterior predictive interval
 
 - d2h_precip_lower:
 
-  Lower credible interval bound
+  Lower bound of the credible interval
 
 - d2h_precip_upper:
 
-  Upper credible interval bound
+  Upper bound of the credible interval
+
+- prediction_interval_width:
+
+  Width of the credible interval
 
 - model_used:
 
   Name of model used for prediction
+
+The interval is the posterior predictive specified in manuscript
+supplement Section S4.1, Eq. 7 (analytical uncertainty plus the model's
+posterior residual SD).
 
 ## Examples
 
@@ -145,7 +148,7 @@ results <- predict_d2h_precip(
 # Specify model explicitly
 results <- predict_d2h_precip(
   example_data,
-  model = "b0b1_elev_sp"
+  model = "baseline_env_sp"
 )
 
 # Get full posterior draws

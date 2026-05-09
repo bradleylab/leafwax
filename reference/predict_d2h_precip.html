@@ -11,7 +11,7 @@ available data and returns results in a tidy format."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">leafwax</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.2.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.2.2</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -19,7 +19,7 @@ available data and returns results in a tidy format."></head><body>
     </button>
 
     <div id="navbar" class="collapse navbar-collapse ms-3">
-      <ul class="navbar-nav me-auto"><li class="nav-item"><a class="nav-link" href="../index.html"><span class="fa fa-home"></span></a></li>
+      <ul class="navbar-nav me-auto"><li class="nav-item"><a class="nav-link" href="../index.html" aria-label="Home"><span class="fa fa-home"></span></a></li>
 <li class="nav-item"><a class="nav-link" href="../articles/paleo-record-workflow.html">Get started</a></li>
 <li class="active nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">News</a></li>
@@ -58,7 +58,6 @@ available data and returns results in a tidy format.</p>
 <span>  pft_grass <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  model <span class="op">=</span> <span class="st">"auto"</span>,</span>
 <span>  n_draws <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  use_lookup <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  credible_level <span class="op">=</span> <span class="fl">0.9</span>,</span>
 <span>  return_draws <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  progress <span class="op">=</span> <span class="cn">TRUE</span>,</span>
@@ -118,10 +117,6 @@ available data and returns results in a tidy format.</p>
 <dd><p>Integer number of posterior draws (NULL for all)</p></dd>
 
 
-<dt id="arg-use-lookup">use_lookup<a class="anchor" aria-label="anchor" href="#arg-use-lookup"></a></dt>
-<dd><p>Logical whether to use lookup tables for spatial models</p></dd>
-
-
 <dt id="arg-credible-level">credible_level<a class="anchor" aria-label="anchor" href="#arg-credible-level"></a></dt>
 <dd><p>Numeric credible interval level (default 0.9)</p></dd>
 
@@ -147,19 +142,26 @@ available data and returns results in a tidy format.</p>
 <dd><p>Median predicted precipitation d2H</p></dd>
 
 <dt>d2h_precip_sd</dt>
-<dd><p>Standard deviation of predictions</p></dd>
+<dd><p>Standard deviation of the posterior
+predictive interval</p></dd>
 
 <dt>d2h_precip_lower</dt>
-<dd><p>Lower credible interval bound</p></dd>
+<dd><p>Lower bound of the credible interval</p></dd>
 
 <dt>d2h_precip_upper</dt>
-<dd><p>Upper credible interval bound</p></dd>
+<dd><p>Upper bound of the credible interval</p></dd>
+
+<dt>prediction_interval_width</dt>
+<dd><p>Width of the credible interval</p></dd>
 
 <dt>model_used</dt>
 <dd><p>Name of model used for prediction</p></dd>
 
 
-</dl></div>
+</dl><p>The interval is the posterior predictive specified in manuscript
+supplement Section S4.1, Eq. 7 (analytical uncertainty plus the
+model's posterior residual SD).</p>
+    </div>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
@@ -179,7 +181,7 @@ available data and returns results in a tidy format.</p>
 <span class="r-in"><span><span class="co"># Specify model explicitly</span></span></span>
 <span class="r-in"><span><span class="va">results</span> <span class="op">&lt;-</span> <span class="fu">predict_d2h_precip</span><span class="op">(</span></span></span>
 <span class="r-in"><span>  <span class="va">example_data</span>,</span></span>
-<span class="r-in"><span>  model <span class="op">=</span> <span class="st">"b0b1_elev_sp"</span></span></span>
+<span class="r-in"><span>  model <span class="op">=</span> <span class="st">"baseline_env_sp"</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Get full posterior draws</span></span></span>

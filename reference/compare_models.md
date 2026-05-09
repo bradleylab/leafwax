@@ -54,13 +54,13 @@ data(example_data)
 # Compare multiple models
 comparison <- compare_models(
   example_data,
-  models = c("b0b1", "b0b1_elev", "b0b1_sp")
+  models = c("baseline", "baseline_env", "baseline_sp")
 )
 
 # Get all individual model results
 all_results <- compare_models(
   example_data,
-  models = c("b0b1", "b0b1_elev"),
+  models = c("baseline", "baseline_env"),
   return_all = TRUE
 )
 } # }

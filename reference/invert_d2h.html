@@ -11,7 +11,7 @@ elevation effects and spatial correlations."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">leafwax</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.2.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.2.2</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -19,7 +19,7 @@ elevation effects and spatial correlations."></head><body>
     </button>
 
     <div id="navbar" class="collapse navbar-collapse ms-3">
-      <ul class="navbar-nav me-auto"><li class="nav-item"><a class="nav-link" href="../index.html"><span class="fa fa-home"></span></a></li>
+      <ul class="navbar-nav me-auto"><li class="nav-item"><a class="nav-link" href="../index.html" aria-label="Home"><span class="fa fa-home"></span></a></li>
 <li class="nav-item"><a class="nav-link" href="../articles/paleo-record-workflow.html">Get started</a></li>
 <li class="active nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">News</a></li>
@@ -60,15 +60,13 @@ elevation effects and spatial correlations.</p>
 <span>  return_full <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  credible_level <span class="op">=</span> <span class="fl">0.9</span>,</span>
 <span>  verbose <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  sigma_within <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  sigma_within_sd <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  record_id <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  slope <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu">invert_d2H</span><span class="op">(</span></span>
 <span>  <span class="va">d2H_wax</span>,</span>
-<span>  <span class="va">d2H_wax_sd</span>,</span>
+<span>  d2H_wax_sd <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  <span class="va">longitude</span>,</span>
 <span>  <span class="va">latitude</span>,</span>
 <span>  elevation <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -83,8 +81,6 @@ elevation effects and spatial correlations.</p>
 <span>  return_full <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  credible_level <span class="op">=</span> <span class="fl">0.9</span>,</span>
 <span>  verbose <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  sigma_within <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  sigma_within_sd <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  record_id <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  slope <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
@@ -150,26 +146,6 @@ elevation effects and spatial correlations.</p>
 <dd><p>Logical whether to print progress messages</p></dd>
 
 
-<dt id="arg-sigma-within">sigma_within<a class="anchor" aria-label="anchor" href="#arg-sigma-within"></a></dt>
-<dd><p>Numeric, optional within-record residual standard
-deviation in per mil. When supplied, an additional
-<code>Normal(0, sigma_within)</code> noise term is added to the inverted
-<code>d2H_precip</code> per posterior draw, representing residual variance
-within a single sedimentary record (after spatial structure has
-cancelled). Use <code><a href="estimate_sigma_within.html">estimate_sigma_within()</a></code> to obtain this from a
-stationary baseline interval of the record. Section 4.5.3 of the
-manuscript explains why the global posterior <code>sigma</code> overstates
-within-record uncertainty.</p></dd>
-
-
-<dt id="arg-sigma-within-sd">sigma_within_sd<a class="anchor" aria-label="anchor" href="#arg-sigma-within-sd"></a></dt>
-<dd><p>Numeric, optional standard error on
-<code>sigma_within</code>. When non-<code>NULL</code>, each posterior draw resamples the
-residual SD from <code>Normal(sigma_within, sigma_within_sd)</code> (truncated
-at zero), so uncertainty in the within-record SD itself propagates
-into the prediction.</p></dd>
-
-
 <dt id="arg-record-id">record_id<a class="anchor" aria-label="anchor" href="#arg-record-id"></a></dt>
 <dd><p>Character or numeric, optional record identifier.
 When supplied and constant across all input rows, all rows are
@@ -207,7 +183,9 @@ supplied, the override applies uniformly to every input row.</p></dd>
 
 
 <dt id="arg-c-fraction">c4_fraction<a class="anchor" aria-label="anchor" href="#arg-c-fraction"></a></dt>
-<dd><p>Numeric vector of C4 vegetation percentage (0-100)</p></dd>
+<dd><p>Numeric vector of C4 vegetation cover as a
+fraction in <code>[0, 1]</code>. The wrapper converts to the percent (0-100)
+scale used internally before standardisation.</p></dd>
 
 
 <dt id="arg-c-fraction-sd">c4_fraction_sd<a class="anchor" aria-label="anchor" href="#arg-c-fraction-sd"></a></dt>
@@ -228,16 +206,28 @@ supplied, the override applies uniformly to every input row.</p></dd>
 <dd><p>Median predicted precipitation d2H</p></dd>
 
 <dt>d2h_precip_sd</dt>
-<dd><p>Standard deviation of predictions</p></dd>
+<dd><p>Standard deviation of the posterior
+predictive interval</p></dd>
 
 <dt>d2h_precip_lower</dt>
-<dd><p>Lower credible interval bound</p></dd>
+<dd><p>Lower bound of the credible interval</p></dd>
 
 <dt>d2h_precip_upper</dt>
-<dd><p>Upper credible interval bound</p></dd>
+<dd><p>Upper bound of the credible interval</p></dd>
+
+<dt>prediction_interval_width</dt>
+<dd><p>Width of the credible interval
+(upper - lower).</p></dd>
 
 
-</dl><p>If return_full is TRUE, a list with:</p>
+</dl><p>The interval is the posterior predictive specified in manuscript
+supplement Section S4.1, Eq. 7: the wax-error draw combines
+analytical uncertainty with the model's posterior residual SD
+<code>sigma</code>. For within-record change detection, the spatial GP
+intercept's contribution cancels in any contrast computed from
+the returned <code>posterior_draws</code> (manuscript Section 4.5.3); the
+same <code>sigma</code> applies in both regimes.</p>
+<p>If return_full is TRUE, a list with:</p>
 <dl><dt>summary</dt>
 <dd><p>The summary data frame described above</p></dd>
 
@@ -245,7 +235,7 @@ supplied, the override applies uniformly to every input row.</p></dd>
 <dd><p>Matrix of all posterior draws (n_draws x n_locations)</p></dd>
 
 <dt>model_info</dt>
-<dd><p>Information about the model used</p></dd>
+<dd><p>Information about the model used.</p></dd>
 
 </dl></div>
 

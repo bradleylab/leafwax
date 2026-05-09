@@ -4,8 +4,7 @@ Walks the four-level taxonomy from manuscript Section 4.5.6 and reports
 the highest level a claim survives at. The taxonomy is:
 
 - Level 1: a leaf-wax delta-2-H change occurred between two intervals.
-  Defensible when the change exceeds analytical uncertainty and the
-  within-record residual SD `sigma_within`.
+  Defensible when the change exceeds analytical uncertainty.
 
 - Level 2: the wax change is consistent with a directional hydroclimate
   change. Requires corroborating evidence (multi- proxy concordance,
@@ -13,9 +12,9 @@ the highest level a claim survives at. The taxonomy is:
   stability) supplied via `corroborating_proxies`.
 
 - Level 3: the wax change implies a quantitative delta-2-H_precip
-  magnitude. Requires a defended local effective slope, a defended
-  `sigma_within`, and explicit uncertainty propagation through the
-  inversion. When `reconstruction` is NULL the function calls
+  magnitude. Requires a defended local effective slope and explicit
+  uncertainty propagation through the inversion. When `reconstruction`
+  is NULL the function calls
   [`invert_d2H()`](https://bradleylab.github.io/leafwax/reference/invert_d2h.md)
   itself.
 
@@ -51,10 +50,8 @@ assess_claim(
   Named list specifying the claim. Required fields: `level` (integer
   1-4, the level the user is asserting), `interval_baseline` (length-2
   numeric c(min, max) age window), `interval_test` (length-2 numeric age
-  window), `sigma_within` (per mil; from
-  [`estimate_sigma_within()`](https://bradleylab.github.io/leafwax/reference/estimate_sigma_within.md)).
-  Optional fields, used by higher levels: `sigma_analytical` (default
-  3), `rho_t` (default 0; from
+  window). Optional fields, used by higher levels: `sigma_analytical`
+  (default 3), `rho_t` (default 0; from
   [`estimate_temporal_autocorrelation()`](https://bradleylab.github.io/leafwax/reference/estimate_temporal_autocorrelation.md)),
   `beta_eff` (numeric scalar; required at Level 3+), `confidence`
   (default 0.95), `magnitude_precip` (numeric, the precip-space
@@ -69,7 +66,7 @@ assess_claim(
 
   Optional output of `invert_d2H(..., return_full = TRUE)` on the
   record. When NULL and the claim's level is 3 or 4, the function runs
-  the inversion itself given `longitude` / `latitude` / `model_name`.
+  the inversion itself.
 
 - longitude, latitude:
 

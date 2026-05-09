@@ -6,7 +6,7 @@ spiral method.
 ## Usage
 
 ``` r
-generate_fibonacci_sphere(n_points = 125)
+generate_fibonacci_sphere(n_points = N_SPATIAL_KNOTS)
 ```
 
 ## Arguments

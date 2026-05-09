@@ -3,7 +3,7 @@
 reports the highest level a claim survives at. The taxonomy is:
 Level 1: a leaf-wax delta-2-H change occurred between two
 intervals. Defensible when the change exceeds analytical
-uncertainty and the within-record residual SD sigma_within.
+uncertainty.
 Level 2: the wax change is consistent with a directional
 hydroclimate change. Requires corroborating evidence (multi-
 proxy concordance, sedimentological context, or biomarker
@@ -11,9 +11,9 @@ evidence for vegetation stability) supplied via
 corroborating_proxies.
 Level 3: the wax change implies a quantitative
 delta-2-H_precip magnitude. Requires a defended local effective
-slope, a defended sigma_within, and explicit uncertainty
-propagation through the inversion. When reconstruction is
-NULL the function calls invert_d2H() itself.
+slope and explicit uncertainty propagation through the
+inversion. When reconstruction is NULL the function calls
+invert_d2H() itself.
 Level 4: the magnitude is uniquely attributable to
 precipitation isotope change rather than to vegetation,
 source-water seasonality, or evapotranspirative enrichment.
@@ -24,7 +24,7 @@ precipitation control over the interval.
 reports the highest level a claim survives at. The taxonomy is:
 Level 1: a leaf-wax delta-2-H change occurred between two
 intervals. Defensible when the change exceeds analytical
-uncertainty and the within-record residual SD sigma_within.
+uncertainty.
 Level 2: the wax change is consistent with a directional
 hydroclimate change. Requires corroborating evidence (multi-
 proxy concordance, sedimentological context, or biomarker
@@ -32,9 +32,9 @@ evidence for vegetation stability) supplied via
 corroborating_proxies.
 Level 3: the wax change implies a quantitative
 delta-2-H_precip magnitude. Requires a defended local effective
-slope, a defended sigma_within, and explicit uncertainty
-propagation through the inversion. When reconstruction is
-NULL the function calls invert_d2H() itself.
+slope and explicit uncertainty propagation through the
+inversion. When reconstruction is NULL the function calls
+invert_d2H() itself.
 Level 4: the magnitude is uniquely attributable to
 precipitation isotope change rather than to vegetation,
 source-water seasonality, or evapotranspirative enrichment.
@@ -49,7 +49,7 @@ precipitation control over the interval.
 
     <a class="navbar-brand me-2" href="../index.html">leafwax</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.2.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.2.2</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -57,7 +57,7 @@ precipitation control over the interval.
     </button>
 
     <div id="navbar" class="collapse navbar-collapse ms-3">
-      <ul class="navbar-nav me-auto"><li class="nav-item"><a class="nav-link" href="../index.html"><span class="fa fa-home"></span></a></li>
+      <ul class="navbar-nav me-auto"><li class="nav-item"><a class="nav-link" href="../index.html" aria-label="Home"><span class="fa fa-home"></span></a></li>
 <li class="nav-item"><a class="nav-link" href="../articles/paleo-record-workflow.html">Get started</a></li>
 <li class="active nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">News</a></li>
@@ -79,7 +79,7 @@ precipitation control over the interval.
     <p>Walks the four-level taxonomy from manuscript Section 4.5.6 and
 reports the highest level a claim survives at. The taxonomy is:</p><ul><li><p>Level 1: a leaf-wax delta-2-H change occurred between two
 intervals. Defensible when the change exceeds analytical
-uncertainty and the within-record residual SD <code>sigma_within</code>.</p></li>
+uncertainty.</p></li>
 <li><p>Level 2: the wax change is consistent with a directional
 hydroclimate change. Requires corroborating evidence (multi-
 proxy concordance, sedimentological context, or biomarker
@@ -87,9 +87,9 @@ evidence for vegetation stability) supplied via
 <code>corroborating_proxies</code>.</p></li>
 <li><p>Level 3: the wax change implies a quantitative
 delta-2-H_precip magnitude. Requires a defended local effective
-slope, a defended <code>sigma_within</code>, and explicit uncertainty
-propagation through the inversion. When <code>reconstruction</code> is
-NULL the function calls <code><a href="invert_d2h.html">invert_d2H()</a></code> itself.</p></li>
+slope and explicit uncertainty propagation through the
+inversion. When <code>reconstruction</code> is NULL the function calls
+<code><a href="invert_d2h.html">invert_d2H()</a></code> itself.</p></li>
 <li><p>Level 4: the magnitude is uniquely attributable to
 precipitation isotope change rather than to vegetation,
 source-water seasonality, or evapotranspirative enrichment.
@@ -124,8 +124,7 @@ columns of equal length. <code>d2h_wax_err</code> is optional; defaults to
 <dd><p>Named list specifying the claim. Required fields:
 <code>level</code> (integer 1-4, the level the user is asserting),
 <code>interval_baseline</code> (length-2 numeric c(min, max) age window),
-<code>interval_test</code> (length-2 numeric age window),
-<code>sigma_within</code> (per mil; from <code><a href="estimate_sigma_within.html">estimate_sigma_within()</a></code>).
+<code>interval_test</code> (length-2 numeric age window).
 Optional fields, used by higher levels:
 <code>sigma_analytical</code> (default 3),
 <code>rho_t</code> (default 0; from <code><a href="estimate_temporal_autocorrelation.html">estimate_temporal_autocorrelation()</a></code>),
@@ -141,9 +140,8 @@ and a non-empty <code>evidence</code> string; required at Level 4).</p></dd>
 
 
 <dt id="arg-reconstruction">reconstruction<a class="anchor" aria-label="anchor" href="#arg-reconstruction"></a></dt>
-<dd><p>Optional output of <code>invert_d2H(..., return_full = TRUE)</code> on the record. When NULL and the claim's level is 3 or 4,
-the function runs the inversion itself given <code>longitude</code> /
-<code>latitude</code> / <code>model_name</code>.</p></dd>
+<dd><p>Optional output of <code>invert_d2H(..., return_full = TRUE)</code> on the record. When NULL and the claim's level is 3 or
+4, the function runs the inversion itself.</p></dd>
 
 
 <dt id="arg-longitude-latitude">longitude, latitude<a class="anchor" aria-label="anchor" href="#arg-longitude-latitude"></a></dt>
