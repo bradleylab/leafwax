@@ -113,7 +113,10 @@ slope uncertainty.
 `invert_d2H()` accepts the slope vector built above plus the within-
 record SD. We pass `record_id` so the function validates that all
 rows are from one site, and we ask for the full posterior draws
-matrix so we can hand it to `detect_change()`.
+matrix so we can hand it to `detect_change()`. Because the
+reconstruction is going into a within-record contrast, we set
+`interval_type = "fitted"`: the global posterior residual SD is the
+wrong noise for this contrast (manuscript Section 4.5.3).
 
 ```{r invert}
 recon <- suppressWarnings(invert_d2H(
@@ -127,6 +130,7 @@ recon <- suppressWarnings(invert_d2H(
   slope        = slope_post,
   record_id    = "LS11KOMA",
   return_full  = TRUE,
+  interval_type = "fitted",
   verbose      = FALSE
 ))
 

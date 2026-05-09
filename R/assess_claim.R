@@ -54,9 +54,13 @@
 #'   `evapotranspirative_stationary` (each a list with `value` (TRUE)
 #'     and a non-empty `evidence` string; required at Level 4).
 #' @param reconstruction Optional output of `invert_d2H(..., return_full
-#'   = TRUE)` on the record. When NULL and the claim's level is 3 or 4,
-#'   the function runs the inversion itself given `longitude` /
-#'   `latitude` / `model_name`.
+#'   = TRUE, interval_type = "fitted")` on the record. When NULL and
+#'   the claim's level is 3 or 4, the function runs the inversion
+#'   itself with the correct `interval_type`. When supplied directly,
+#'   it must be built with `interval_type = "fitted"`: the L3+ contrast
+#'   is derived under the assumption that the global residual SD is
+#'   not in the posterior (manuscript Section 4.5.3). Passing a
+#'   `"predictive"` reconstruction raises an error.
 #' @param longitude,latitude Site coordinates, used only when
 #'   `reconstruction` is NULL.
 #' @param model_name Model to use when running the inversion (default
@@ -266,6 +270,7 @@ assess_claim <- function(record,
           slope        = beta_eff,
           return_full  = TRUE,
           verbose      = FALSE,
+          interval_type = "fitted",
           ...
         ),
         warning = function(w) {
@@ -279,6 +284,17 @@ assess_claim <- function(record,
     if (is.null(reconstruction$posterior_draws)) {
       stop("reconstruction must be invert_d2H(..., return_full = TRUE) ",
            "and contain $posterior_draws")
+    }
+    rec_interval <- attr(reconstruction, "leafwax_interval_type") %||%
+                    reconstruction$model_info$interval_type %||%
+                    NA_character_
+    if (!is.na(rec_interval) && identical(rec_interval, "predictive")) {
+      stop("assess_claim L3+ requires invert_d2H(..., interval_type = ",
+           "\"fitted\"); the predictive interval includes the global ",
+           "residual sigma, which inflates within-record p_exceed ",
+           "(manuscript Section 4.5.3). Rebuild the reconstruction with ",
+           "interval_type = \"fitted\" or omit it and let assess_claim ",
+           "build it internally.")
     }
     # Re-emit the preview-tier warning at the inferential layer using
     # the *reconstruction's* own model name — the user-supplied

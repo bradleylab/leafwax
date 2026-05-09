@@ -2,6 +2,29 @@
 
 ## Bug fixes (runtime correctness)
 
+* `invert_d2H()` and `invert_d2h()`: the reported credible interval was
+  labelled `prediction_interval_width` but did not include the model's
+  residual SD `sigma`, making it a credible interval on the fitted
+  value rather than a posterior predictive interval. At a typical site
+  this gave intervals roughly an order of magnitude narrower than the
+  manuscript's per-site uncertainties. The default now returns the
+  full Bayesian posterior predictive interval (parameter uncertainty
+  + measurement uncertainty + residual `sigma` + `sigma_within` if
+  supplied). New argument `interval_type = c("predictive", "fitted")`
+  selects between the two; `interval_type = "fitted"` reproduces the
+  pre-v0.2.2 behavior. The returned object carries
+  `attr(., "leafwax_interval_type")` so downstream callers can detect
+  a misuse. `predict_d2h_precip()` and `invert_d2H_ensemble()`
+  inherit the predictive default.
+* `detect_change()` and `assess_claim()` (Level 3+): require the
+  reconstruction to be built with `interval_type = "fitted"`. The
+  within-record contrast formula in manuscript Section 4.5.3 is
+  derived under the assumption that the global residual SD is not in
+  the posterior; using a predictive reconstruction would inflate
+  `p_exceed` and the detection threshold. `assess_claim()` now
+  passes `interval_type = "fitted"` on its internal `invert_d2H()`
+  call. Both functions raise an informative error when given a
+  user-supplied predictive reconstruction.
 * `invert_d2H_ensemble()`: rewritten to fix multiple bugs in the
   default-args path. The previous default `models =` argument used
   v0.1 names that are not in the v10 registry; replaced with
@@ -84,6 +107,18 @@ Regression tests covering these fixes are in
 
 ## Breaking changes
 
+* `invert_d2H()` reported intervals are now wider by default (full
+  posterior predictive instead of fitted-value credible interval). The
+  point estimate (`d2h_precip_mean`, `d2h_precip_median`) is unchanged;
+  `d2h_precip_sd`, `d2h_precip_lower`, `d2h_precip_upper`, and
+  `prediction_interval_width` are wider. Pre-v0.2.2 numbers are
+  reproducible via `interval_type = "fitted"`. `detect_change()` and
+  `assess_claim()` now require the fitted form explicitly; existing
+  scripts that built a downcore reconstruction and passed it to
+  `detect_change()` or `assess_claim()` must add
+  `interval_type = "fitted"` to the `invert_d2H()` call. Callers that
+  let `assess_claim()` build the reconstruction internally are
+  unaffected.
 * `invert_d2H_ensemble()` return shape changed. `posterior_draws` is
   now an `n_draws x n_sites` matrix (previously: a flat vector of
   length `n_draws` for single-site, silently corrupted for multi-site).

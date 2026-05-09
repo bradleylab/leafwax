@@ -18,9 +18,13 @@ detect_change(
 )
 }
 \arguments{
-\item{reconstruction}{Output of \code{invert_d2H(..., return_full = TRUE)}
-on a downcore series. Must contain a \code{posterior_draws} matrix of
-shape \verb{n_iter x n_samples}.}
+\item{reconstruction}{Output of \code{invert_d2H(..., return_full = TRUE, interval_type = "fitted")} on a downcore series. Must contain a
+\code{posterior_draws} matrix of shape \verb{n_iter x n_samples}. The
+reconstruction must be built with \code{interval_type = "fitted"}: the
+change-detection threshold formula (and \code{p_exceed}) is derived
+under the assumption that the global residual SD is not in the
+posterior. Passing a \code{"predictive"} reconstruction raises an
+error.}
 
 \item{age}{Numeric vector, length \code{n_samples}, of sample ages
 matching the reconstruction columns.}

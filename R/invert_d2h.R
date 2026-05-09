@@ -59,7 +59,28 @@ NULL
 #'   build a defensible per-draw override that respects the manuscript's
 #'   simple-model ceiling at alpha = 0.88 (Section 4.5.5). When
 #'   supplied, the override applies uniformly to every input row.
-#' 
+#' @param interval_type Character, one of `"predictive"` (default) or
+#'   `"fitted"`. Controls which variance components contribute to the
+#'   reported credible interval.
+#'   \itemize{
+#'     \item `"predictive"` returns the full Bayesian posterior
+#'       predictive interval: parameter uncertainty + measurement
+#'       uncertainty + the model's residual SD (`sigma`) +
+#'       `sigma_within` if supplied. This matches the standard
+#'       definition of a regression prediction interval and the
+#'       manuscript's reported per-site uncertainties.
+#'     \item `"fitted"` returns a credible interval on the fitted
+#'       value `E[d2H_precip | d2H_wax]`: parameter + measurement +
+#'       `sigma_within` if supplied, but **without** the residual SD.
+#'       This is the input expected by `detect_change()` and
+#'       `assess_claim()` (Section 4.5.3): for within-record change
+#'       detection the global residual SD bundles between-site
+#'       sources of variance the record does not carry.
+#'   }
+#'   The returned object carries
+#'   `attr(., "leafwax_interval_type")` so downstream callers can
+#'   detect a misuse.
+#'
 #' @return If return_full is FALSE, a data frame with columns:
 #'   \item{d2h_precip_mean}{Mean predicted precipitation d2H}
 #'   \item{d2h_precip_median}{Median predicted precipitation d2H}
@@ -109,7 +130,11 @@ invert_d2h <- function(d2h_wax, d2h_wax_err = NULL,
                        sigma_within = NULL,
                        sigma_within_sd = NULL,
                        record_id = NULL,
-                       slope = NULL) {
+                       slope = NULL,
+                       interval_type = c("predictive", "fitted")) {
+
+  interval_type <- match.arg(interval_type)
+  add_residual_sigma <- identical(interval_type, "predictive")
 
   # Input validation
   n_obs <- length(d2h_wax)
@@ -426,30 +451,33 @@ invert_d2h <- function(d2h_wax, d2h_wax_err = NULL,
       beta_oipc_eff <- beta_oipc[iter] + slope_effect[iter, ]
     }
 
-    # Uncertainty propagation. The base predictive includes:
-    # (1) the analytical uncertainty on d2H_wax (added in standardized
-    # space via d2h_wax_err_std), and (2) the regression-parameter
-    # uncertainty already carried through the posterior draws. The
-    # global residual sigma is intentionally NOT added here: when used
-    # for within-record change detection, the global posterior sigma
-    # overstates the relevant noise (it bundles between-site sources
-    # of variance the record does not carry; manuscript Section 4.5.3).
-    # Users who want a within-record residual SD pass it via
-    # sigma_within; the noise enters in wax space below so it
-    # propagates through beta_oipc_eff like the measurement noise.
-    # Users who want global single-point predictive variance can wrap
-    # this call and add Normal(0, model$draws$sigma) noise themselves.
+    # Uncertainty propagation. The components combined in quadrature in
+    # standardized wax space are:
+    #   (1) analytical uncertainty on d2H_wax (d2h_wax_err_std)
+    #   (2) regression-parameter uncertainty (already carried through
+    #       the posterior draws of beta_0, beta_oipc, GP fields, etc.)
+    #   (3) the model's residual SD `sigma`, included when
+    #       interval_type = "predictive" (the default). Standardized
+    #       directly: `sigma` is fitted on standardized wax.
+    #   (4) within-record residual `sigma_within`, included when the
+    #       caller supplies it.
+    #
+    # Component (3) is dropped under interval_type = "fitted" because
+    # within-record change detection (manuscript Section 4.5.3) treats
+    # the global posterior sigma as overstating the relevant noise
+    # (it bundles between-site sources of variance the record does
+    # not carry). detect_change() and assess_claim() therefore require
+    # `interval_type = "fitted"`; calling them with a predictive-mode
+    # reconstruction yields an inflated p_exceed.
     for (i in 1:n_obs) {
-      # Combine measurement uncertainty and within-record residual in
-      # quadrature in standardized wax space, then draw
-      # the wax-error realization. Per-i draws keep adjacent samples
-      # within a record carrying independent residuals while sharing
-      # the iter-level posterior draw of parameters above.
+      var_std <- d2h_wax_err_std[i]^2
       if (use_sigma_within) {
-        wax_sd_std <- sqrt(d2h_wax_err_std[i]^2 + sigma_w_draws_std[iter]^2)
-      } else {
-        wax_sd_std <- d2h_wax_err_std[i]
+        var_std <- var_std + sigma_w_draws_std[iter]^2
       }
+      if (add_residual_sigma) {
+        var_std <- var_std + sigma[iter]^2
+      }
+      wax_sd_std <- sqrt(var_std)
       d2h_wax_with_error <- rnorm(1, d2h_wax_std[i], wax_sd_std)
 
       # Invert to get precipitation d2H (in standardized space). The
@@ -521,9 +549,12 @@ invert_d2h <- function(d2h_wax, d2h_wax_err = NULL,
       )
     )
     attr(out, "leafwax_tier") <- tier
+    attr(out, "leafwax_interval_type") <- interval_type
+    out$model_info$interval_type <- interval_type
     return(out)
   } else {
     attr(summary_df, "leafwax_tier") <- tier
+    attr(summary_df, "leafwax_interval_type") <- interval_type
     return(summary_df)
   }
 }
@@ -538,6 +569,10 @@ invert_d2h <- function(d2h_wax, d2h_wax_err = NULL,
 #' @param c4_fraction_sd C4 fraction uncertainty (not used, kept for compatibility)
 #' @param model_name Character string specifying which model to use
 #' @param n_posterior_draws Integer number of posterior draws to use
+#' @param interval_type Character, one of `"predictive"` (default) or
+#'   `"fitted"`. See `?invert_d2h` for details. Use `"fitted"` when the
+#'   reconstruction will be passed to `detect_change()` or
+#'   `assess_claim()`.
 #' @export
 invert_d2H <- function(d2H_wax,
                       d2H_wax_sd,
@@ -558,7 +593,10 @@ invert_d2H <- function(d2H_wax,
                       sigma_within = NULL,
                       sigma_within_sd = NULL,
                       record_id = NULL,
-                      slope = NULL) {
+                      slope = NULL,
+                      interval_type = c("predictive", "fitted")) {
+
+  interval_type <- match.arg(interval_type)
 
   # The internal invert_d2h() core takes c4_percent (0-100), matching
   # the scale at which scaling_params$c4_mean / c4_sd were estimated.
@@ -600,7 +638,8 @@ invert_d2H <- function(d2H_wax,
     sigma_within = sigma_within,
     sigma_within_sd = sigma_within_sd,
     record_id = record_id,
-    slope = slope
+    slope = slope,
+    interval_type = interval_type
   )
 }
 

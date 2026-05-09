@@ -37,9 +37,13 @@ non-empty + named),
 \code{evapotranspirative_stationary} (each a list with \code{value} (TRUE)
 and a non-empty \code{evidence} string; required at Level 4).}
 
-\item{reconstruction}{Optional output of \code{invert_d2H(..., return_full = TRUE)} on the record. When NULL and the claim's level is 3 or 4,
-the function runs the inversion itself given \code{longitude} /
-\code{latitude} / \code{model_name}.}
+\item{reconstruction}{Optional output of \code{invert_d2H(..., return_full = TRUE, interval_type = "fitted")} on the record. When NULL and
+the claim's level is 3 or 4, the function runs the inversion
+itself with the correct \code{interval_type}. When supplied directly,
+it must be built with \code{interval_type = "fitted"}: the L3+ contrast
+is derived under the assumption that the global residual SD is
+not in the posterior (manuscript Section 4.5.3). Passing a
+\code{"predictive"} reconstruction raises an error.}
 
 \item{longitude, latitude}{Site coordinates, used only when
 \code{reconstruction} is NULL.}

@@ -107,9 +107,14 @@ estimate_temporal_autocorrelation <- function(d2h_wax, age,
 #' independent samples that can be distinguished from within-record
 #' noise at the chosen confidence level.
 #'
-#' @param reconstruction Output of `invert_d2H(..., return_full = TRUE)`
-#'   on a downcore series. Must contain a `posterior_draws` matrix of
-#'   shape `n_iter x n_samples`.
+#' @param reconstruction Output of `invert_d2H(..., return_full = TRUE,
+#'   interval_type = "fitted")` on a downcore series. Must contain a
+#'   `posterior_draws` matrix of shape `n_iter x n_samples`. The
+#'   reconstruction must be built with `interval_type = "fitted"`: the
+#'   change-detection threshold formula (and `p_exceed`) is derived
+#'   under the assumption that the global residual SD is not in the
+#'   posterior. Passing a `"predictive"` reconstruction raises an
+#'   error.
 #' @param age Numeric vector, length `n_samples`, of sample ages
 #'   matching the reconstruction columns.
 #' @param baseline_interval Length-2 numeric `c(min, max)` defining the
@@ -160,6 +165,17 @@ detect_change <- function(reconstruction,
     stop("reconstruction must be the list returned by ",
          "invert_d2H(..., return_full = TRUE) and contain ",
          "$posterior_draws")
+  }
+  rec_interval <- attr(reconstruction, "leafwax_interval_type") %||%
+                  reconstruction$model_info$interval_type %||%
+                  NA_character_
+  if (!is.na(rec_interval) && identical(rec_interval, "predictive")) {
+    stop("detect_change requires invert_d2H(..., interval_type = ",
+         "\"fitted\"); the predictive interval includes the global ",
+         "residual sigma, which inflates the change-detection ",
+         "threshold and the posterior p_exceed (manuscript Section ",
+         "4.5.3). Rebuild the reconstruction with ",
+         "interval_type = \"fitted\".")
   }
   # Re-raise the preview-tier warning at the change-detection layer.
   # Posterior-probability statements (`p_exceed`) are exactly what the

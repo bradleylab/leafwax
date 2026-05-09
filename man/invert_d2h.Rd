@@ -23,7 +23,8 @@ invert_d2h(
   sigma_within = NULL,
   sigma_within_sd = NULL,
   record_id = NULL,
-  slope = NULL
+  slope = NULL,
+  interval_type = c("predictive", "fitted")
 )
 
 invert_d2H(
@@ -46,7 +47,8 @@ invert_d2H(
   sigma_within = NULL,
   sigma_within_sd = NULL,
   record_id = NULL,
-  slope = NULL
+  slope = NULL,
+  interval_type = c("predictive", "fitted")
 )
 }
 \arguments{
@@ -113,6 +115,11 @@ A single numeric replaces the slope with a fixed point estimate
 build a defensible per-draw override that respects the manuscript's
 simple-model ceiling at alpha = 0.88 (Section 4.5.5). When
 supplied, the override applies uniformly to every input row.}
+
+\item{interval_type}{Character, one of \code{"predictive"} (default) or
+\code{"fitted"}. See \code{?invert_d2h} for details. Use \code{"fitted"} when the
+reconstruction will be passed to \code{detect_change()} or
+\code{assess_claim()}.}
 
 \item{d2H_wax}{Numeric vector of leaf wax d2H values (per mil)}
 
