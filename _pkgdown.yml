@@ -109,15 +109,15 @@ articles:
 
 news:
   releases:
-    - text: "Version 0.2.0"
-      href: https://github.com/bradleylab/leafwax/releases/tag/v0.2.0
+    - text: "Version 0.2.2"
+      href: https://github.com/bradleylab/leafwax/releases/tag/v0.2.2
 
 development:
   mode: auto
 
 authors:
   Alex Bradley:
-    href: https://eps.wustl.edu/people/alex-bradley
+    href: https://eeps.washu.edu/people/alexander-s-bradley
 
 footer:
   structure:
