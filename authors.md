@@ -2,8 +2,8 @@
 
 ## Authors
 
-- **[Alex Bradley](https://eps.wustl.edu/people/alex-bradley)**. Author,
-  maintainer. [](https://orcid.org/0000-0002-4044-2802)
+- **[Alex Bradley](https://eeps.washu.edu/people/alexander-s-bradley)**.
+  Author, maintainer. [](https://orcid.org/0000-0002-4044-2802)
 
 ## Citation
 
