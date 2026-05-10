@@ -1,8 +1,8 @@
 ---
-title: "Paleo-record workflow: from a downcore series to a defensible claim"
+title: "When does a leaf-wax record support a precipitation-isotope claim?"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Paleo-record workflow: from a downcore series to a defensible claim}
+  %\VignetteIndexEntry{When does a leaf-wax record support a precipitation-isotope claim?}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -331,7 +331,7 @@ plot_recon <- function(rec, ages, title, boundary) {
     ylim = range(c(rec$summary$d2h_precip_lower,
                    rec$summary$d2h_precip_upper)),
     xlab = "Age (yr BP)",
-    ylab = "d2H_precip (per mil)",
+    ylab = expression(delta^2 * H[precipitation] ~ "(‰)"),
     main = title
   )
   polygon(
