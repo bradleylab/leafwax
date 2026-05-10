@@ -64,17 +64,18 @@ enough to support a published claim of change. The central question for
 any record is whether the difference in <code>d2H_precip</code> between
 two stratigraphic intervals can be distinguished from
 calibration-plus-analytical noise, and at what confidence level.</p>
-<p>The vignette runs the chain on two Iso2k records that produce
-opposite verdicts. Lake Malawi (LS11KOMA, Konecky et al.) has 11 samples
-across the Common Era and an in-record <code>d2H_wax</code> range of
-approximately 10 per mil — a record where no plausible 30 per mil shift
-in <code>d2H_precip</code> can be distinguished from within-record
-noise. Lake Qinghai (LS16THQI01, Thomas et al.) has 240 samples spanning
-31 kyr of the glacial-to-Holocene transition on the northeastern Tibetan
-Plateau, with strong sample-to-sample autocorrelation that shrinks the
-detection threshold; here a substantial drying signal across the Last
-Glacial Maximum boundary is recovered with high posterior
-probability.</p>
+<p>The vignette runs the chain on two Iso2k records with different
+inferential ceilings. Lake Malawi (LS11KOMA, Konecky et al.) has 11
+samples across the Common Era and an in-record <code>d2H_wax</code>
+range of approximately 10 per mil — a record where no plausible 30 per
+mil shift in <code>d2H_precip</code> can be distinguished from
+within-record noise. Lake Qinghai (LS16THQI01, Thomas et al.) has 240
+samples spanning 31 kyr of the glacial-to-Holocene transition on the
+northeastern Tibetan Plateau. Its large LGM-to-Holocene shift and strong
+sample-to-sample autocorrelation support a directional
+hydroclimate-change claim, but the example 30 per mil quantitative
+<code>d2H_precip</code> claim still does not clear the 95 percent Level
+3 threshold.</p>
 <p>The detection threshold from manuscript Section 4.5.3 is</p>
 <p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mrow><mi mathvariant="normal">t</mi><mi mathvariant="normal">h</mi><mi mathvariant="normal">r</mi><mi mathvariant="normal">e</mi><mi mathvariant="normal">s</mi><mi mathvariant="normal">h</mi><mi mathvariant="normal">o</mi><mi mathvariant="normal">l</mi><mi mathvariant="normal">d</mi></mrow><mrow><mi mathvariant="normal">p</mi><mi mathvariant="normal">r</mi><mi mathvariant="normal">e</mi><mi mathvariant="normal">c</mi><mi mathvariant="normal">i</mi><mi mathvariant="normal">p</mi></mrow></msub><mo>=</mo><mfrac><mrow><mn>1.96</mn><msqrt><mrow><mn>2</mn><mo stretchy="false" form="prefix">(</mo><mn>1</mn><mo>−</mo><msub><mi>ρ</mi><mi>t</mi></msub><mo stretchy="false" form="postfix">)</mo></mrow></msqrt><mspace width="0.167em"></mspace><msqrt><mrow><msubsup><mi>σ</mi><mrow><mi mathvariant="normal">r</mi><mi mathvariant="normal">e</mi><mi mathvariant="normal">s</mi><mi mathvariant="normal">i</mi><mi mathvariant="normal">d</mi><mi mathvariant="normal">u</mi><mi mathvariant="normal">a</mi><mi mathvariant="normal">l</mi></mrow><mn>2</mn></msubsup><mo>+</mo><msubsup><mi>σ</mi><mrow><mi mathvariant="normal">a</mi><mi mathvariant="normal">n</mi><mi mathvariant="normal">a</mi><mi mathvariant="normal">l</mi><mi mathvariant="normal">y</mi><mi mathvariant="normal">t</mi><mi mathvariant="normal">i</mi><mi mathvariant="normal">c</mi><mi mathvariant="normal">a</mi><mi mathvariant="normal">l</mi></mrow><mn>2</mn></msubsup></mrow></msqrt></mrow><msub><mi>β</mi><mrow><mi mathvariant="normal">e</mi><mi mathvariant="normal">f</mi><mi mathvariant="normal">f</mi></mrow></msub></mfrac></mrow><annotation encoding="application/x-tex">
 \mathrm{threshold}_{\mathrm{precip}}
@@ -92,18 +93,27 @@ and cancels in any contrast between intervals.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/bradleylab/leafwax" class="external-link">leafwax</a></span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">malawi_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span></span>
-<span>  <span class="st">"extdata"</span>, <span class="st">"example_records"</span>, <span class="st">"LS11KOMA_d2H.csv"</span>,</span>
-<span>  package <span class="op">=</span> <span class="st">"leafwax"</span></span>
-<span><span class="op">)</span></span>
+<span><span class="va">record_path</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">filename</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span></span>
+<span>    <span class="st">"extdata"</span>, <span class="st">"example_records"</span>, <span class="va">filename</span>,</span>
+<span>    package <span class="op">=</span> <span class="st">"leafwax"</span></span>
+<span>  <span class="op">)</span></span>
+<span>  <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nchar.html" class="external-link">nzchar</a></span><span class="op">(</span><span class="va">path</span><span class="op">)</span><span class="op">)</span> <span class="kw"><a href="https://rdrr.io/r/base/function.html" class="external-link">return</a></span><span class="op">(</span><span class="va">path</span><span class="op">)</span></span>
+<span></span>
+<span>  <span class="va">local_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span></span>
+<span>    <span class="st">".."</span>, <span class="st">"inst"</span>, <span class="st">"extdata"</span>, <span class="st">"example_records"</span>, <span class="va">filename</span></span>
+<span>  <span class="op">)</span></span>
+<span>  <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/files.html" class="external-link">file.exists</a></span><span class="op">(</span><span class="va">local_path</span><span class="op">)</span><span class="op">)</span> <span class="kw"><a href="https://rdrr.io/r/base/function.html" class="external-link">return</a></span><span class="op">(</span><span class="va">local_path</span><span class="op">)</span></span>
+<span></span>
+<span>  <span class="kw"><a href="https://rdrr.io/r/base/stop.html" class="external-link">stop</a></span><span class="op">(</span><span class="st">"Could not locate example record: "</span>, <span class="va">filename</span><span class="op">)</span></span>
+<span><span class="op">}</span></span>
+<span></span>
+<span><span class="va">malawi_path</span> <span class="op">&lt;-</span> <span class="fu">record_path</span><span class="op">(</span><span class="st">"LS11KOMA_d2H.csv"</span><span class="op">)</span></span>
 <span><span class="va">malawi</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.csv</a></span><span class="op">(</span><span class="va">malawi_path</span><span class="op">)</span></span>
 <span><span class="va">malawi</span><span class="op">$</span><span class="va">d2h_wax</span> <span class="op">&lt;-</span> <span class="va">malawi</span><span class="op">$</span><span class="va">d2H_wax</span></span>
 <span><span class="va">malawi</span><span class="op">$</span><span class="va">age</span>     <span class="op">&lt;-</span> <span class="va">malawi</span><span class="op">$</span><span class="va">age_yrBP</span></span>
 <span></span>
-<span><span class="va">qh_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span></span>
-<span>  <span class="st">"extdata"</span>, <span class="st">"example_records"</span>, <span class="st">"LS16THQI01_d2H.csv"</span>,</span>
-<span>  package <span class="op">=</span> <span class="st">"leafwax"</span></span>
-<span><span class="op">)</span></span>
+<span><span class="va">qh_path</span> <span class="op">&lt;-</span> <span class="fu">record_path</span><span class="op">(</span><span class="st">"LS16THQI01_d2H.csv"</span><span class="op">)</span></span>
 <span><span class="va">qh</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.csv</a></span><span class="op">(</span><span class="va">qh_path</span><span class="op">)</span></span>
 <span><span class="va">qh</span><span class="op">$</span><span class="va">d2h_wax</span> <span class="op">&lt;-</span> <span class="va">qh</span><span class="op">$</span><span class="va">d2H_wax</span></span>
 <span><span class="va">qh</span><span class="op">$</span><span class="va">age</span>     <span class="op">&lt;-</span> <span class="va">qh</span><span class="op">$</span><span class="va">age_yrBP</span></span>
@@ -291,14 +301,16 @@ Asian-monsoon records show a regional shift in source-water
 <span><span class="co">#&gt; 1      lgm        162     74  -37.10131    -35.58982   -57.77988   -25.12177</span></span>
 <span><span class="co">#&gt;   p_abs_delta_gt_10 p_abs_delta_gt_30 p_abs_delta_gt_50</span></span>
 <span><span class="co">#&gt; 1                 1              0.78              0.08</span></span></code></pre></div>
-<p>The two records produce opposite verdicts. Malawi: lag-1
+<p>The two records produce different verdicts. Malawi: lag-1
 autocorrelation 0.39, 95 percent detection threshold approximately 61
 per mil, posterior probability of a 30 per mil shift across 1000 yr BP
 0.12. Qinghai: lag-1 autocorrelation 0.85 (densely sampled and strongly
 persistent), threshold approximately 42 per mil, posterior probability
 of a 30 per mil shift across 15,000 yr BP 0.78. The Malawi record cannot
 distinguish a 30 per mil change in <code>d2H_precip</code> from
-calibration noise; the Qinghai record can. Two factors drive the
+calibration noise. The Qinghai record provides much stronger evidence
+for a large LGM-to-Holocene shift, but the 30 per mil quantitative claim
+remains below the 95 percent decision threshold. Two factors drive the
 contrast: Qinghai’s much larger LGM-to-Holocene <code>d2H_wax</code>
 shift, and its high autocorrelation, which reduces
 <code>sqrt(2(1-rho_t))</code> and pulls the threshold down.</p>
@@ -381,9 +393,10 @@ highest level where every prerequisite passes.</p>
 <p>Read each <code>verdict$levels</code> data frame top to bottom —
 every level above the highest one passed is reported with the reason it
 failed. The Malawi claim fails at the within-record noise step; the
-Qinghai claim clears all four levels because the wax-side
-LGM-to-Holocene change is large relative to noise and the asserted
-stationarity evidence holds.</p>
+Qinghai claim clears Level 2 for the asserted 30 per mil Level 4 claim.
+It fails Level 3 because the posterior probability for a 30 per mil
+<code>d2H_precip</code> shift is below 0.95, even though the example
+supplies stationarity evidence for the Level 4 controls.</p>
 </div>
 <div class="section level2">
 <h2 id="plot-the-reconstructions">6. Plot the reconstructions<a class="anchor" aria-label="anchor" href="#plot-the-reconstructions"></a>
@@ -417,7 +430,7 @@ stationarity evidence holds.</p>
 <span>           <span class="st">"Lake Malawi (LS11KOMA): no detection at 95%"</span>,</span>
 <span>           boundary <span class="op">=</span> <span class="fl">1000</span><span class="op">)</span></span>
 <span><span class="fu">plot_recon</span><span class="op">(</span><span class="va">recon_qh</span>, <span class="va">qh</span><span class="op">$</span><span class="va">age</span>,</span>
-<span>           <span class="st">"Lake Qinghai (LS16THQI01): clear LGM signal"</span>,</span>
+<span>           <span class="st">"Lake Qinghai (LS16THQI01): large LGM shift"</span>,</span>
 <span>           boundary <span class="op">=</span> <span class="fl">15000</span><span class="op">)</span></span></code></pre></div>
 <p><img src="paleo-record-workflow_files/figure-html/plot-1.png" class="r-plt" alt="" width="672"></p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
@@ -439,9 +452,10 @@ temporal autocorrelation. <code><a href="../reference/detect_change.html">detect
 into a single threshold and a posterior probability;
 <code><a href="../reference/assess_claim.html">assess_claim()</a></code> walks them through the four-level taxonomy.
 Records like Malawi do not clear Level 2 for plausible 30 per mil
-claims; long, densely-sampled records like Qinghai do, because their
-large interval-mean shifts and high sample-to-sample autocorrelation
-jointly raise signal-to-noise above the calibration’s noise floor.</p>
+claims. Long, densely sampled records like Qinghai can clear directional
+hydroclimate-change claims and provide much stronger quantitative
+evidence, but the example 30 per mil Level 4 claim still requires
+posterior support at the chosen confidence level.</p>
 </div>
 <div class="section level2">
 <h2 id="notes">Notes<a class="anchor" aria-label="anchor" href="#notes"></a>
