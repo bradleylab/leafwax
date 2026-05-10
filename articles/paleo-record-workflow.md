@@ -8,16 +8,18 @@ intervals can be distinguished from calibration-plus-analytical noise,
 and at what confidence level.
 
 The vignette runs the chain on two Iso2k records with different
-inferential ceilings. Lake Malawi (LS11KOMA, Konecky et al.) has 11
-samples across the Common Era and an in-record `d2H_wax` range of
-approximately 10 per mil — a record where no plausible 30 per mil shift
-in `d2H_precip` can be distinguished from within-record noise. Lake
-Qinghai (LS16THQI01, Thomas et al.) has 240 samples spanning 31 kyr of
-the glacial-to-Holocene transition on the northeastern Tibetan Plateau.
-Its large LGM-to-Holocene shift and strong sample-to-sample
-autocorrelation support a directional hydroclimate-change claim, but the
-example 30 per mil quantitative `d2H_precip` claim still does not clear
-the 95 percent Level 3 threshold.
+inferential ceilings. Zaca Lake (LS14FEZA, Heusser et al.) has 518
+samples spanning the last 3 kyr in coastal southern California and an
+in-record `d2H_wax` range of approximately 77 per mil distributed
+without a coherent secular trend — a record where no plausible 30 per
+mil shift in `d2H_precip` can be distinguished from within-record noise
+across any reasonable interval split. Lake Qinghai (LS16THQI01, Thomas
+et al.) has 240 samples spanning 31 kyr of the glacial-to-Holocene
+transition on the northeastern Tibetan Plateau. Its large
+LGM-to-Holocene shift and strong sample-to-sample autocorrelation
+support a directional hydroclimate-change claim, but the example 30 per
+mil quantitative `d2H_precip` claim still does not clear the 95 percent
+Level 3 threshold.
 
 The detection threshold from manuscript Section 4.5.3 is
 
@@ -54,28 +56,29 @@ record_path <- function(filename) {
   stop("Could not locate example record: ", filename)
 }
 
-malawi_path <- record_path("LS11KOMA_d2H.csv")
-malawi <- read.csv(malawi_path)
-malawi$d2h_wax <- malawi$d2H_wax
-malawi$age     <- malawi$age_yrBP
+zaca_path <- record_path("LS14FEZA_d2H.csv")
+zaca <- read.csv(zaca_path)
+zaca$d2h_wax <- zaca$d2H_wax
+zaca$age     <- zaca$age_yrBP
 
 qh_path <- record_path("LS16THQI01_d2H.csv")
 qh <- read.csv(qh_path)
 qh$d2h_wax <- qh$d2H_wax
 qh$age     <- qh$age_yrBP
 
-c(malawi_n        = nrow(malawi),
-  malawi_range_pm = round(diff(range(malawi$d2h_wax)), 1),
+c(zaca_n        = nrow(zaca),
+  zaca_range_pm = round(diff(range(zaca$d2h_wax)), 1),
   qh_n            = nrow(qh),
   qh_range_pm     = round(diff(range(qh$d2h_wax)), 1))
-#>        malawi_n malawi_range_pm            qh_n     qh_range_pm 
-#>            11.0            10.6           240.0           131.3
+#>        zaca_n zaca_range_pm          qh_n   qh_range_pm 
+#>         518.0          77.0         240.0         131.3
 ```
 
-Lake Malawi sits at 10.02° S, 34.19° E (477 m); Lake Qinghai at 37.0° N,
-100.0° E (3,194 m). The Malawi series covers the Common Era at roughly
-200-yr resolution; the Qinghai series covers the glacial–Holocene
-transition at roughly 130-yr resolution.
+Zaca Lake sits at 34.78° N, 120.04° W (730 m) on the southern California
+coast; Lake Qinghai at 37.0° N, 100.0° E (3,194 m) on the northeastern
+Tibetan Plateau. The Zaca series covers the last 3 kyr at roughly 6-yr
+resolution; the Qinghai series covers the glacial–Holocene transition at
+roughly 130-yr resolution.
 
 ## 2. Local effective slope
 
@@ -89,11 +92,11 @@ uncertainty propagates through the inversion.
 
 ``` r
 
-malawi_lon <- 34.1878; malawi_lat <- -10.0183
+zaca_lon <- -120.0392; zaca_lat <- 34.7778
 qh_lon     <- 100;     qh_lat     <- 37
 
-slope_malawi <- suppressWarnings(local_effective_slope(
-  longitude = malawi_lon, latitude = malawi_lat,
+slope_zaca <- suppressWarnings(local_effective_slope(
+  longitude = zaca_lon, latitude = zaca_lat,
   model_name = "baseline_sp", n_draws = 100,
   ceiling = 0.88, verbose = FALSE
 ))
@@ -105,11 +108,11 @@ slope_qh <- suppressWarnings(local_effective_slope(
 ))
 
 rbind(
-  malawi  = quantile(slope_malawi, c(0.025, 0.5, 0.975)),
+  zaca  = quantile(slope_zaca, c(0.025, 0.5, 0.975)),
   qinghai = quantile(slope_qh,     c(0.025, 0.5, 0.975))
 )
 #>              2.5%       50%     97.5%
-#> malawi  0.4216630 0.5785350 0.6923703
+#> zaca    0.4158966 0.5744484 0.7357822
 #> qinghai 0.2665229 0.4161201 0.5569460
 ```
 
@@ -127,15 +130,15 @@ cancels in any difference between intervals (Section 4.5.3).
 
 ``` r
 
-recon_malawi <- suppressWarnings(invert_d2H(
-  d2H_wax    = malawi$d2h_wax,
-  d2H_wax_sd = rep(3, nrow(malawi)),
-  longitude  = rep(malawi_lon, nrow(malawi)),
-  latitude   = rep(malawi_lat, nrow(malawi)),
+recon_zaca <- suppressWarnings(invert_d2H(
+  d2H_wax    = zaca$d2h_wax,
+  d2H_wax_sd = rep(3, nrow(zaca)),
+  longitude  = rep(zaca_lon, nrow(zaca)),
+  latitude   = rep(zaca_lat, nrow(zaca)),
   model_name = "baseline_sp",
   n_posterior_draws = 100,
-  slope        = slope_malawi,
-  record_id    = "LS11KOMA",
+  slope        = slope_zaca,
+  record_id    = "LS14FEZA",
   return_full  = TRUE,
   verbose      = FALSE
 ))
@@ -173,25 +176,25 @@ correction; Meyers and colleagues) or Mudelsee’s `pearsonT3`, which is
 bias-corrected for unevenly spaced data. A Lomb-Scargle estimator is
 planned for v0.3 (`method = "lomb_scargle"`).
 
-The Malawi record splits at 1000 yr BP. The Qinghai record splits at
+The Zaca record splits at 1000 yr BP. The Qinghai record splits at
 15,000 yr BP — late LGM to mid-Holocene, the boundary across which many
 Asian-monsoon records show a regional shift in source-water `d2H`.
 
 ``` r
 
-rho_malawi <- estimate_temporal_autocorrelation(
-  malawi$d2h_wax, malawi$age, method = "ar1"
+rho_zaca <- estimate_temporal_autocorrelation(
+  zaca$d2h_wax, zaca$age, method = "ar1"
 )
 
-dc_malawi <- detect_change(
-  reconstruction    = recon_malawi,
-  age               = malawi$age,
+dc_zaca <- detect_change(
+  reconstruction    = recon_zaca,
+  age               = zaca$age,
   baseline_interval = c(0, 1000),
   test_intervals    = list(post_1000 = c(1000, 2000)),
   sigma_residual    = 16,
   sigma_analytical  = 3,
-  rho_t             = rho_malawi,
-  beta_eff          = stats::median(slope_malawi),
+  rho_t             = rho_zaca,
+  beta_eff          = stats::median(slope_zaca),
   confidence        = 0.95,
   magnitudes        = c(10, 30, 50)
 )
@@ -222,25 +225,25 @@ dc_qh <- detect_change(
 #> download_model_data("baseline_sp") for the full posterior.
 
 list(
-  malawi  = list(rho_t = round(rho_malawi, 3),
-                 threshold_permil = round(dc_malawi$threshold, 1),
-                 intervals        = dc_malawi$intervals),
+  zaca  = list(rho_t = round(rho_zaca, 3),
+                 threshold_permil = round(dc_zaca$threshold, 1),
+                 intervals        = dc_zaca$intervals),
   qinghai = list(rho_t = round(rho_qh, 3),
                  threshold_permil = round(dc_qh$threshold, 1),
                  intervals        = dc_qh$intervals)
 )
-#> $malawi
-#> $malawi$rho_t
-#> [1] 0.394
+#> $zaca
+#> $zaca$rho_t
+#> [1] 0.445
 #> 
-#> $malawi$threshold_permil
-#> [1] 60.7
+#> $zaca$threshold_permil
+#> [1] 58.5
 #> 
-#> $malawi$intervals
+#> $zaca$intervals
 #>    interval n_baseline n_test delta_mean delta_median delta_lower delta_upper
-#> 1 post_1000          6      5  -10.29747    -9.278969   -40.96457     17.9845
+#> 1 post_1000        257    127  0.1163509    0.5201522   -5.648273     6.10717
 #>   p_abs_delta_gt_10 p_abs_delta_gt_30 p_abs_delta_gt_50
-#> 1              0.57              0.12              0.01
+#> 1                 0                 0                 0
 #> 
 #> 
 #> $qinghai
@@ -252,22 +255,22 @@ list(
 #> 
 #> $qinghai$intervals
 #>   interval n_baseline n_test delta_mean delta_median delta_lower delta_upper
-#> 1      lgm        162     74  -37.10131    -35.58982   -57.77988   -25.12177
+#> 1      lgm        162     74  -38.50674    -37.18504   -59.10398   -24.23564
 #>   p_abs_delta_gt_10 p_abs_delta_gt_30 p_abs_delta_gt_50
-#> 1                 1              0.78              0.08
+#> 1                 1              0.82              0.13
 ```
 
-The two records produce different verdicts. Malawi: lag-1
-autocorrelation 0.39, 95 percent detection threshold approximately 61
-per mil, posterior probability of a 30 per mil shift across 1000 yr BP
-0.12. Qinghai: lag-1 autocorrelation 0.85 (densely sampled and strongly
-persistent), threshold approximately 42 per mil, posterior probability
-of a 30 per mil shift across 15,000 yr BP 0.78. The Malawi record cannot
-distinguish a 30 per mil change in `d2H_precip` from calibration noise.
-The Qinghai record provides much stronger evidence for a large
-LGM-to-Holocene shift, but the 30 per mil quantitative claim remains
-below the 95 percent decision threshold. Two factors drive the contrast:
-Qinghai’s much larger LGM-to-Holocene `d2H_wax` shift, and its high
+The two records produce different verdicts. Zaca: lag-1 autocorrelation
+0.44, 95 percent detection threshold approximately 59 per mil, posterior
+probability of a 30 per mil shift across 1000 yr BP 0.00. Qinghai: lag-1
+autocorrelation 0.85 (densely sampled and strongly persistent),
+threshold approximately 42 per mil, posterior probability of a 30 per
+mil shift across 15,000 yr BP 0.82. The Zaca record cannot distinguish a
+30 per mil change in `d2H_precip` from calibration noise. The Qinghai
+record provides much stronger evidence for a large LGM-to-Holocene
+shift, but the 30 per mil quantitative claim remains below the 95
+percent decision threshold. Two factors drive the contrast: Qinghai’s
+much larger LGM-to-Holocene `d2H_wax` shift, and its high
 autocorrelation, which reduces `sqrt(2(1-rho_t))` and pulls the
 threshold down.
 
@@ -310,10 +313,10 @@ build_claim <- function(beta_eff, rho_t, baseline, test, magnitude_precip) {
   )
 }
 
-malawi_record <- data.frame(
-  d2h_wax     = malawi$d2h_wax,
-  age         = malawi$age,
-  d2h_wax_err = rep(3, nrow(malawi))
+zaca_record <- data.frame(
+  d2h_wax     = zaca$d2h_wax,
+  age         = zaca$age,
+  d2h_wax_err = rep(3, nrow(zaca))
 )
 qh_record <- data.frame(
   d2h_wax     = qh$d2h_wax,
@@ -321,13 +324,13 @@ qh_record <- data.frame(
   d2h_wax_err = rep(3, nrow(qh))
 )
 
-verdict_malawi <- suppressWarnings(assess_claim(
-  record         = malawi_record,
-  claim          = build_claim(stats::median(slope_malawi),
-                                rho_malawi,
+verdict_zaca <- suppressWarnings(assess_claim(
+  record         = zaca_record,
+  claim          = build_claim(stats::median(slope_zaca),
+                                rho_zaca,
                                 c(0, 1000), c(1000, 2000),
                                 magnitude_precip = 30),
-  reconstruction = recon_malawi
+  reconstruction = recon_zaca
 ))
 
 verdict_qh <- suppressWarnings(assess_claim(
@@ -339,18 +342,18 @@ verdict_qh <- suppressWarnings(assess_claim(
   reconstruction = recon_qh
 ))
 
-c(malawi_highest_level   = verdict_malawi$highest_level,
-  malawi_supported_at_4  = verdict_malawi$asserted_supported,
+c(zaca_highest_level   = verdict_zaca$highest_level,
+  zaca_supported_at_4  = verdict_zaca$asserted_supported,
   qinghai_highest_level  = verdict_qh$highest_level,
   qinghai_supported_at_4 = verdict_qh$asserted_supported)
-#>   malawi_highest_level  malawi_supported_at_4  qinghai_highest_level 
+#>     zaca_highest_level    zaca_supported_at_4  qinghai_highest_level 
 #>                      0                      0                      2 
 #> qinghai_supported_at_4 
 #>                      0
 ```
 
 Read each `verdict$levels` data frame top to bottom — every level above
-the highest one passed is reported with the reason it failed. The Malawi
+the highest one passed is reported with the reason it failed. The Zaca
 claim fails at the within-record noise step; the Qinghai claim clears
 Level 2 for the asserted 30 per mil Level 4 claim. It fails Level 3
 because the posterior probability for a 30 per mil `d2H_precip` shift is
@@ -385,8 +388,8 @@ plot_recon <- function(rec, ages, title, boundary) {
   abline(v = boundary, lty = 2, col = "red")
 }
 
-plot_recon(recon_malawi, malawi$age,
-           "Lake Malawi (LS11KOMA): no detection at 95%",
+plot_recon(recon_zaca, zaca$age,
+           "Zaca Lake (LS14FEZA): no detection at 95%",
            boundary = 1000)
 plot_recon(recon_qh, qh$age,
            "Lake Qinghai (LS16THQI01): large LGM shift",
@@ -415,7 +418,7 @@ effective slope, and the lag-1 temporal autocorrelation.
 [`detect_change()`](https://bradleylab.github.io/leafwax/reference/detect_change.md)
 packages these into a single threshold and a posterior probability;
 [`assess_claim()`](https://bradleylab.github.io/leafwax/reference/assess_claim.md)
-walks them through the four-level taxonomy. Records like Malawi do not
+walks them through the four-level taxonomy. Records like Zaca do not
 clear Level 2 for plausible 30 per mil claims. Long, densely sampled
 records like Qinghai can clear directional hydroclimate-change claims
 and provide much stronger quantitative evidence, but the example 30 per

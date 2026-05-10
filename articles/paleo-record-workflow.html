@@ -65,17 +65,18 @@ any record is whether the difference in <code>d2H_precip</code> between
 two stratigraphic intervals can be distinguished from
 calibration-plus-analytical noise, and at what confidence level.</p>
 <p>The vignette runs the chain on two Iso2k records with different
-inferential ceilings. Lake Malawi (LS11KOMA, Konecky et al.) has 11
-samples across the Common Era and an in-record <code>d2H_wax</code>
-range of approximately 10 per mil — a record where no plausible 30 per
-mil shift in <code>d2H_precip</code> can be distinguished from
-within-record noise. Lake Qinghai (LS16THQI01, Thomas et al.) has 240
-samples spanning 31 kyr of the glacial-to-Holocene transition on the
-northeastern Tibetan Plateau. Its large LGM-to-Holocene shift and strong
-sample-to-sample autocorrelation support a directional
-hydroclimate-change claim, but the example 30 per mil quantitative
-<code>d2H_precip</code> claim still does not clear the 95 percent Level
-3 threshold.</p>
+inferential ceilings. Zaca Lake (LS14FEZA, Heusser et al.) has 518
+samples spanning the last 3 kyr in coastal southern California and an
+in-record <code>d2H_wax</code> range of approximately 77 per mil
+distributed without a coherent secular trend — a record where no
+plausible 30 per mil shift in <code>d2H_precip</code> can be
+distinguished from within-record noise across any reasonable interval
+split. Lake Qinghai (LS16THQI01, Thomas et al.) has 240 samples spanning
+31 kyr of the glacial-to-Holocene transition on the northeastern Tibetan
+Plateau. Its large LGM-to-Holocene shift and strong sample-to-sample
+autocorrelation support a directional hydroclimate-change claim, but the
+example 30 per mil quantitative <code>d2H_precip</code> claim still does
+not clear the 95 percent Level 3 threshold.</p>
 <p>The detection threshold from manuscript Section 4.5.3 is</p>
 <p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mrow><mi mathvariant="normal">t</mi><mi mathvariant="normal">h</mi><mi mathvariant="normal">r</mi><mi mathvariant="normal">e</mi><mi mathvariant="normal">s</mi><mi mathvariant="normal">h</mi><mi mathvariant="normal">o</mi><mi mathvariant="normal">l</mi><mi mathvariant="normal">d</mi></mrow><mrow><mi mathvariant="normal">p</mi><mi mathvariant="normal">r</mi><mi mathvariant="normal">e</mi><mi mathvariant="normal">c</mi><mi mathvariant="normal">i</mi><mi mathvariant="normal">p</mi></mrow></msub><mo>=</mo><mfrac><mrow><mn>1.96</mn><msqrt><mrow><mn>2</mn><mo stretchy="false" form="prefix">(</mo><mn>1</mn><mo>−</mo><msub><mi>ρ</mi><mi>t</mi></msub><mo stretchy="false" form="postfix">)</mo></mrow></msqrt><mspace width="0.167em"></mspace><msqrt><mrow><msubsup><mi>σ</mi><mrow><mi mathvariant="normal">r</mi><mi mathvariant="normal">e</mi><mi mathvariant="normal">s</mi><mi mathvariant="normal">i</mi><mi mathvariant="normal">d</mi><mi mathvariant="normal">u</mi><mi mathvariant="normal">a</mi><mi mathvariant="normal">l</mi></mrow><mn>2</mn></msubsup><mo>+</mo><msubsup><mi>σ</mi><mrow><mi mathvariant="normal">a</mi><mi mathvariant="normal">n</mi><mi mathvariant="normal">a</mi><mi mathvariant="normal">l</mi><mi mathvariant="normal">y</mi><mi mathvariant="normal">t</mi><mi mathvariant="normal">i</mi><mi mathvariant="normal">c</mi><mi mathvariant="normal">a</mi><mi mathvariant="normal">l</mi></mrow><mn>2</mn></msubsup></mrow></msqrt></mrow><msub><mi>β</mi><mrow><mi mathvariant="normal">e</mi><mi mathvariant="normal">f</mi><mi mathvariant="normal">f</mi></mrow></msub></mfrac></mrow><annotation encoding="application/x-tex">
 \mathrm{threshold}_{\mathrm{precip}}
@@ -108,26 +109,27 @@ and cancels in any contrast between intervals.</p>
 <span>  <span class="kw"><a href="https://rdrr.io/r/base/stop.html" class="external-link">stop</a></span><span class="op">(</span><span class="st">"Could not locate example record: "</span>, <span class="va">filename</span><span class="op">)</span></span>
 <span><span class="op">}</span></span>
 <span></span>
-<span><span class="va">malawi_path</span> <span class="op">&lt;-</span> <span class="fu">record_path</span><span class="op">(</span><span class="st">"LS11KOMA_d2H.csv"</span><span class="op">)</span></span>
-<span><span class="va">malawi</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.csv</a></span><span class="op">(</span><span class="va">malawi_path</span><span class="op">)</span></span>
-<span><span class="va">malawi</span><span class="op">$</span><span class="va">d2h_wax</span> <span class="op">&lt;-</span> <span class="va">malawi</span><span class="op">$</span><span class="va">d2H_wax</span></span>
-<span><span class="va">malawi</span><span class="op">$</span><span class="va">age</span>     <span class="op">&lt;-</span> <span class="va">malawi</span><span class="op">$</span><span class="va">age_yrBP</span></span>
+<span><span class="va">zaca_path</span> <span class="op">&lt;-</span> <span class="fu">record_path</span><span class="op">(</span><span class="st">"LS14FEZA_d2H.csv"</span><span class="op">)</span></span>
+<span><span class="va">zaca</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.csv</a></span><span class="op">(</span><span class="va">zaca_path</span><span class="op">)</span></span>
+<span><span class="va">zaca</span><span class="op">$</span><span class="va">d2h_wax</span> <span class="op">&lt;-</span> <span class="va">zaca</span><span class="op">$</span><span class="va">d2H_wax</span></span>
+<span><span class="va">zaca</span><span class="op">$</span><span class="va">age</span>     <span class="op">&lt;-</span> <span class="va">zaca</span><span class="op">$</span><span class="va">age_yrBP</span></span>
 <span></span>
 <span><span class="va">qh_path</span> <span class="op">&lt;-</span> <span class="fu">record_path</span><span class="op">(</span><span class="st">"LS16THQI01_d2H.csv"</span><span class="op">)</span></span>
 <span><span class="va">qh</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.csv</a></span><span class="op">(</span><span class="va">qh_path</span><span class="op">)</span></span>
 <span><span class="va">qh</span><span class="op">$</span><span class="va">d2h_wax</span> <span class="op">&lt;-</span> <span class="va">qh</span><span class="op">$</span><span class="va">d2H_wax</span></span>
 <span><span class="va">qh</span><span class="op">$</span><span class="va">age</span>     <span class="op">&lt;-</span> <span class="va">qh</span><span class="op">$</span><span class="va">age_yrBP</span></span>
 <span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>malawi_n        <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">malawi</span><span class="op">)</span>,</span>
-<span>  malawi_range_pm <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/diff.html" class="external-link">diff</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/range.html" class="external-link">range</a></span><span class="op">(</span><span class="va">malawi</span><span class="op">$</span><span class="va">d2h_wax</span><span class="op">)</span><span class="op">)</span>, <span class="fl">1</span><span class="op">)</span>,</span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>zaca_n        <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">zaca</span><span class="op">)</span>,</span>
+<span>  zaca_range_pm <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/diff.html" class="external-link">diff</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/range.html" class="external-link">range</a></span><span class="op">(</span><span class="va">zaca</span><span class="op">$</span><span class="va">d2h_wax</span><span class="op">)</span><span class="op">)</span>, <span class="fl">1</span><span class="op">)</span>,</span>
 <span>  qh_n            <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">qh</span><span class="op">)</span>,</span>
 <span>  qh_range_pm     <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/diff.html" class="external-link">diff</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/range.html" class="external-link">range</a></span><span class="op">(</span><span class="va">qh</span><span class="op">$</span><span class="va">d2h_wax</span><span class="op">)</span><span class="op">)</span>, <span class="fl">1</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt;        malawi_n malawi_range_pm            qh_n     qh_range_pm </span></span>
-<span><span class="co">#&gt;            11.0            10.6           240.0           131.3</span></span></code></pre></div>
-<p>Lake Malawi sits at 10.02° S, 34.19° E (477 m); Lake Qinghai at 37.0°
-N, 100.0° E (3,194 m). The Malawi series covers the Common Era at
-roughly 200-yr resolution; the Qinghai series covers the
-glacial–Holocene transition at roughly 130-yr resolution.</p>
+<span><span class="co">#&gt;        zaca_n zaca_range_pm          qh_n   qh_range_pm </span></span>
+<span><span class="co">#&gt;         518.0          77.0         240.0         131.3</span></span></code></pre></div>
+<p>Zaca Lake sits at 34.78° N, 120.04° W (730 m) on the southern
+California coast; Lake Qinghai at 37.0° N, 100.0° E (3,194 m) on the
+northeastern Tibetan Plateau. The Zaca series covers the last 3 kyr at
+roughly 6-yr resolution; the Qinghai series covers the glacial–Holocene
+transition at roughly 130-yr resolution.</p>
 </div>
 <div class="section level2">
 <h2 id="local-effective-slope">2. Local effective slope<a class="anchor" aria-label="anchor" href="#local-effective-slope"></a>
@@ -140,11 +142,11 @@ manuscript Section 4.5.5. A point-estimate workflow can pass the
 posterior median; the full per-draw vector is retained here so slope
 uncertainty propagates through the inversion.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">malawi_lon</span> <span class="op">&lt;-</span> <span class="fl">34.1878</span>; <span class="va">malawi_lat</span> <span class="op">&lt;-</span> <span class="op">-</span><span class="fl">10.0183</span></span>
+<code class="sourceCode R"><span><span class="va">zaca_lon</span> <span class="op">&lt;-</span> <span class="op">-</span><span class="fl">120.0392</span>; <span class="va">zaca_lat</span> <span class="op">&lt;-</span> <span class="fl">34.7778</span></span>
 <span><span class="va">qh_lon</span>     <span class="op">&lt;-</span> <span class="fl">100</span>;     <span class="va">qh_lat</span>     <span class="op">&lt;-</span> <span class="fl">37</span></span>
 <span></span>
-<span><span class="va">slope_malawi</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/warning.html" class="external-link">suppressWarnings</a></span><span class="op">(</span><span class="fu"><a href="../reference/local_effective_slope.html">local_effective_slope</a></span><span class="op">(</span></span>
-<span>  longitude <span class="op">=</span> <span class="va">malawi_lon</span>, latitude <span class="op">=</span> <span class="va">malawi_lat</span>,</span>
+<span><span class="va">slope_zaca</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/warning.html" class="external-link">suppressWarnings</a></span><span class="op">(</span><span class="fu"><a href="../reference/local_effective_slope.html">local_effective_slope</a></span><span class="op">(</span></span>
+<span>  longitude <span class="op">=</span> <span class="va">zaca_lon</span>, latitude <span class="op">=</span> <span class="va">zaca_lat</span>,</span>
 <span>  model_name <span class="op">=</span> <span class="st">"baseline_sp"</span>, n_draws <span class="op">=</span> <span class="fl">100</span>,</span>
 <span>  ceiling <span class="op">=</span> <span class="fl">0.88</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span><span class="op">)</span></span>
@@ -156,11 +158,11 @@ uncertainty propagates through the inversion.</p>
 <span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">rbind</a></span><span class="op">(</span></span>
-<span>  malawi  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/quantile.html" class="external-link">quantile</a></span><span class="op">(</span><span class="va">slope_malawi</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.025</span>, <span class="fl">0.5</span>, <span class="fl">0.975</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  zaca  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/quantile.html" class="external-link">quantile</a></span><span class="op">(</span><span class="va">slope_zaca</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.025</span>, <span class="fl">0.5</span>, <span class="fl">0.975</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  qinghai <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/quantile.html" class="external-link">quantile</a></span><span class="op">(</span><span class="va">slope_qh</span>,     <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.025</span>, <span class="fl">0.5</span>, <span class="fl">0.975</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span><span class="co">#&gt;              2.5%       50%     97.5%</span></span>
-<span><span class="co">#&gt; malawi  0.4216630 0.5785350 0.6923703</span></span>
+<span><span class="co">#&gt; zaca    0.4158966 0.5744484 0.7357822</span></span>
 <span><span class="co">#&gt; qinghai 0.2665229 0.4161201 0.5569460</span></span></code></pre></div>
 </div>
 <div class="section level2">
@@ -175,15 +177,15 @@ analytical uncertainty plus the model’s posterior residual SD
 contrasts because the spatial GP intercept cancels in any difference
 between intervals (Section 4.5.3).</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">recon_malawi</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/warning.html" class="external-link">suppressWarnings</a></span><span class="op">(</span><span class="fu"><a href="../reference/invert_d2h.html">invert_d2H</a></span><span class="op">(</span></span>
-<span>  d2H_wax    <span class="op">=</span> <span class="va">malawi</span><span class="op">$</span><span class="va">d2h_wax</span>,</span>
-<span>  d2H_wax_sd <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">3</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">malawi</span><span class="op">)</span><span class="op">)</span>,</span>
-<span>  longitude  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="va">malawi_lon</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">malawi</span><span class="op">)</span><span class="op">)</span>,</span>
-<span>  latitude   <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="va">malawi_lat</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">malawi</span><span class="op">)</span><span class="op">)</span>,</span>
+<code class="sourceCode R"><span><span class="va">recon_zaca</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/warning.html" class="external-link">suppressWarnings</a></span><span class="op">(</span><span class="fu"><a href="../reference/invert_d2h.html">invert_d2H</a></span><span class="op">(</span></span>
+<span>  d2H_wax    <span class="op">=</span> <span class="va">zaca</span><span class="op">$</span><span class="va">d2h_wax</span>,</span>
+<span>  d2H_wax_sd <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">3</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">zaca</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  longitude  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="va">zaca_lon</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">zaca</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  latitude   <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="va">zaca_lat</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">zaca</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  model_name <span class="op">=</span> <span class="st">"baseline_sp"</span>,</span>
 <span>  n_posterior_draws <span class="op">=</span> <span class="fl">100</span>,</span>
-<span>  slope        <span class="op">=</span> <span class="va">slope_malawi</span>,</span>
-<span>  record_id    <span class="op">=</span> <span class="st">"LS11KOMA"</span>,</span>
+<span>  slope        <span class="op">=</span> <span class="va">slope_zaca</span>,</span>
+<span>  record_id    <span class="op">=</span> <span class="st">"LS14FEZA"</span>,</span>
 <span>  return_full  <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  verbose      <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span><span class="op">)</span></span>
@@ -220,24 +222,24 @@ correction; Meyers and colleagues) or Mudelsee’s <code>pearsonT3</code>,
 which is bias-corrected for unevenly spaced data. A Lomb-Scargle
 estimator is planned for v0.3
 (<code>method = "lomb_scargle"</code>).</p>
-<p>The Malawi record splits at 1000 yr BP. The Qinghai record splits at
+<p>The Zaca record splits at 1000 yr BP. The Qinghai record splits at
 15,000 yr BP — late LGM to mid-Holocene, the boundary across which many
 Asian-monsoon records show a regional shift in source-water
 <code>d2H</code>.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">rho_malawi</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_temporal_autocorrelation.html">estimate_temporal_autocorrelation</a></span><span class="op">(</span></span>
-<span>  <span class="va">malawi</span><span class="op">$</span><span class="va">d2h_wax</span>, <span class="va">malawi</span><span class="op">$</span><span class="va">age</span>, method <span class="op">=</span> <span class="st">"ar1"</span></span>
+<code class="sourceCode R"><span><span class="va">rho_zaca</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_temporal_autocorrelation.html">estimate_temporal_autocorrelation</a></span><span class="op">(</span></span>
+<span>  <span class="va">zaca</span><span class="op">$</span><span class="va">d2h_wax</span>, <span class="va">zaca</span><span class="op">$</span><span class="va">age</span>, method <span class="op">=</span> <span class="st">"ar1"</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">dc_malawi</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/detect_change.html">detect_change</a></span><span class="op">(</span></span>
-<span>  reconstruction    <span class="op">=</span> <span class="va">recon_malawi</span>,</span>
-<span>  age               <span class="op">=</span> <span class="va">malawi</span><span class="op">$</span><span class="va">age</span>,</span>
+<span><span class="va">dc_zaca</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/detect_change.html">detect_change</a></span><span class="op">(</span></span>
+<span>  reconstruction    <span class="op">=</span> <span class="va">recon_zaca</span>,</span>
+<span>  age               <span class="op">=</span> <span class="va">zaca</span><span class="op">$</span><span class="va">age</span>,</span>
 <span>  baseline_interval <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1000</span><span class="op">)</span>,</span>
 <span>  test_intervals    <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>post_1000 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1000</span>, <span class="fl">2000</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  sigma_residual    <span class="op">=</span> <span class="fl">16</span>,</span>
 <span>  sigma_analytical  <span class="op">=</span> <span class="fl">3</span>,</span>
-<span>  rho_t             <span class="op">=</span> <span class="va">rho_malawi</span>,</span>
-<span>  beta_eff          <span class="op">=</span> <span class="fu">stats</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/stats/median.html" class="external-link">median</a></span><span class="op">(</span><span class="va">slope_malawi</span><span class="op">)</span>,</span>
+<span>  rho_t             <span class="op">=</span> <span class="va">rho_zaca</span>,</span>
+<span>  beta_eff          <span class="op">=</span> <span class="fu">stats</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/stats/median.html" class="external-link">median</a></span><span class="op">(</span><span class="va">slope_zaca</span><span class="op">)</span>,</span>
 <span>  confidence        <span class="op">=</span> <span class="fl">0.95</span>,</span>
 <span>  magnitudes        <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">10</span>, <span class="fl">30</span>, <span class="fl">50</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
@@ -268,25 +270,25 @@ Asian-monsoon records show a regional shift in source-water
 <span><span class="co">#&gt; download_model_data("baseline_sp") for the full posterior.</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
-<span>  malawi  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>rho_t <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">rho_malawi</span>, <span class="fl">3</span><span class="op">)</span>,</span>
-<span>                 threshold_permil <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">dc_malawi</span><span class="op">$</span><span class="va">threshold</span>, <span class="fl">1</span><span class="op">)</span>,</span>
-<span>                 intervals        <span class="op">=</span> <span class="va">dc_malawi</span><span class="op">$</span><span class="va">intervals</span><span class="op">)</span>,</span>
+<span>  zaca  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>rho_t <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">rho_zaca</span>, <span class="fl">3</span><span class="op">)</span>,</span>
+<span>                 threshold_permil <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">dc_zaca</span><span class="op">$</span><span class="va">threshold</span>, <span class="fl">1</span><span class="op">)</span>,</span>
+<span>                 intervals        <span class="op">=</span> <span class="va">dc_zaca</span><span class="op">$</span><span class="va">intervals</span><span class="op">)</span>,</span>
 <span>  qinghai <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>rho_t <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">rho_qh</span>, <span class="fl">3</span><span class="op">)</span>,</span>
 <span>                 threshold_permil <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">dc_qh</span><span class="op">$</span><span class="va">threshold</span>, <span class="fl">1</span><span class="op">)</span>,</span>
 <span>                 intervals        <span class="op">=</span> <span class="va">dc_qh</span><span class="op">$</span><span class="va">intervals</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
-<span><span class="co">#&gt; $malawi</span></span>
-<span><span class="co">#&gt; $malawi$rho_t</span></span>
-<span><span class="co">#&gt; [1] 0.394</span></span>
+<span><span class="co">#&gt; $zaca</span></span>
+<span><span class="co">#&gt; $zaca$rho_t</span></span>
+<span><span class="co">#&gt; [1] 0.445</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $malawi$threshold_permil</span></span>
-<span><span class="co">#&gt; [1] 60.7</span></span>
+<span><span class="co">#&gt; $zaca$threshold_permil</span></span>
+<span><span class="co">#&gt; [1] 58.5</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $malawi$intervals</span></span>
+<span><span class="co">#&gt; $zaca$intervals</span></span>
 <span><span class="co">#&gt;    interval n_baseline n_test delta_mean delta_median delta_lower delta_upper</span></span>
-<span><span class="co">#&gt; 1 post_1000          6      5  -10.29747    -9.278969   -40.96457     17.9845</span></span>
+<span><span class="co">#&gt; 1 post_1000        257    127  0.1163509    0.5201522   -5.648273     6.10717</span></span>
 <span><span class="co">#&gt;   p_abs_delta_gt_10 p_abs_delta_gt_30 p_abs_delta_gt_50</span></span>
-<span><span class="co">#&gt; 1              0.57              0.12              0.01</span></span>
+<span><span class="co">#&gt; 1                 0                 0                 0</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $qinghai</span></span>
@@ -298,15 +300,15 @@ Asian-monsoon records show a regional shift in source-water
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $qinghai$intervals</span></span>
 <span><span class="co">#&gt;   interval n_baseline n_test delta_mean delta_median delta_lower delta_upper</span></span>
-<span><span class="co">#&gt; 1      lgm        162     74  -37.10131    -35.58982   -57.77988   -25.12177</span></span>
+<span><span class="co">#&gt; 1      lgm        162     74  -38.50674    -37.18504   -59.10398   -24.23564</span></span>
 <span><span class="co">#&gt;   p_abs_delta_gt_10 p_abs_delta_gt_30 p_abs_delta_gt_50</span></span>
-<span><span class="co">#&gt; 1                 1              0.78              0.08</span></span></code></pre></div>
-<p>The two records produce different verdicts. Malawi: lag-1
-autocorrelation 0.39, 95 percent detection threshold approximately 61
+<span><span class="co">#&gt; 1                 1              0.82              0.13</span></span></code></pre></div>
+<p>The two records produce different verdicts. Zaca: lag-1
+autocorrelation 0.44, 95 percent detection threshold approximately 59
 per mil, posterior probability of a 30 per mil shift across 1000 yr BP
-0.12. Qinghai: lag-1 autocorrelation 0.85 (densely sampled and strongly
+0.00. Qinghai: lag-1 autocorrelation 0.85 (densely sampled and strongly
 persistent), threshold approximately 42 per mil, posterior probability
-of a 30 per mil shift across 15,000 yr BP 0.78. The Malawi record cannot
+of a 30 per mil shift across 15,000 yr BP 0.82. The Zaca record cannot
 distinguish a 30 per mil change in <code>d2H_precip</code> from
 calibration noise. The Qinghai record provides much stronger evidence
 for a large LGM-to-Holocene shift, but the 30 per mil quantitative claim
@@ -353,10 +355,10 @@ highest level where every prerequisite passes.</p>
 <span>  <span class="op">)</span></span>
 <span><span class="op">}</span></span>
 <span></span>
-<span><span class="va">malawi_record</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
-<span>  d2h_wax     <span class="op">=</span> <span class="va">malawi</span><span class="op">$</span><span class="va">d2h_wax</span>,</span>
-<span>  age         <span class="op">=</span> <span class="va">malawi</span><span class="op">$</span><span class="va">age</span>,</span>
-<span>  d2h_wax_err <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">3</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">malawi</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">zaca_record</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
+<span>  d2h_wax     <span class="op">=</span> <span class="va">zaca</span><span class="op">$</span><span class="va">d2h_wax</span>,</span>
+<span>  age         <span class="op">=</span> <span class="va">zaca</span><span class="op">$</span><span class="va">age</span>,</span>
+<span>  d2h_wax_err <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">3</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">zaca</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span><span class="va">qh_record</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
 <span>  d2h_wax     <span class="op">=</span> <span class="va">qh</span><span class="op">$</span><span class="va">d2h_wax</span>,</span>
@@ -364,13 +366,13 @@ highest level where every prerequisite passes.</p>
 <span>  d2h_wax_err <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">3</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">qh</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">verdict_malawi</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/warning.html" class="external-link">suppressWarnings</a></span><span class="op">(</span><span class="fu"><a href="../reference/assess_claim.html">assess_claim</a></span><span class="op">(</span></span>
-<span>  record         <span class="op">=</span> <span class="va">malawi_record</span>,</span>
-<span>  claim          <span class="op">=</span> <span class="fu">build_claim</span><span class="op">(</span><span class="fu">stats</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/stats/median.html" class="external-link">median</a></span><span class="op">(</span><span class="va">slope_malawi</span><span class="op">)</span>,</span>
-<span>                                <span class="va">rho_malawi</span>,</span>
+<span><span class="va">verdict_zaca</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/warning.html" class="external-link">suppressWarnings</a></span><span class="op">(</span><span class="fu"><a href="../reference/assess_claim.html">assess_claim</a></span><span class="op">(</span></span>
+<span>  record         <span class="op">=</span> <span class="va">zaca_record</span>,</span>
+<span>  claim          <span class="op">=</span> <span class="fu">build_claim</span><span class="op">(</span><span class="fu">stats</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/stats/median.html" class="external-link">median</a></span><span class="op">(</span><span class="va">slope_zaca</span><span class="op">)</span>,</span>
+<span>                                <span class="va">rho_zaca</span>,</span>
 <span>                                <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1000</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1000</span>, <span class="fl">2000</span><span class="op">)</span>,</span>
 <span>                                magnitude_precip <span class="op">=</span> <span class="fl">30</span><span class="op">)</span>,</span>
-<span>  reconstruction <span class="op">=</span> <span class="va">recon_malawi</span></span>
+<span>  reconstruction <span class="op">=</span> <span class="va">recon_zaca</span></span>
 <span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">verdict_qh</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/warning.html" class="external-link">suppressWarnings</a></span><span class="op">(</span><span class="fu"><a href="../reference/assess_claim.html">assess_claim</a></span><span class="op">(</span></span>
@@ -382,17 +384,17 @@ highest level where every prerequisite passes.</p>
 <span>  reconstruction <span class="op">=</span> <span class="va">recon_qh</span></span>
 <span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>malawi_highest_level   <span class="op">=</span> <span class="va">verdict_malawi</span><span class="op">$</span><span class="va">highest_level</span>,</span>
-<span>  malawi_supported_at_4  <span class="op">=</span> <span class="va">verdict_malawi</span><span class="op">$</span><span class="va">asserted_supported</span>,</span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>zaca_highest_level   <span class="op">=</span> <span class="va">verdict_zaca</span><span class="op">$</span><span class="va">highest_level</span>,</span>
+<span>  zaca_supported_at_4  <span class="op">=</span> <span class="va">verdict_zaca</span><span class="op">$</span><span class="va">asserted_supported</span>,</span>
 <span>  qinghai_highest_level  <span class="op">=</span> <span class="va">verdict_qh</span><span class="op">$</span><span class="va">highest_level</span>,</span>
 <span>  qinghai_supported_at_4 <span class="op">=</span> <span class="va">verdict_qh</span><span class="op">$</span><span class="va">asserted_supported</span><span class="op">)</span></span>
-<span><span class="co">#&gt;   malawi_highest_level  malawi_supported_at_4  qinghai_highest_level </span></span>
+<span><span class="co">#&gt;     zaca_highest_level    zaca_supported_at_4  qinghai_highest_level </span></span>
 <span><span class="co">#&gt;                      0                      0                      2 </span></span>
 <span><span class="co">#&gt; qinghai_supported_at_4 </span></span>
 <span><span class="co">#&gt;                      0</span></span></code></pre></div>
 <p>Read each <code>verdict$levels</code> data frame top to bottom —
 every level above the highest one passed is reported with the reason it
-failed. The Malawi claim fails at the within-record noise step; the
+failed. The Zaca claim fails at the within-record noise step; the
 Qinghai claim clears Level 2 for the asserted 30 per mil Level 4 claim.
 It fails Level 3 because the posterior probability for a 30 per mil
 <code>d2H_precip</code> shift is below 0.95, even though the example
@@ -426,8 +428,8 @@ supplies stationarity evidence for the Level 4 controls.</p>
 <span>  <span class="fu"><a href="https://rdrr.io/r/graphics/abline.html" class="external-link">abline</a></span><span class="op">(</span>v <span class="op">=</span> <span class="va">boundary</span>, lty <span class="op">=</span> <span class="fl">2</span>, col <span class="op">=</span> <span class="st">"red"</span><span class="op">)</span></span>
 <span><span class="op">}</span></span>
 <span></span>
-<span><span class="fu">plot_recon</span><span class="op">(</span><span class="va">recon_malawi</span>, <span class="va">malawi</span><span class="op">$</span><span class="va">age</span>,</span>
-<span>           <span class="st">"Lake Malawi (LS11KOMA): no detection at 95%"</span>,</span>
+<span><span class="fu">plot_recon</span><span class="op">(</span><span class="va">recon_zaca</span>, <span class="va">zaca</span><span class="op">$</span><span class="va">age</span>,</span>
+<span>           <span class="st">"Zaca Lake (LS14FEZA): no detection at 95%"</span>,</span>
 <span>           boundary <span class="op">=</span> <span class="fl">1000</span><span class="op">)</span></span>
 <span><span class="fu">plot_recon</span><span class="op">(</span><span class="va">recon_qh</span>, <span class="va">qh</span><span class="op">$</span><span class="va">age</span>,</span>
 <span>           <span class="st">"Lake Qinghai (LS16THQI01): large LGM shift"</span>,</span>
@@ -451,8 +453,8 @@ within-record <code>d2H_wax</code> interval-mean contrast relative to
 temporal autocorrelation. <code><a href="../reference/detect_change.html">detect_change()</a></code> packages these
 into a single threshold and a posterior probability;
 <code><a href="../reference/assess_claim.html">assess_claim()</a></code> walks them through the four-level taxonomy.
-Records like Malawi do not clear Level 2 for plausible 30 per mil
-claims. Long, densely sampled records like Qinghai can clear directional
+Records like Zaca do not clear Level 2 for plausible 30 per mil claims.
+Long, densely sampled records like Qinghai can clear directional
 hydroclimate-change claims and provide much stronger quantitative
 evidence, but the example 30 per mil Level 4 claim still requires
 posterior support at the chosen confidence level.</p>
