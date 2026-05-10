@@ -24,17 +24,17 @@ whether the difference in `d2H_precip` between two stratigraphic
 intervals can be distinguished from calibration-plus-analytical noise,
 and at what confidence level.
 
-The vignette runs the chain on two Iso2k records that produce opposite
-verdicts. Lake Malawi (LS11KOMA, Konecky et al.) has 11 samples across
-the Common Era and an in-record `d2H_wax` range of approximately 10
-per mil — a record where no plausible 30 per mil shift in `d2H_precip`
-can be distinguished from within-record noise. Lake Qinghai
-(LS16THQI01, Thomas et al.) has 240 samples spanning 31 kyr of the
-glacial-to-Holocene transition on the northeastern Tibetan Plateau,
-with strong sample-to-sample autocorrelation that shrinks the
-detection threshold; here a substantial drying signal across the
-Last Glacial Maximum boundary is recovered with high posterior
-probability.
+The vignette runs the chain on two Iso2k records with different
+inferential ceilings. Lake Malawi (LS11KOMA, Konecky et al.) has 11
+samples across the Common Era and an in-record `d2H_wax` range of
+approximately 10 per mil — a record where no plausible 30 per mil shift
+in `d2H_precip` can be distinguished from within-record noise. Lake
+Qinghai (LS16THQI01, Thomas et al.) has 240 samples spanning 31 kyr of
+the glacial-to-Holocene transition on the northeastern Tibetan Plateau.
+Its large LGM-to-Holocene shift and strong sample-to-sample
+autocorrelation support a directional hydroclimate-change claim, but
+the example 30 per mil quantitative `d2H_precip` claim still does not
+clear the 95 percent Level 3 threshold.
 
 The detection threshold from manuscript Section 4.5.3 is
 
@@ -55,18 +55,27 @@ cancels in any contrast between intervals.
 ```{r load}
 library(leafwax)
 
-malawi_path <- system.file(
-  "extdata", "example_records", "LS11KOMA_d2H.csv",
-  package = "leafwax"
-)
+record_path <- function(filename) {
+  path <- system.file(
+    "extdata", "example_records", filename,
+    package = "leafwax"
+  )
+  if (nzchar(path)) return(path)
+
+  local_path <- file.path(
+    "..", "inst", "extdata", "example_records", filename
+  )
+  if (file.exists(local_path)) return(local_path)
+
+  stop("Could not locate example record: ", filename)
+}
+
+malawi_path <- record_path("LS11KOMA_d2H.csv")
 malawi <- read.csv(malawi_path)
 malawi$d2h_wax <- malawi$d2H_wax
 malawi$age     <- malawi$age_yrBP
 
-qh_path <- system.file(
-  "extdata", "example_records", "LS16THQI01_d2H.csv",
-  package = "leafwax"
-)
+qh_path <- record_path("LS16THQI01_d2H.csv")
 qh <- read.csv(qh_path)
 qh$d2h_wax <- qh$d2H_wax
 qh$age     <- qh$age_yrBP
@@ -220,7 +229,7 @@ list(
 )
 ```
 
-The two records produce opposite verdicts. Malawi: lag-1
+The two records produce different verdicts. Malawi: lag-1
 autocorrelation `r round(rho_malawi, 2)`, 95 percent detection
 threshold approximately `r round(dc_malawi$threshold, 0)` per mil,
 posterior probability of a 30 per mil shift across 1000 yr BP
@@ -231,10 +240,12 @@ strongly persistent), threshold approximately
 per mil shift across 15,000 yr BP
 `r sprintf("%.2f", dc_qh$intervals$p_abs_delta_gt_30)`. The Malawi
 record cannot distinguish a 30 per mil change in `d2H_precip` from
-calibration noise; the Qinghai record can. Two factors drive the
-contrast: Qinghai's much larger LGM-to-Holocene `d2H_wax` shift, and
-its high autocorrelation, which reduces `sqrt(2(1-rho_t))` and pulls
-the threshold down.
+calibration noise. The Qinghai record provides much stronger evidence
+for a large LGM-to-Holocene shift, but the 30 per mil quantitative
+claim remains below the 95 percent decision threshold. Two factors
+drive the contrast: Qinghai's much larger LGM-to-Holocene `d2H_wax`
+shift, and its high autocorrelation, which reduces `sqrt(2(1-rho_t))`
+and pulls the threshold down.
 
 ## 5. Assess a published claim
 
@@ -312,9 +323,10 @@ c(malawi_highest_level   = verdict_malawi$highest_level,
 Read each `verdict$levels` data frame top to bottom — every level
 above the highest one passed is reported with the reason it failed.
 The Malawi claim fails at the within-record noise step; the Qinghai
-claim clears all four levels because the wax-side LGM-to-Holocene
-change is large relative to noise and the asserted stationarity
-evidence holds.
+claim clears Level 2 for the asserted 30 per mil Level 4 claim. It
+fails Level 3 because the posterior probability for a 30 per mil
+`d2H_precip` shift is below 0.95, even though the example supplies
+stationarity evidence for the Level 4 controls.
 
 ## 6. Plot the reconstructions
 
@@ -347,7 +359,7 @@ plot_recon(recon_malawi, malawi$age,
            "Lake Malawi (LS11KOMA): no detection at 95%",
            boundary = 1000)
 plot_recon(recon_qh, qh$age,
-           "Lake Qinghai (LS16THQI01): clear LGM signal",
+           "Lake Qinghai (LS16THQI01): large LGM shift",
            boundary = 15000)
 
 par(op)
@@ -367,10 +379,11 @@ local effective slope, and the lag-1 temporal autocorrelation.
 `detect_change()` packages these into a single threshold and a
 posterior probability; `assess_claim()` walks them through the
 four-level taxonomy. Records like Malawi do not clear Level 2 for
-plausible 30 per mil claims; long, densely-sampled records like
-Qinghai do, because their large interval-mean shifts and high
-sample-to-sample autocorrelation jointly raise signal-to-noise above
-the calibration's noise floor.
+plausible 30 per mil claims. Long, densely sampled records like
+Qinghai can clear directional hydroclimate-change claims and provide
+much stronger quantitative evidence, but the example 30 per mil Level
+4 claim still requires posterior support at the chosen confidence
+level.
 
 ## Notes
 
