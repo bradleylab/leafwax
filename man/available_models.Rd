@@ -11,18 +11,18 @@ Character vector of available model names. Models include:
 \itemize{
 \item \code{baseline}: Basic OIPC model without spatial effects
 \item \code{baseline_sp}: Basic model with spatial Gaussian process
-\item \code{baseline_env}: Includes elevation effects
-\item \code{baseline_env_sp}: Elevation effects with spatial GP
-\item \code{baseline_veg}: Includes vegetation (PFT) effects
-\item \code{baseline_veg_sp}: Vegetation effects with spatial GP
+\item \code{baseline_env}: Includes precipitation-amount effects
+\item \code{baseline_env_sp}: Precipitation-amount effects with spatial GP
+\item \code{baseline_veg}: Includes vegetation interaction effects
+\item \code{baseline_veg_sp}: Vegetation interactions with spatial GP
 \item \code{c4_only_sp}: C4 vegetation effects only (spatial)
-\item \code{elevation_only_sp}: Elevation effects only (spatial)
-\item \code{elevation_c4_sp}: Combined elevation and C4 effects
-\item \code{elevation_c4_interact_sp}: With interaction terms
-\item \code{full}: All effects without spatial component
-\item \code{full_sp}: All effects with spatial component
-\item \code{full_interact}: All effects with interactions
-\item \code{full_interact_sp}: Full model with spatial GP
+\item \code{elevation_only_sp}: Historical elevation-context variant (spatial)
+\item \code{elevation_c4_sp}: Historical elevation-context + C4 variant
+\item \code{elevation_c4_interact_sp}: Historical elevation/C4-interaction name; C4 effect only
+\item \code{full}: Precipitation amount + vegetation interactions without spatial component
+\item \code{full_sp}: Precipitation amount + vegetation interactions with spatial component
+\item \code{full_interact}: Precipitation amount + vegetation interactions
+\item \code{full_interact_sp}: Full interaction model with spatial GP
 }
 }
 \description{

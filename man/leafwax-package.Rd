@@ -29,8 +29,8 @@ The package includes 14 calibration models with different capabilities. The
 v10 fits include precipitation amount (\code{baseline_env*} and
 \code{full*} variants), C4 abundance, and PFT cover; none of the v10
 variants carry a fitted elevation coefficient despite the historical
-"elevation_*" naming. Capability flags exposed by
-\code{get_model_parameters()} are derived from each model's posterior
+"elevation_*" naming. Runtime capability flags in
+\code{load_posteriors()} are derived from each model's posterior
 columns at load time.
 \itemize{
 \item \strong{Basic models}: baseline, baseline_sp

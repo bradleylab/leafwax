@@ -6,8 +6,8 @@ NULL
 #' Invert leaf wax d2H to precipitation d2H
 #' 
 #' Uses Bayesian posterior draws to invert leaf wax hydrogen isotope values
-#' to precipitation isotope values, accounting for all model components including
-#' elevation effects and spatial correlations.
+#' to precipitation isotope values, accounting for all fitted model components
+#' including vegetation effects and spatial correlations where applicable.
 #' 
 #' @param d2h_wax Numeric vector of leaf wax d2H values (per mil)
 #' @param d2h_wax_err Numeric vector of measurement uncertainties (per mil)
@@ -508,16 +508,20 @@ invert_d2H <- function(d2H_wax,
   )
 }
 
-#' Detect model capabilities from model name
+#' Detect model capabilities from static v10 metadata
 #' 
 #' @param model_name Name of the model
 #' @return List of capability flags
 #' @export
 detect_model_capabilities <- function(model_name) {
+  caps <- get_model_parameters(model_name)$capabilities
+
   list(
-    has_gp = grepl("sp", model_name),
-    has_elevation = grepl("elev", model_name),
-    has_c4 = grepl("c4", model_name),
-    has_pft = grepl("pft", model_name)
+    has_gp = caps$has_spatial,
+    has_elevation = caps$has_elevation,
+    has_precip = caps$has_precip,
+    has_c4 = caps$has_c4,
+    has_pft = caps$has_pft,
+    has_interaction = caps$has_interaction
   )
 }

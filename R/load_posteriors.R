@@ -152,10 +152,10 @@ load_posteriors <- function(model_name, n_draws = NULL, verbose = TRUE) {
   }
 
   # Create metadata. Capability flags are derived from the actual draws
-  # column names rather than the model name, because some model names
-  # (e.g., `full`, `full_sp`, `full_interact_sp`) include C4/PFT effects
-  # without the substrings the older regex looked for. Spatial / interaction
-  # flags still come from the name (those are unambiguous in the v10 set).
+  # column names rather than the model name, because several historical
+  # v10 names contain substrings that no longer imply fitted coefficients.
+  # Spatial status is the exception because it is represented by the
+  # shipped knot metadata and the `_sp` model id convention.
   param_names <- names(draws)
   # Capability flags are derived from actual posterior columns. Earlier
   # versions also matched the model NAME (e.g. "env", "elevation") but
@@ -174,8 +174,7 @@ load_posteriors <- function(model_name, n_draws = NULL, verbose = TRUE) {
                     any(grepl("oipc.*c4|c4.*oipc", param_names, ignore.case = TRUE)),
     has_pft       = any(grepl("^beta_(tree|shrub|grass)", param_names)),
     has_gp        = grepl("(^|_)sp$", model_name),
-    has_interaction = grepl("interact", model_name) ||
-                      any(grepl("oipc.*(tree|shrub|grass|c4)|(tree|shrub|grass|c4).*oipc",
+    has_interaction = any(grepl("oipc.*(tree|shrub|grass|c4)|(tree|shrub|grass|c4).*oipc",
                                 param_names, ignore.case = TRUE))
   )
 

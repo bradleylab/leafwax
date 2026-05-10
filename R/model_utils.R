@@ -9,18 +9,18 @@
 #'   \itemize{
 #'     \item \code{baseline}: Basic OIPC model without spatial effects
 #'     \item \code{baseline_sp}: Basic model with spatial Gaussian process
-#'     \item \code{baseline_env}: Includes elevation effects
-#'     \item \code{baseline_env_sp}: Elevation effects with spatial GP
-#'     \item \code{baseline_veg}: Includes vegetation (PFT) effects
-#'     \item \code{baseline_veg_sp}: Vegetation effects with spatial GP
+#'     \item \code{baseline_env}: Includes precipitation-amount effects
+#'     \item \code{baseline_env_sp}: Precipitation-amount effects with spatial GP
+#'     \item \code{baseline_veg}: Includes vegetation interaction effects
+#'     \item \code{baseline_veg_sp}: Vegetation interactions with spatial GP
 #'     \item \code{c4_only_sp}: C4 vegetation effects only (spatial)
-#'     \item \code{elevation_only_sp}: Elevation effects only (spatial)
-#'     \item \code{elevation_c4_sp}: Combined elevation and C4 effects
-#'     \item \code{elevation_c4_interact_sp}: With interaction terms
-#'     \item \code{full}: All effects without spatial component
-#'     \item \code{full_sp}: All effects with spatial component
-#'     \item \code{full_interact}: All effects with interactions
-#'     \item \code{full_interact_sp}: Full model with spatial GP
+#'     \item \code{elevation_only_sp}: Historical elevation-context variant (spatial)
+#'     \item \code{elevation_c4_sp}: Historical elevation-context + C4 variant
+#'     \item \code{elevation_c4_interact_sp}: Historical elevation/C4-interaction name; C4 effect only
+#'     \item \code{full}: Precipitation amount + vegetation interactions without spatial component
+#'     \item \code{full_sp}: Precipitation amount + vegetation interactions with spatial component
+#'     \item \code{full_interact}: Precipitation amount + vegetation interactions
+#'     \item \code{full_interact_sp}: Full interaction model with spatial GP
 #'   }
 #' @examples
 #' # List all available models
@@ -45,151 +45,145 @@ available_models <- function() {
 #' @export
 get_all_model_metadata <- function() {
 
-  # Define all 14 models with their properties
-  models <- list(
-    # Basic models
-    baseline = list(
-      name = "baseline",
-      description = "Basic OIPC model without spatial or environmental effects",
-      has_spatial = FALSE,
+  # Define all 14 models with their v10 fitted capabilities. The v10
+  # posteriors do not contain beta_elev columns, so has_elevation is
+  # FALSE for every shipped model even when the historical model id
+  # contains "elevation".
+  model_meta <- function(name, description,
+                         has_spatial = FALSE,
+                         has_precip = FALSE,
+                         has_c4 = FALSE,
+                         has_vegetation = FALSE,
+                         has_interaction = FALSE,
+                         size_mb = NA_real_) {
+    list(
+      name = name,
+      description = description,
+      has_spatial = has_spatial,
       has_elevation = FALSE,
-      has_c4 = FALSE,
-      has_vegetation = FALSE,
+      has_precip = has_precip,
+      has_c4 = has_c4,
+      has_vegetation = has_vegetation,
+      has_interaction = has_interaction,
+      size_mb = size_mb
+    )
+  }
+
+  models <- list(
+    baseline = model_meta(
+      "baseline",
+      "Basic OIPC model without spatial or environmental effects",
       size_mb = 581
     ),
 
-    baseline_sp = list(
-      name = "baseline_sp",
-      description = "Basic OIPC model with spatial Gaussian process",
+    baseline_sp = model_meta(
+      "baseline_sp",
+      "Basic OIPC model with spatial Gaussian process",
       has_spatial = TRUE,
-      has_elevation = FALSE,
-      has_c4 = FALSE,
-      has_vegetation = FALSE,
       size_mb = 917
     ),
 
-    # Environmental models
-    baseline_env = list(
-      name = "baseline_env",
-      description = "OIPC + elevation effects",
-      has_spatial = FALSE,
-      has_elevation = TRUE,
-      has_c4 = FALSE,
-      has_vegetation = FALSE,
+    baseline_env = model_meta(
+      "baseline_env",
+      "OIPC + precipitation-amount effect",
+      has_precip = TRUE,
       size_mb = 639
     ),
 
-    baseline_env_sp = list(
-      name = "baseline_env_sp",
-      description = "OIPC + elevation + spatial effects",
+    baseline_env_sp = model_meta(
+      "baseline_env_sp",
+      "OIPC + precipitation-amount + spatial effects",
       has_spatial = TRUE,
-      has_elevation = TRUE,
-      has_c4 = FALSE,
-      has_vegetation = FALSE,
+      has_precip = TRUE,
       size_mb = 992
     ),
 
-    # Vegetation models
-    baseline_veg = list(
-      name = "baseline_veg",
-      description = "OIPC + vegetation effects (C4/C3)",
-      has_spatial = FALSE,
-      has_elevation = FALSE,
+    baseline_veg = model_meta(
+      "baseline_veg",
+      "OIPC + vegetation interaction effects (C4/PFT)",
       has_c4 = TRUE,
       has_vegetation = TRUE,
+      has_interaction = TRUE,
       size_mb = 717
     ),
 
-    baseline_veg_sp = list(
-      name = "baseline_veg_sp",
-      description = "OIPC + vegetation + spatial effects",
+    baseline_veg_sp = model_meta(
+      "baseline_veg_sp",
+      "OIPC + vegetation interactions + spatial effects",
       has_spatial = TRUE,
-      has_elevation = FALSE,
       has_c4 = TRUE,
       has_vegetation = TRUE,
+      has_interaction = TRUE,
       size_mb = 1200
     ),
 
-    # C4-specific models
-    c4_only_sp = list(
-      name = "c4_only_sp",
-      description = "OIPC + C4 fraction + spatial effects",
+    c4_only_sp = model_meta(
+      "c4_only_sp",
+      "OIPC + C4 fraction + spatial effects",
       has_spatial = TRUE,
-      has_elevation = FALSE,
       has_c4 = TRUE,
-      has_vegetation = FALSE,
       size_mb = 986
     ),
 
-    # Elevation models
-    elevation_only_sp = list(
-      name = "elevation_only_sp",
-      description = "OIPC + elevation + spatial effects",
+    elevation_only_sp = model_meta(
+      "elevation_only_sp",
+      "OIPC + spatial effects (historical elevation-context variant; no fitted elevation coefficient)",
       has_spatial = TRUE,
-      has_elevation = TRUE,
-      has_c4 = FALSE,
-      has_vegetation = FALSE,
       size_mb = 923
     ),
 
-    elevation_c4_sp = list(
-      name = "elevation_c4_sp",
-      description = "OIPC + elevation + C4 + spatial effects",
+    elevation_c4_sp = model_meta(
+      "elevation_c4_sp",
+      "OIPC + C4 + spatial effects (historical elevation-context variant)",
       has_spatial = TRUE,
-      has_elevation = TRUE,
       has_c4 = TRUE,
-      has_vegetation = FALSE,
       size_mb = 992
     ),
 
-    elevation_c4_interact_sp = list(
-      name = "elevation_c4_interact_sp",
-      description = "OIPC + elevation x C4 interaction + spatial effects",
+    elevation_c4_interact_sp = model_meta(
+      "elevation_c4_interact_sp",
+      "OIPC + C4 + spatial effects (historical elevation/interaction-context variant; no fitted elevation or interaction coefficient)",
       has_spatial = TRUE,
-      has_elevation = TRUE,
       has_c4 = TRUE,
-      has_vegetation = FALSE,
-      has_interaction = TRUE,
       size_mb = 1300
     ),
 
-    # Full models
-    full = list(
-      name = "full",
-      description = "Full model with elevation + vegetation effects",
-      has_spatial = FALSE,
-      has_elevation = TRUE,
+    full = model_meta(
+      "full",
+      "Precipitation amount + vegetation interactions",
+      has_precip = TRUE,
       has_c4 = TRUE,
       has_vegetation = TRUE,
+      has_interaction = TRUE,
       size_mb = 811
     ),
 
-    full_sp = list(
-      name = "full_sp",
-      description = "Full model with all effects + spatial GP",
+    full_sp = model_meta(
+      "full_sp",
+      "Precipitation amount + vegetation interactions + spatial GP",
       has_spatial = TRUE,
-      has_elevation = TRUE,
+      has_precip = TRUE,
       has_c4 = TRUE,
       has_vegetation = TRUE,
+      has_interaction = TRUE,
       size_mb = 1700
     ),
 
-    full_interact = list(
-      name = "full_interact",
-      description = "Full model with interactions (no spatial)",
-      has_spatial = FALSE,
-      has_elevation = TRUE,
+    full_interact = model_meta(
+      "full_interact",
+      "Precipitation amount + vegetation interactions (no spatial GP)",
+      has_precip = TRUE,
       has_c4 = TRUE,
       has_vegetation = TRUE,
       has_interaction = TRUE,
       size_mb = 812
     ),
 
-    full_interact_sp = list(
-      name = "full_interact_sp",
-      description = "Full model with all interactions + spatial GP",
+    full_interact_sp = model_meta(
+      "full_interact_sp",
+      "Precipitation amount + vegetation interactions + spatial GP",
       has_spatial = TRUE,
-      has_elevation = TRUE,
+      has_precip = TRUE,
       has_c4 = TRUE,
       has_vegetation = TRUE,
       has_interaction = TRUE,
@@ -246,4 +240,3 @@ get_model_info <- function(model_name) {
 
   return(models[[model_name]])
 }
-

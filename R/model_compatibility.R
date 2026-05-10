@@ -26,7 +26,7 @@ get_model_parameters <- function(model_name) {
     has_precip = grepl("env", model_name) || grepl("^full", model_name),
     has_c4 = grepl("(c4|veg|^full)", model_name),
     has_pft = grepl("(veg|^full)", model_name),
-    has_interaction = grepl("interact", model_name)
+    has_interaction = grepl("(veg|^full)", model_name)
   )
 
   # Expected parameters based on model type
@@ -46,6 +46,18 @@ get_model_parameters <- function(model_name) {
 
   if (capabilities$has_pft) {
     expected_params <- c(expected_params, "beta_tree", "beta_shrub", "beta_grass")
+  }
+
+  if (capabilities$has_interaction) {
+    if (capabilities$has_c4) {
+      expected_params <- c(expected_params, "beta_oipc_x_c4")
+    }
+    if (capabilities$has_pft) {
+      expected_params <- c(
+        expected_params,
+        "beta_oipc_x_tree", "beta_oipc_x_shrub", "beta_oipc_x_grass"
+      )
+    }
   }
 
   # Required predictors for this model
@@ -80,6 +92,10 @@ generate_model_description <- function(model_name, capabilities) {
 
   if (capabilities$has_elevation) {
     components <- c(components, "elevation effects")
+  }
+
+  if (isTRUE(capabilities$has_precip)) {
+    components <- c(components, "precipitation-amount effects")
   }
 
   if (capabilities$has_c4 && !capabilities$has_pft) {
@@ -190,4 +206,3 @@ validate_model_inputs <- function(model_name, d2h_wax, longitude, latitude,
     model_info = model_info
   ))
 }
-

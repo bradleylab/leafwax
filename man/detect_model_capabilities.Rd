@@ -2,7 +2,7 @@
 % Please edit documentation in R/invert_d2h.R
 \name{detect_model_capabilities}
 \alias{detect_model_capabilities}
-\title{Detect model capabilities from model name}
+\title{Detect model capabilities from static v10 metadata}
 \usage{
 detect_model_capabilities(model_name)
 }
@@ -13,5 +13,5 @@ detect_model_capabilities(model_name)
 List of capability flags
 }
 \description{
-Detect model capabilities from model name
+Detect model capabilities from static v10 metadata
 }

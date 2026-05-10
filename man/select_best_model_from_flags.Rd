@@ -13,7 +13,10 @@ select_best_model_from_flags(
 )
 }
 \arguments{
-\item{has_elevation}{Logical, whether elevation data is available}
+\item{has_elevation}{Logical, whether elevation data is available.
+Accepted for compatibility; shipped v10 posteriors do not contain
+fitted elevation coefficients, so elevation alone does not change
+the selected model.}
 
 \item{has_c4}{Logical, whether C4 vegetation data is available}
 

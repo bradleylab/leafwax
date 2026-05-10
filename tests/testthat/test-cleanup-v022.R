@@ -445,6 +445,99 @@ test_that("invert_d2H supplied elevation with v10 models warns and ignores (no s
   )
 })
 
+test_that("metadata registry exposes v10 posterior capabilities, not historical elevation names", {
+  metadata <- get_all_model_metadata()
+  expect_length(metadata, 14L)
+
+  has_elevation <- vapply(metadata, function(m) isTRUE(m$has_elevation), logical(1))
+  expect_false(any(has_elevation))
+
+  has_precip <- names(metadata)[
+    vapply(metadata, function(m) isTRUE(m$has_precip), logical(1))
+  ]
+  expect_setequal(
+    has_precip,
+    c("baseline_env", "baseline_env_sp",
+      "full", "full_sp", "full_interact", "full_interact_sp")
+  )
+})
+
+test_that("static capability helpers match loaded v10 posterior metadata", {
+  metadata <- get_all_model_metadata()
+
+  for (model_name in available_models()) {
+    loaded <- suppressWarnings(suppressMessages(
+      load_posteriors(model_name, n_draws = 1, verbose = FALSE)
+    ))$metadata
+    params <- get_model_parameters(model_name)$capabilities
+    registry <- metadata[[model_name]]
+    detected <- detect_model_capabilities(model_name)
+
+    expect_identical(params$has_elevation, loaded$has_elevation)
+    expect_identical(params$has_precip, loaded$has_precip)
+    expect_identical(params$has_c4, loaded$has_c4)
+    expect_identical(params$has_pft, loaded$has_pft)
+    expect_identical(params$has_spatial, loaded$has_gp)
+    expect_identical(params$has_interaction, loaded$has_interaction)
+
+    expect_identical(registry$has_elevation, loaded$has_elevation)
+    expect_identical(registry$has_precip, loaded$has_precip)
+    expect_identical(registry$has_c4, loaded$has_c4)
+    expect_identical(registry$has_vegetation, loaded$has_pft)
+    expect_identical(registry$has_spatial, loaded$has_gp)
+    expect_identical(registry$has_interaction, loaded$has_interaction)
+
+    expect_identical(detected$has_elevation, loaded$has_elevation)
+    expect_identical(detected$has_precip, loaded$has_precip)
+    expect_identical(detected$has_c4, loaded$has_c4)
+    expect_identical(detected$has_pft, loaded$has_pft)
+    expect_identical(detected$has_gp, loaded$has_gp)
+    expect_identical(detected$has_interaction, loaded$has_interaction)
+  }
+})
+
+test_that("list_models and validate_inputs do not require elevation for v10 models", {
+  models <- list_models(check_data = FALSE, verbose = FALSE)
+  expect_false(any(models$has_elevation))
+  expect_false(any(grepl("elevation", models$requires, ignore.case = TRUE)))
+
+  expect_error(
+    validate_inputs(
+      d2h_wax = -150,
+      longitude = -90,
+      latitude = 38,
+      model_name = "baseline_env"
+    ),
+    NA
+  )
+})
+
+test_that("auto model selection ignores elevation-only input for v10 routing", {
+  res <- suppressWarnings(predict_d2h_precip(
+    d2h_wax = -150,
+    longitude = -90,
+    latitude = 38,
+    elevation = 1000,
+    model = "auto",
+    progress = FALSE,
+    verbose = FALSE
+  ))
+
+  expect_equal(res$model_used, "baseline_sp")
+})
+
+test_that("shipped model_info.json matches v10 no-elevation and 125-knot metadata", {
+  info <- jsonlite::fromJSON(
+    system.file("extdata", "model_info.json", package = "leafwax"),
+    simplifyVector = FALSE
+  )
+
+  all_params <- unlist(lapply(info$models, `[[`, "parameters"), use.names = FALSE)
+  expect_false("beta_elev" %in% all_params)
+  expect_match(info$notes$elevation, "not fitted|not used", ignore.case = TRUE)
+  expect_match(info$notes$spatial_knots, "125")
+})
+
 test_that("list_cached_models / check_data_cache read the v0.2 posteriors directory layout", {
   # Lock in the 8d6b748 fix: the cache helpers previously looked for
   # v0.1 file-name patterns (metadata/<model>_metadata.rds and

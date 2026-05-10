@@ -218,7 +218,10 @@ predict_d2h_precip <- function(data = NULL,
 #' shipped variants given which covariates the user has available.
 #' Spatial-aware models are preferred when `prefer_spatial = TRUE`.
 #'
-#' @param has_elevation Logical, whether elevation data is available
+#' @param has_elevation Logical, whether elevation data is available.
+#'   Accepted for compatibility; shipped v10 posteriors do not contain
+#'   fitted elevation coefficients, so elevation alone does not change
+#'   the selected model.
 #' @param has_c4 Logical, whether C4 vegetation data is available
 #' @param has_pft Logical, whether PFT data is available
 #' @param prefer_spatial Logical, whether to prefer spatial models
@@ -233,20 +236,14 @@ select_best_model_from_flags <- function(has_elevation = FALSE,
   available <- available_models()
   pref <- function(name) name %in% available
 
-  # Pick the richest model that uses every covariate the user has.
+  # Pick the richest model that uses every fitted covariate the user has.
+  # v10 posteriors do not contain beta_elev columns, so elevation is
+  # deliberately ignored for routing even when the caller supplies it.
   # If prefer_spatial is FALSE, drop "_sp" suffix candidates first.
   candidates <- if (prefer_spatial) {
-    if (has_pft && has_c4 && has_elevation) {
-      c("full_interact_sp", "full_sp", "elevation_c4_interact_sp",
-        "elevation_c4_sp", "baseline_env_sp", "baseline_sp")
-    } else if (has_pft && has_c4) {
+    if (has_pft && has_c4) {
       c("full_interact_sp", "full_sp", "baseline_veg_sp",
         "c4_only_sp", "baseline_sp")
-    } else if (has_elevation && has_c4) {
-      c("elevation_c4_interact_sp", "elevation_c4_sp",
-        "elevation_only_sp", "baseline_env_sp", "baseline_sp")
-    } else if (has_elevation) {
-      c("elevation_only_sp", "baseline_env_sp", "baseline_sp")
     } else if (has_c4) {
       c("c4_only_sp", "baseline_sp")
     } else {
@@ -255,8 +252,6 @@ select_best_model_from_flags <- function(has_elevation = FALSE,
   } else {
     if (has_pft && has_c4) {
       c("full_interact", "full", "baseline_veg", "baseline")
-    } else if (has_elevation) {
-      c("baseline_env", "baseline")
     } else {
       c("baseline")
     }
@@ -313,6 +308,7 @@ list_models <- function(check_data = TRUE, verbose = TRUE) {
     m <- metadata[[i]]
     model_df$description[i]  <- m$description %||% NA_character_
     model_df$has_elevation[i] <- isTRUE(m$has_elevation)
+    model_df$has_precip[i]    <- isTRUE(m$has_precip)
     model_df$has_c4[i]        <- isTRUE(m$has_c4)
     model_df$has_pft[i]       <- isTRUE(m$has_vegetation %||% m$has_pft)
     model_df$has_spatial[i]   <- isTRUE(m$has_spatial %||% m$has_gp)

@@ -162,7 +162,7 @@ Critical sanity check: `invert_d2H_ensemble()` and `compare_models()` should bot
 ```r
 library(leafwax)
 # These should both run without error after commit 2:
-e <- invert_d2H_ensemble(d2h_wax = -150, longitude = -90, latitude = 38)
+e <- invert_d2H_ensemble(d2H_wax = -150, longitude = -90, latitude = 38)
 c <- compare_models(data.frame(d2h_wax = -150, longitude = -90, latitude = 38))
 ```
 
