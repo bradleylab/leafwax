@@ -1,4 +1,4 @@
-# Paleo-record workflow: from a downcore series to a defensible claim
+# When does a leaf-wax record support a precipitation-isotope claim?
 
 The workflow reconstructs `d2H_precip` from a downcore leaf-wax series
 and tests whether the reconstructed signal is large enough to support a
@@ -358,7 +358,7 @@ plot_recon <- function(rec, ages, title, boundary) {
     ylim = range(c(rec$summary$d2h_precip_lower,
                    rec$summary$d2h_precip_upper)),
     xlab = "Age (yr BP)",
-    ylab = "d2H_precip (per mil)",
+    ylab = expression(delta^2 * H[precipitation] ~ "(‰)"),
     main = title
   )
   polygon(
