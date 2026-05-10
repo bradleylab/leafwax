@@ -9,7 +9,6 @@ local_effective_slope(
   latitude,
   model_name,
   override = NULL,
-  ceiling = 0.88,
   n_draws = NULL,
   verbose = FALSE
 )
@@ -28,10 +27,6 @@ models return the global posterior unchanged.}
 slope. A single value broadcasts across all draws. A vector of
 length \code{n_draws} is used per draw.}
 
-\item{ceiling}{Optional numeric upper bound on the slope. Default
-\code{0.88}, the simple-model ceiling under stationarity. Set to
-\code{Inf} or \code{NULL} to disable.}
-
 \item{n_draws}{Integer, optional number of posterior draws to use
 (\code{NULL} uses all). Forwarded to \code{load_posteriors()}.}
 
@@ -39,34 +34,36 @@ length \code{n_draws} is used per draw.}
 }
 \value{
 Numeric vector of length \code{n_draws}, the per-draw effective
-slope at the site (after override and ceiling, in that order).
+slope at the site (after override, if any).
 }
 \description{
 Returns a per-draw vector of the d2H_wax-d2H_precip slope at a
-single site, combining the global posterior beta_oipc with the
-spatial slope GP prediction at that site. The result is the
-quantity a paleohydrologist needs in Section 4.5.5 of the
-manuscript: a site-specific slope posterior with an explicit
-upper bound from simple-model fractionation theory.
+single site, combining the global posterior \code{beta_oipc} with the
+spatial slope GP prediction at that site. The returned vector is
+the raw posterior at the site; every draw the calibration produced
+is preserved without modification.
 }
 \details{
-Three modes:
+Two modes:
 \itemize{
 \item Default: returns the model's per-draw slope at the site.
 \item Override (single value or per-draw vector) replaces the
 model slope with a defended local value (e.g., from independent
 evidence about source-water seasonality, leaf-water enrichment,
 or vegetation).
-\item Ceiling: any draw exceeding \code{ceiling} (default 0.88, the
-simple-model upper bound from \verb{epsilon_app ~= -120 permil}) is
-truncated to the ceiling. A warning is emitted when more than
-5\\% of draws are truncated, since that suggests the model and
-the user's intended interpretation are inconsistent with the
-simple-model bound.
 }
 
 Pass the returned vector to \code{invert_d2H(..., slope = ...)} to
 propagate it through the inversion.
+
+Mechanistic reference values (e.g. the simple two-pool stationarity
+bound \code{alpha = 1 + epsilon_app/1000} ~ 0.88 under
+\verb{epsilon_app ~= -120 permil}; Sessions 2005) are documented for
+interpretation but are never applied to the returned draws. The
+frequency of draws above any chosen reference is computable
+directly from the returned vector
+(\code{mean(slope > 0.88)}) and carries scientific information about
+how often the calibration implicates non-stationarity at the site.
 }
 \examples{
 \donttest{
@@ -78,11 +75,15 @@ s <- local_effective_slope(
 )
 summary(s)
 
+# How often does the calibration imply a slope above the simple-model
+# stationarity bound at this site?
+mean(s > 0.88)
+
 # Override with a defended local slope
 s_fixed <- local_effective_slope(
   longitude = -90, latitude = 38,
   model_name = "baseline_sp",
-  override = 0.55, ceiling = 0.88
+  override = 0.55
 )
 
 # Pass through to the inversion. The slope vector and the

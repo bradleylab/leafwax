@@ -90,9 +90,9 @@ slope. NULL (default) uses the model's site-specific slope, i.e.,
 A single numeric replaces the slope with a fixed point estimate
 (broadcast across all posterior draws). A vector of length
 \code{n_draws} is used per draw. Use \code{local_effective_slope()} to
-build a defensible per-draw override that respects the manuscript's
-simple-model ceiling at alpha = 0.88 (Section 4.5.5). When
-supplied, the override applies uniformly to every input row.}
+build a defensible per-draw override from the calibration's
+site-specific posterior. When supplied, the override applies
+uniformly to every input row.}
 
 \item{d2H_wax}{Numeric vector of leaf wax d2H values (per mil)}
 

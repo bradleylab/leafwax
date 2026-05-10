@@ -42,9 +42,9 @@ NULL
 #'   A single numeric replaces the slope with a fixed point estimate
 #'   (broadcast across all posterior draws). A vector of length
 #'   `n_draws` is used per draw. Use `local_effective_slope()` to
-#'   build a defensible per-draw override that respects the manuscript's
-#'   simple-model ceiling at alpha = 0.88 (Section 4.5.5). When
-#'   supplied, the override applies uniformly to every input row.
+#'   build a defensible per-draw override from the calibration's
+#'   site-specific posterior. When supplied, the override applies
+#'   uniformly to every input row.
 #'
 #' @return If return_full is FALSE, a data frame with columns:
 #'   \item{d2h_precip_mean}{Mean predicted precipitation d2H}
@@ -287,10 +287,8 @@ invert_d2h <- function(d2h_wax, d2h_wax_err = NULL,
     }
     # Reject zero / near-zero slopes: the inversion divides by the
     # slope, so a zero override produces NaN/Inf reconstructions
-    # silently. Force the user to supply a positive slope (the simple
-    # two-pool fractionation model is bounded above by ~0.88; values
-    # at or below zero have no scientific interpretation in this
-    # framework).
+    # silently. Force the user to supply a positive slope; zero or
+    # negative values have no interpretation in this framework.
     if (any(abs(slope) < .Machine$double.eps^0.5)) {
       stop("slope contains values at or near zero; the inversion divides ",
            "by slope and would produce NaN/Inf. Supply a positive slope.")

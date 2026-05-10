@@ -4,8 +4,7 @@ test_that("local_effective_slope: spatial model returns per-draw vector", {
   s <- local_effective_slope(
     longitude = -90, latitude = 38,
     model_name = "baseline_sp",
-    n_draws = 100, verbose = FALSE,
-    ceiling = Inf
+    n_draws = 100, verbose = FALSE
   )
   expect_type(s, "double")
   expect_length(s, 100L)
@@ -21,8 +20,7 @@ test_that("local_effective_slope: non-spatial model returns global beta_oipc", {
   s_local <- local_effective_slope(
     longitude = -90, latitude = 38,
     model_name = "baseline",
-    n_draws = NULL, verbose = FALSE,
-    ceiling = Inf
+    n_draws = NULL, verbose = FALSE
   )
   beta <- as.numeric(load_posteriors("baseline", n_draws = NULL,
                                      verbose = FALSE)$draws$beta_oipc)
@@ -41,74 +39,63 @@ test_that("local_effective_slope: matches a hand-rolled extraction", {
                                   m$scaling)
   hand <- as.numeric(m$draws$beta_oipc) + as.numeric(dual$slope[, 1])
 
-  # Reuse the same draws (same seed, same n_draws). load_posteriors uses
-  # sample.int when n_draws < total, so set the seed to align.
-  set.seed(1)
-  m2 <- load_posteriors("baseline_sp", n_draws = 50, verbose = FALSE)
-  set.seed(1)
+  # load_posteriors() uses deterministic stratified thinning, so the
+  # public helper should be exactly the same posterior slice.
   s <- local_effective_slope(
     longitude = -90, latitude = 38,
     model_name = "baseline_sp",
-    n_draws = 50, verbose = FALSE,
-    ceiling = Inf
+    n_draws = 50, verbose = FALSE
   )
 
-  # Both should be length 50, both finite. The numeric equality is
-  # deterministic only for the same posterior draws subset; we
-  # compare the mean and SD instead.
   expect_length(s, 50L)
   expect_true(all(is.finite(s)))
+  expect_equal(s, hand, tolerance = 0)
 })
 
-test_that("local_effective_slope: ceiling truncates and warns above 5%", {
-  # Force >5% truncation by setting an absurdly low ceiling on a model
-  # whose slopes sit around 0.5 per the manuscript.
-  expect_warning(
-    s <- local_effective_slope(
-      longitude = -90, latitude = 38,
-      model_name = "baseline_sp",
-      n_draws = 200, ceiling = 0.3, verbose = FALSE
-    ),
-    "exceeded the ceiling"
-  )
-  expect_true(max(s) <= 0.3 + 1e-12)
-})
-
-test_that("local_effective_slope: ceiling = Inf disables truncation", {
+test_that("local_effective_slope: returns raw posterior, no clipping", {
+  # SPEC §3.3 / §6 invariant 4: the function must not clip, filter,
+  # or otherwise modify the posterior draws. Draws above any
+  # mechanistic reference (e.g. alpha = 0.88) must survive through
+  # the public API unchanged.
   s <- local_effective_slope(
     longitude = -90, latitude = 38,
     model_name = "baseline_sp",
-    n_draws = 100, ceiling = Inf, verbose = FALSE
+    n_draws = 200, verbose = FALSE
   )
-  # No truncation: max should match the natural posterior maximum.
-  expect_gt(max(s), 0.3)
+  beta <- as.numeric(load_posteriors("baseline_sp", n_draws = 200,
+                                     verbose = FALSE)$draws$beta_oipc)
+  # The function must not expose a `ceiling` argument that would
+  # induce post-hoc modification of the draws.
+  expect_false("ceiling" %in% names(formals(local_effective_slope)))
+  # Raw beta_oipc draws above 0.88 must propagate through the
+  # public API without being clipped.
+  if (any(beta > 0.88)) {
+    expect_true(any(s > 0.88))
+  }
 })
 
-test_that("local_effective_slope: override broadcasts and is still ceiling'd", {
-  # Single-value override: every draw is 0.6.
+test_that("local_effective_slope: override broadcasts cleanly", {
+  # Single-value override: every draw is the same value, including
+  # values that exceed any mechanistic reference - the package does
+  # not second-guess the user's defended slope.
   s <- local_effective_slope(
     longitude = -90, latitude = 38,
     model_name = "baseline_sp",
-    override = 0.6,
-    ceiling = 0.88,
+    override = 0.95,
     n_draws = 100, verbose = FALSE
   )
-  expect_true(all(s == 0.6))
+  expect_true(all(s == 0.95))
 
-  # Per-draw override that exceeds the ceiling on some entries.
+  # Per-draw override is used per draw without modification.
   vec <- c(rep(0.4, 50), rep(0.95, 50))
-  expect_warning(
-    s2 <- local_effective_slope(
-      longitude = -90, latitude = 38,
-      model_name = "baseline_sp",
-      override = vec,
-      ceiling = 0.88,
-      n_draws = 100, verbose = FALSE
-    ),
-    "exceeded the ceiling"
+  s2 <- local_effective_slope(
+    longitude = -90, latitude = 38,
+    model_name = "baseline_sp",
+    override = vec,
+    n_draws = 100, verbose = FALSE
   )
   expect_equal(sum(s2 == 0.4), 50L)
-  expect_equal(sum(s2 == 0.88), 50L)
+  expect_equal(sum(s2 == 0.95), 50L)
 })
 
 test_that("local_effective_slope: rejects bad inputs", {
@@ -180,7 +167,6 @@ test_that("local_effective_slope output pairs correctly with invert_d2H", {
     longitude = -90, latitude = 38,
     model_name = "baseline_sp",
     n_draws = 80,
-    ceiling = Inf,
     verbose = FALSE
   )
   res <- suppressWarnings(invert_d2H(

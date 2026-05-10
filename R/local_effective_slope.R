@@ -1,37 +1,39 @@
 # Per-draw d2H_wax<-d2H_precip slope at a specific site, with optional
-# override and stationarity ceiling. Implements the local effective
-# slope obligation from manuscript Section 4.5.5: a defensible slope
-# must come from the model's site-specific posterior plus an explicit
-# ceiling at alpha = 0.88, since the simple two-pool fractionation
-# model cannot exceed that under stationarity of vegetation, leaf-water
-# enrichment, seasonality, and source-water sampling.
+# user override. Returns the raw posterior vector of the local slope
+# at the requested coordinates so downstream uncertainty propagation
+# reflects the calibration's full inferential picture (SPEC.md §3.3).
+# The function does not clip, filter, or otherwise post-process the
+# draws; mechanistic reasoning about plausible slope magnitudes
+# belongs in the calibration's prior, not in a post-hoc filter.
 
 #' Local effective slope at a paleo-reconstruction site
 #'
 #' Returns a per-draw vector of the d2H_wax-d2H_precip slope at a
-#' single site, combining the global posterior beta_oipc with the
-#' spatial slope GP prediction at that site. The result is the
-#' quantity a paleohydrologist needs in Section 4.5.5 of the
-#' manuscript: a site-specific slope posterior with an explicit
-#' upper bound from simple-model fractionation theory.
+#' single site, combining the global posterior `beta_oipc` with the
+#' spatial slope GP prediction at that site. The returned vector is
+#' the raw posterior at the site; every draw the calibration produced
+#' is preserved without modification.
 #'
-#' Three modes:
+#' Two modes:
 #' \itemize{
 #'   \item Default: returns the model's per-draw slope at the site.
 #'   \item Override (single value or per-draw vector) replaces the
 #'     model slope with a defended local value (e.g., from independent
 #'     evidence about source-water seasonality, leaf-water enrichment,
 #'     or vegetation).
-#'   \item Ceiling: any draw exceeding `ceiling` (default 0.88, the
-#'     simple-model upper bound from `epsilon_app ~= -120 permil`) is
-#'     truncated to the ceiling. A warning is emitted when more than
-#'     5\% of draws are truncated, since that suggests the model and
-#'     the user's intended interpretation are inconsistent with the
-#'     simple-model bound.
 #' }
 #'
 #' Pass the returned vector to `invert_d2H(..., slope = ...)` to
 #' propagate it through the inversion.
+#'
+#' Mechanistic reference values (e.g. the simple two-pool stationarity
+#' bound `alpha = 1 + epsilon_app/1000` ~ 0.88 under
+#' `epsilon_app ~= -120 permil`; Sessions 2005) are documented for
+#' interpretation but are never applied to the returned draws. The
+#' frequency of draws above any chosen reference is computable
+#' directly from the returned vector
+#' (`mean(slope > 0.88)`) and carries scientific information about
+#' how often the calibration implicates non-stationarity at the site.
 #'
 #' @param longitude Numeric, single longitude in decimal degrees.
 #' @param latitude Numeric, single latitude in decimal degrees.
@@ -42,14 +44,11 @@
 #' @param override Optional numeric. NULL (default) uses the model
 #'   slope. A single value broadcasts across all draws. A vector of
 #'   length `n_draws` is used per draw.
-#' @param ceiling Optional numeric upper bound on the slope. Default
-#'   `0.88`, the simple-model ceiling under stationarity. Set to
-#'   `Inf` or `NULL` to disable.
 #' @param n_draws Integer, optional number of posterior draws to use
 #'   (`NULL` uses all). Forwarded to `load_posteriors()`.
 #' @param verbose Logical, whether to print progress messages.
 #' @return Numeric vector of length `n_draws`, the per-draw effective
-#'   slope at the site (after override and ceiling, in that order).
+#'   slope at the site (after override, if any).
 #' @export
 #' @examples
 #' \donttest{
@@ -61,11 +60,15 @@
 #' )
 #' summary(s)
 #'
+#' # How often does the calibration imply a slope above the simple-model
+#' # stationarity bound at this site?
+#' mean(s > 0.88)
+#'
 #' # Override with a defended local slope
 #' s_fixed <- local_effective_slope(
 #'   longitude = -90, latitude = 38,
 #'   model_name = "baseline_sp",
-#'   override = 0.55, ceiling = 0.88
+#'   override = 0.55
 #' )
 #'
 #' # Pass through to the inversion. The slope vector and the
@@ -83,7 +86,6 @@ local_effective_slope <- function(longitude,
                                   latitude,
                                   model_name,
                                   override = NULL,
-                                  ceiling = 0.88,
                                   n_draws = NULL,
                                   verbose = FALSE) {
 
@@ -132,9 +134,9 @@ local_effective_slope <- function(longitude,
 
   slope <- beta_oipc + slope_pert
 
-  # Override applies AFTER the model slope is computed but BEFORE the
-  # ceiling, so users overriding with a defended value still get the
-  # ceiling applied unless they disable it.
+  # Override replaces the model slope with a user-supplied value or
+  # vector. The override is the user's decision; the package does not
+  # post-process it further.
   if (!is.null(override)) {
     if (!is.numeric(override)) {
       stop("override must be numeric")
@@ -148,34 +150,6 @@ local_effective_slope <- function(longitude,
         "override must be length 1 or length n_draws (%d), got %d",
         n_iter, length(override)
       ))
-    }
-  }
-
-  # Ceiling truncation. Section 4.5.5 of the manuscript places the
-  # simple-model upper bound at ~0.88 under stationarity of vegetation,
-  # leaf-water enrichment, seasonal source-water sampling, and
-  # evapotranspirative regime.
-  if (!is.null(ceiling) && is.finite(ceiling)) {
-    n_truncated <- sum(slope > ceiling)
-    if (n_truncated > 0L) {
-      slope <- pmin(slope, ceiling)
-      frac_truncated <- n_truncated / n_iter
-      if (verbose) {
-        cat(sprintf(
-          "  Truncated %d of %d draws (%.1f%%) at the ceiling = %.3g\n",
-          n_truncated, n_iter, 100 * frac_truncated, ceiling
-        ))
-      }
-      if (frac_truncated > 0.05) {
-        warning(sprintf(
-          paste("local_effective_slope(): %d of %d draws (%.1f%%) exceeded",
-                "the ceiling = %.3g and were truncated. This is more than",
-                "5%% and suggests the model's site-specific slope or",
-                "your override is inconsistent with the simple-model",
-                "stationarity bound from manuscript Section 4.5.5."),
-          n_truncated, n_iter, 100 * frac_truncated, ceiling
-        ), call. = FALSE)
-      }
     }
   }
 
