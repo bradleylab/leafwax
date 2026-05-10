@@ -1,11 +1,10 @@
 # Local effective slope at a paleo-reconstruction site
 
 Returns a per-draw vector of the d2H_wax-d2H_precip slope at a single
-site, combining the global posterior beta_oipc with the spatial slope GP
-prediction at that site. The result is the quantity a paleohydrologist
-needs in Section 4.5.5 of the manuscript: a site-specific slope
-posterior with an explicit upper bound from simple-model fractionation
-theory.
+site, combining the global posterior `beta_oipc` with the spatial slope
+GP prediction at that site. The returned vector is the raw posterior at
+the site; every draw the calibration produced is preserved without
+modification.
 
 ## Usage
 
@@ -15,7 +14,6 @@ local_effective_slope(
   latitude,
   model_name,
   override = NULL,
-  ceiling = 0.88,
   n_draws = NULL,
   verbose = FALSE
 )
@@ -45,12 +43,6 @@ local_effective_slope(
   broadcasts across all draws. A vector of length `n_draws` is used per
   draw.
 
-- ceiling:
-
-  Optional numeric upper bound on the slope. Default `0.88`, the
-  simple-model ceiling under stationarity. Set to `Inf` or `NULL` to
-  disable.
-
 - n_draws:
 
   Integer, optional number of posterior draws to use (`NULL` uses all).
@@ -64,11 +56,11 @@ local_effective_slope(
 ## Value
 
 Numeric vector of length `n_draws`, the per-draw effective slope at the
-site (after override and ceiling, in that order).
+site (after override, if any).
 
 ## Details
 
-Three modes:
+Two modes:
 
 - Default: returns the model's per-draw slope at the site.
 
@@ -76,13 +68,17 @@ Three modes:
   with a defended local value (e.g., from independent evidence about
   source-water seasonality, leaf-water enrichment, or vegetation).
 
-- Ceiling: any draw exceeding `ceiling` (default 0.88, the simple-model
-  upper bound from `epsilon_app ~= -120 permil`) is truncated to the
-  ceiling. A warning is emitted when more than 5\\ the user's intended
-  interpretation are inconsistent with the simple-model bound.
-
 Pass the returned vector to `invert_d2H(..., slope = ...)` to propagate
 it through the inversion.
+
+Mechanistic reference values (e.g. the simple two-pool stationarity
+bound `alpha = 1 + epsilon_app/1000` ~ 0.88 under
+`epsilon_app ~= -120 permil`; Sessions 2005) are documented for
+interpretation but are never applied to the returned draws. The
+frequency of draws above any chosen reference is computable directly
+from the returned vector (`mean(slope > 0.88)`) and carries scientific
+information about how often the calibration implicates non-stationarity
+at the site.
 
 ## Examples
 
@@ -99,11 +95,16 @@ summary(s)
 #>    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
 #>  0.3927  0.5540  0.6020  0.6110  0.6820  0.8342 
 
+# How often does the calibration imply a slope above the simple-model
+# stationarity bound at this site?
+mean(s > 0.88)
+#> [1] 0
+
 # Override with a defended local slope
 s_fixed <- local_effective_slope(
   longitude = -90, latitude = 38,
   model_name = "baseline_sp",
-  override = 0.55, ceiling = 0.88
+  override = 0.55
 )
 #> Warning: leafwax preview posteriors in use: 100 draws of 'baseline_sp'. Tail probabilities and 95% credible intervals are unstable at this sample size; not suitable for inference. Run download_model_data("baseline_sp") for the full posterior.
 

@@ -126,9 +126,9 @@ invert_d2H(
   replaces the slope with a fixed point estimate (broadcast across all
   posterior draws). A vector of length `n_draws` is used per draw. Use
   [`local_effective_slope()`](https://bradleylab.github.io/leafwax/reference/local_effective_slope.md)
-  to build a defensible per-draw override that respects the manuscript's
-  simple-model ceiling at alpha = 0.88 (Section 4.5.5). When supplied,
-  the override applies uniformly to every input row.
+  to build a defensible per-draw override from the calibration's
+  site-specific posterior. When supplied, the override applies uniformly
+  to every input row.
 
 - d2H_wax:
 

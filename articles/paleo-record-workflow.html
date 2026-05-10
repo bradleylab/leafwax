@@ -134,13 +134,15 @@ transition at roughly 130-yr resolution.</p>
 <div class="section level2">
 <h2 id="local-effective-slope">2. Local effective slope<a class="anchor" aria-label="anchor" href="#local-effective-slope"></a>
 </h2>
-<p><code><a href="../reference/local_effective_slope.html">local_effective_slope()</a></code> returns a per-draw vector of the
-<code>d2H_wax</code>–<code>d2H_precip</code> slope at the site,
+<p><code><a href="../reference/local_effective_slope.html">local_effective_slope()</a></code> returns the raw per-draw vector
+of the <code>d2H_wax</code>–<code>d2H_precip</code> slope at the site,
 combining the global posterior <code>beta_oipc</code> with the spatial
-slope GP. The default ceiling is 0.88, the simple-model upper bound from
-manuscript Section 4.5.5. A point-estimate workflow can pass the
-posterior median; the full per-draw vector is retained here so slope
-uncertainty propagates through the inversion.</p>
+slope GP. The function does not clip or filter the draws; it propagates
+the calibration’s posterior unchanged. A point-estimate workflow can
+pass the posterior median, and the simple two-pool stationarity bound (α
+≈ 0.88; manuscript Section 4.5.5) can be checked against the returned
+vector via <code>mean(slope &gt; 0.88)</code> for a site-level read on
+how often the calibration implicates non-stationarity.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">zaca_lon</span> <span class="op">&lt;-</span> <span class="op">-</span><span class="fl">120.0392</span>; <span class="va">zaca_lat</span> <span class="op">&lt;-</span> <span class="fl">34.7778</span></span>
 <span><span class="va">qh_lon</span>     <span class="op">&lt;-</span> <span class="fl">100</span>;     <span class="va">qh_lat</span>     <span class="op">&lt;-</span> <span class="fl">37</span></span>
@@ -148,13 +150,13 @@ uncertainty propagates through the inversion.</p>
 <span><span class="va">slope_zaca</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/warning.html" class="external-link">suppressWarnings</a></span><span class="op">(</span><span class="fu"><a href="../reference/local_effective_slope.html">local_effective_slope</a></span><span class="op">(</span></span>
 <span>  longitude <span class="op">=</span> <span class="va">zaca_lon</span>, latitude <span class="op">=</span> <span class="va">zaca_lat</span>,</span>
 <span>  model_name <span class="op">=</span> <span class="st">"baseline_sp"</span>, n_draws <span class="op">=</span> <span class="fl">100</span>,</span>
-<span>  ceiling <span class="op">=</span> <span class="fl">0.88</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span>  verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">slope_qh</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/warning.html" class="external-link">suppressWarnings</a></span><span class="op">(</span><span class="fu"><a href="../reference/local_effective_slope.html">local_effective_slope</a></span><span class="op">(</span></span>
 <span>  longitude <span class="op">=</span> <span class="va">qh_lon</span>, latitude <span class="op">=</span> <span class="va">qh_lat</span>,</span>
 <span>  model_name <span class="op">=</span> <span class="st">"baseline_sp"</span>, n_draws <span class="op">=</span> <span class="fl">100</span>,</span>
-<span>  ceiling <span class="op">=</span> <span class="fl">0.88</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span>  verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">rbind</a></span><span class="op">(</span></span>

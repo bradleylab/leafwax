@@ -83,12 +83,14 @@ roughly 130-yr resolution.
 ## 2. Local effective slope
 
 [`local_effective_slope()`](https://bradleylab.github.io/leafwax/reference/local_effective_slope.md)
-returns a per-draw vector of the `d2H_wax`–`d2H_precip` slope at the
-site, combining the global posterior `beta_oipc` with the spatial slope
-GP. The default ceiling is 0.88, the simple-model upper bound from
-manuscript Section 4.5.5. A point-estimate workflow can pass the
-posterior median; the full per-draw vector is retained here so slope
-uncertainty propagates through the inversion.
+returns the raw per-draw vector of the `d2H_wax`–`d2H_precip` slope at
+the site, combining the global posterior `beta_oipc` with the spatial
+slope GP. The function does not clip or filter the draws; it propagates
+the calibration’s posterior unchanged. A point-estimate workflow can
+pass the posterior median, and the simple two-pool stationarity bound (α
+≈ 0.88; manuscript Section 4.5.5) can be checked against the returned
+vector via `mean(slope > 0.88)` for a site-level read on how often the
+calibration implicates non-stationarity.
 
 ``` r
 
@@ -98,13 +100,13 @@ qh_lon     <- 100;     qh_lat     <- 37
 slope_zaca <- suppressWarnings(local_effective_slope(
   longitude = zaca_lon, latitude = zaca_lat,
   model_name = "baseline_sp", n_draws = 100,
-  ceiling = 0.88, verbose = FALSE
+  verbose = FALSE
 ))
 
 slope_qh <- suppressWarnings(local_effective_slope(
   longitude = qh_lon, latitude = qh_lat,
   model_name = "baseline_sp", n_draws = 100,
-  ceiling = 0.88, verbose = FALSE
+  verbose = FALSE
 ))
 
 rbind(
