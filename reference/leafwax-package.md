@@ -35,8 +35,8 @@ The package includes 14 calibration models with different capabilities.
 The v10 fits include precipitation amount (`baseline_env*` and `full*`
 variants), C4 abundance, and PFT cover; none of the v10 variants carry a
 fitted elevation coefficient despite the historical "elevation\_\*"
-naming. Capability flags exposed by
-[`get_model_parameters()`](https://bradleylab.github.io/leafwax/reference/get_model_parameters.md)
+naming. Runtime capability flags in
+[`load_posteriors()`](https://bradleylab.github.io/leafwax/reference/load_posteriors.md)
 are derived from each model's posterior columns at load time.
 
 - **Basic models**: baseline, baseline_sp

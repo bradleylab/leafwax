@@ -65,7 +65,7 @@ directly.
 - [`get_model_parameters()`](https://bradleylab.github.io/leafwax/reference/get_model_parameters.md)
   : Get model parameters
 - [`detect_model_capabilities()`](https://bradleylab.github.io/leafwax/reference/detect_model_capabilities.md)
-  : Detect model capabilities from model name
+  : Detect model capabilities from static v10 metadata
 - [`list_model_names()`](https://bradleylab.github.io/leafwax/reference/list_model_names.md)
   : List model names
 - [`leafwax_config()`](https://bradleylab.github.io/leafwax/reference/leafwax_config.md)

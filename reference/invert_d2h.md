@@ -1,8 +1,9 @@
 # Invert leaf wax d2H to precipitation d2H
 
 Uses Bayesian posterior draws to invert leaf wax hydrogen isotope values
-to precipitation isotope values, accounting for all model components
-including elevation effects and spatial correlations.
+to precipitation isotope values, accounting for all fitted model
+components including vegetation effects and spatial correlations where
+applicable.
 
 ## Usage
 

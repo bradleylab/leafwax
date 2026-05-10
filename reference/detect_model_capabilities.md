@@ -1,6 +1,6 @@
-# Detect model capabilities from model name
+# Detect model capabilities from static v10 metadata
 
-Detect model capabilities from model name
+Detect model capabilities from static v10 metadata
 
 ## Usage
 

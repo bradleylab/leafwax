@@ -49,18 +49,18 @@ inversion. Models vary in their complexity and data requirements.</p>
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>Character vector of available model names. Models include:</p><ul><li><p><code>baseline</code>: Basic OIPC model without spatial effects</p></li>
 <li><p><code>baseline_sp</code>: Basic model with spatial Gaussian process</p></li>
-<li><p><code>baseline_env</code>: Includes elevation effects</p></li>
-<li><p><code>baseline_env_sp</code>: Elevation effects with spatial GP</p></li>
-<li><p><code>baseline_veg</code>: Includes vegetation (PFT) effects</p></li>
-<li><p><code>baseline_veg_sp</code>: Vegetation effects with spatial GP</p></li>
+<li><p><code>baseline_env</code>: Includes precipitation-amount effects</p></li>
+<li><p><code>baseline_env_sp</code>: Precipitation-amount effects with spatial GP</p></li>
+<li><p><code>baseline_veg</code>: Includes vegetation interaction effects</p></li>
+<li><p><code>baseline_veg_sp</code>: Vegetation interactions with spatial GP</p></li>
 <li><p><code>c4_only_sp</code>: C4 vegetation effects only (spatial)</p></li>
-<li><p><code>elevation_only_sp</code>: Elevation effects only (spatial)</p></li>
-<li><p><code>elevation_c4_sp</code>: Combined elevation and C4 effects</p></li>
-<li><p><code>elevation_c4_interact_sp</code>: With interaction terms</p></li>
-<li><p><code>full</code>: All effects without spatial component</p></li>
-<li><p><code>full_sp</code>: All effects with spatial component</p></li>
-<li><p><code>full_interact</code>: All effects with interactions</p></li>
-<li><p><code>full_interact_sp</code>: Full model with spatial GP</p></li>
+<li><p><code>elevation_only_sp</code>: Historical elevation-context variant (spatial)</p></li>
+<li><p><code>elevation_c4_sp</code>: Historical elevation-context + C4 variant</p></li>
+<li><p><code>elevation_c4_interact_sp</code>: Historical elevation/C4-interaction name; C4 effect only</p></li>
+<li><p><code>full</code>: Precipitation amount + vegetation interactions without spatial component</p></li>
+<li><p><code>full_sp</code>: Precipitation amount + vegetation interactions with spatial component</p></li>
+<li><p><code>full_interact</code>: Precipitation amount + vegetation interactions</p></li>
+<li><p><code>full_interact_sp</code>: Full interaction model with spatial GP</p></li>
 </ul></div>
 
     <div class="section level2">

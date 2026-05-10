@@ -73,20 +73,19 @@ package, including which covariates each model uses.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   baseline                  Basic OIPC model without spatial or environmental effects</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                             Status: In package</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   baseline_env              OIPC + elevation effects</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>                             Requires: elevation</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   baseline_env              OIPC + precipitation-amount effect</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                             Status: In package</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   baseline_veg              OIPC + vegetation effects (C4/C3)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   baseline_veg              OIPC + vegetation interaction effects (C4/PFT)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                             Requires: C4 fraction, PFT fractions</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                             Status: In package</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   full                      Full model with elevation + vegetation effects</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>                             Requires: elevation, C4 fraction, PFT fractions</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   full                      Precipitation amount + vegetation interactions</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>                             Requires: C4 fraction, PFT fractions</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                             Status: In package</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   full_interact             Full model with interactions (no spatial)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>                             Requires: elevation, C4 fraction, PFT fractions</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   full_interact             Precipitation amount + vegetation interactions (no spatial GP)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>                             Requires: C4 fraction, PFT fractions</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                             Status: In package</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
@@ -94,11 +93,10 @@ package, including which covariates each model uses.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   baseline_sp               Basic OIPC model with spatial Gaussian process</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                             Status: In package</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   baseline_env_sp           OIPC + elevation + spatial effects</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>                             Requires: elevation</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   baseline_env_sp           OIPC + precipitation-amount + spatial effects</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                             Status: In package</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   baseline_veg_sp           OIPC + vegetation + spatial effects</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   baseline_veg_sp           OIPC + vegetation interactions + spatial effects</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                             Requires: C4 fraction, PFT fractions</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                             Status: In package</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
@@ -106,24 +104,23 @@ package, including which covariates each model uses.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                             Requires: C4 fraction</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                             Status: In package</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   elevation_only_sp         OIPC + elevation + spatial effects</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>                             Requires: elevation</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   elevation_only_sp         OIPC + spatial effects (historical elevation-context variant; no fitted elevation coefficient)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                             Status: In package</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   elevation_c4_sp           OIPC + elevation + C4 + spatial effects</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>                             Requires: elevation, C4 fraction</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   elevation_c4_sp           OIPC + C4 + spatial effects (historical elevation-context variant)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>                             Requires: C4 fraction</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                             Status: In package</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   elevation_c4_interact_sp  OIPC + elevation x C4 interaction + spatial effects</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>                             Requires: elevation, C4 fraction</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   elevation_c4_interact_sp  OIPC + C4 + spatial effects (historical elevation/interaction-context variant; no fitted elevation or interaction coefficient)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>                             Requires: C4 fraction</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                             Status: In package</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   full_sp                   Full model with all effects + spatial GP</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>                             Requires: elevation, C4 fraction, PFT fractions</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   full_sp                   Precipitation amount + vegetation interactions + spatial GP</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>                             Requires: C4 fraction, PFT fractions</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                             Status: In package</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   full_interact_sp          Full model with all interactions + spatial GP</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>                             Requires: elevation, C4 fraction, PFT fractions</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   full_interact_sp          Precipitation amount + vegetation interactions + spatial GP</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>                             Requires: C4 fraction, PFT fractions</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                             Status: In package</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Total models: 14 </span>
@@ -132,24 +129,24 @@ package, including which covariates each model uses.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span>             model                                               description</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 1        baseline Basic OIPC model without spatial or environmental effects</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 2     baseline_sp            Basic OIPC model with spatial Gaussian process</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3    baseline_env                                  OIPC + elevation effects</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4 baseline_env_sp                        OIPC + elevation + spatial effects</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5    baseline_veg                         OIPC + vegetation effects (C4/C3)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6 baseline_veg_sp                       OIPC + vegetation + spatial effects</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   has_elevation has_c4 has_pft has_spatial size_mb                   requires</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1         FALSE  FALSE   FALSE       FALSE     581                       none</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2         FALSE  FALSE   FALSE        TRUE     917                       none</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3          TRUE  FALSE   FALSE       FALSE     639                  elevation</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4          TRUE  FALSE   FALSE        TRUE     992                  elevation</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5         FALSE   TRUE    TRUE       FALSE     717 C4 fraction, PFT fractions</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6         FALSE   TRUE    TRUE        TRUE    1200 C4 fraction, PFT fractions</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   data_package data_cached data_status</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1         TRUE       FALSE  In package</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2         TRUE       FALSE  In package</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3         TRUE       FALSE  In package</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4         TRUE       FALSE  In package</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5         TRUE       FALSE  In package</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6         TRUE       FALSE  In package</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3    baseline_env                        OIPC + precipitation-amount effect</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4 baseline_env_sp             OIPC + precipitation-amount + spatial effects</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5    baseline_veg            OIPC + vegetation interaction effects (C4/PFT)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6 baseline_veg_sp          OIPC + vegetation interactions + spatial effects</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   has_elevation has_precip has_c4 has_pft has_spatial size_mb</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1         FALSE      FALSE  FALSE   FALSE       FALSE     581</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2         FALSE      FALSE  FALSE   FALSE        TRUE     917</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3         FALSE       TRUE  FALSE   FALSE       FALSE     639</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4         FALSE       TRUE  FALSE   FALSE        TRUE     992</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5         FALSE      FALSE   TRUE    TRUE       FALSE     717</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6         FALSE      FALSE   TRUE    TRUE        TRUE    1200</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>                     requires data_package data_cached data_status</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1                       none         TRUE       FALSE  In package</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2                       none         TRUE       FALSE  In package</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3                       none         TRUE       FALSE  In package</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4                       none         TRUE       FALSE  In package</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5 C4 fraction, PFT fractions         TRUE       FALSE  In package</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6 C4 fraction, PFT fractions         TRUE       FALSE  In package</span>
 <span class="r-in"><span><span class="co"># }</span></span></span>
 </code></pre></div>
     </div>

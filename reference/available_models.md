@@ -18,29 +18,32 @@ Character vector of available model names. Models include:
 
 - `baseline_sp`: Basic model with spatial Gaussian process
 
-- `baseline_env`: Includes elevation effects
+- `baseline_env`: Includes precipitation-amount effects
 
-- `baseline_env_sp`: Elevation effects with spatial GP
+- `baseline_env_sp`: Precipitation-amount effects with spatial GP
 
-- `baseline_veg`: Includes vegetation (PFT) effects
+- `baseline_veg`: Includes vegetation interaction effects
 
-- `baseline_veg_sp`: Vegetation effects with spatial GP
+- `baseline_veg_sp`: Vegetation interactions with spatial GP
 
 - `c4_only_sp`: C4 vegetation effects only (spatial)
 
-- `elevation_only_sp`: Elevation effects only (spatial)
+- `elevation_only_sp`: Historical elevation-context variant (spatial)
 
-- `elevation_c4_sp`: Combined elevation and C4 effects
+- `elevation_c4_sp`: Historical elevation-context + C4 variant
 
-- `elevation_c4_interact_sp`: With interaction terms
+- `elevation_c4_interact_sp`: Historical elevation/C4-interaction name;
+  C4 effect only
 
-- `full`: All effects without spatial component
+- `full`: Precipitation amount + vegetation interactions without spatial
+  component
 
-- `full_sp`: All effects with spatial component
+- `full_sp`: Precipitation amount + vegetation interactions with spatial
+  component
 
-- `full_interact`: All effects with interactions
+- `full_interact`: Precipitation amount + vegetation interactions
 
-- `full_interact_sp`: Full model with spatial GP
+- `full_interact_sp`: Full interaction model with spatial GP
 
 ## Examples
 

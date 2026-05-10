@@ -59,7 +59,10 @@ Spatial-aware models are preferred when <code>prefer_spatial = TRUE</code>.</p>
 
 
 <dl><dt id="arg-has-elevation">has_elevation<a class="anchor" aria-label="anchor" href="#arg-has-elevation"></a></dt>
-<dd><p>Logical, whether elevation data is available</p></dd>
+<dd><p>Logical, whether elevation data is available.
+Accepted for compatibility; shipped v10 posteriors do not contain
+fitted elevation coefficients, so elevation alone does not change
+the selected model.</p></dd>
 
 
 <dt id="arg-has-c-">has_c4<a class="anchor" aria-label="anchor" href="#arg-has-c-"></a></dt>

@@ -35,20 +35,19 @@ models <- list_models()
 #>   baseline                  Basic OIPC model without spatial or environmental effects
 #>                             Status: In package
 #> 
-#>   baseline_env              OIPC + elevation effects
-#>                             Requires: elevation
+#>   baseline_env              OIPC + precipitation-amount effect
 #>                             Status: In package
 #> 
-#>   baseline_veg              OIPC + vegetation effects (C4/C3)
+#>   baseline_veg              OIPC + vegetation interaction effects (C4/PFT)
 #>                             Requires: C4 fraction, PFT fractions
 #>                             Status: In package
 #> 
-#>   full                      Full model with elevation + vegetation effects
-#>                             Requires: elevation, C4 fraction, PFT fractions
+#>   full                      Precipitation amount + vegetation interactions
+#>                             Requires: C4 fraction, PFT fractions
 #>                             Status: In package
 #> 
-#>   full_interact             Full model with interactions (no spatial)
-#>                             Requires: elevation, C4 fraction, PFT fractions
+#>   full_interact             Precipitation amount + vegetation interactions (no spatial GP)
+#>                             Requires: C4 fraction, PFT fractions
 #>                             Status: In package
 #> 
 #> 
@@ -56,11 +55,10 @@ models <- list_models()
 #>   baseline_sp               Basic OIPC model with spatial Gaussian process
 #>                             Status: In package
 #> 
-#>   baseline_env_sp           OIPC + elevation + spatial effects
-#>                             Requires: elevation
+#>   baseline_env_sp           OIPC + precipitation-amount + spatial effects
 #>                             Status: In package
 #> 
-#>   baseline_veg_sp           OIPC + vegetation + spatial effects
+#>   baseline_veg_sp           OIPC + vegetation interactions + spatial effects
 #>                             Requires: C4 fraction, PFT fractions
 #>                             Status: In package
 #> 
@@ -68,24 +66,23 @@ models <- list_models()
 #>                             Requires: C4 fraction
 #>                             Status: In package
 #> 
-#>   elevation_only_sp         OIPC + elevation + spatial effects
-#>                             Requires: elevation
+#>   elevation_only_sp         OIPC + spatial effects (historical elevation-context variant; no fitted elevation coefficient)
 #>                             Status: In package
 #> 
-#>   elevation_c4_sp           OIPC + elevation + C4 + spatial effects
-#>                             Requires: elevation, C4 fraction
+#>   elevation_c4_sp           OIPC + C4 + spatial effects (historical elevation-context variant)
+#>                             Requires: C4 fraction
 #>                             Status: In package
 #> 
-#>   elevation_c4_interact_sp  OIPC + elevation x C4 interaction + spatial effects
-#>                             Requires: elevation, C4 fraction
+#>   elevation_c4_interact_sp  OIPC + C4 + spatial effects (historical elevation/interaction-context variant; no fitted elevation or interaction coefficient)
+#>                             Requires: C4 fraction
 #>                             Status: In package
 #> 
-#>   full_sp                   Full model with all effects + spatial GP
-#>                             Requires: elevation, C4 fraction, PFT fractions
+#>   full_sp                   Precipitation amount + vegetation interactions + spatial GP
+#>                             Requires: C4 fraction, PFT fractions
 #>                             Status: In package
 #> 
-#>   full_interact_sp          Full model with all interactions + spatial GP
-#>                             Requires: elevation, C4 fraction, PFT fractions
+#>   full_interact_sp          Precipitation amount + vegetation interactions + spatial GP
+#>                             Requires: C4 fraction, PFT fractions
 #>                             Status: In package
 #> 
 #> Total models: 14 
@@ -94,23 +91,23 @@ head(models)
 #>             model                                               description
 #> 1        baseline Basic OIPC model without spatial or environmental effects
 #> 2     baseline_sp            Basic OIPC model with spatial Gaussian process
-#> 3    baseline_env                                  OIPC + elevation effects
-#> 4 baseline_env_sp                        OIPC + elevation + spatial effects
-#> 5    baseline_veg                         OIPC + vegetation effects (C4/C3)
-#> 6 baseline_veg_sp                       OIPC + vegetation + spatial effects
-#>   has_elevation has_c4 has_pft has_spatial size_mb                   requires
-#> 1         FALSE  FALSE   FALSE       FALSE     581                       none
-#> 2         FALSE  FALSE   FALSE        TRUE     917                       none
-#> 3          TRUE  FALSE   FALSE       FALSE     639                  elevation
-#> 4          TRUE  FALSE   FALSE        TRUE     992                  elevation
-#> 5         FALSE   TRUE    TRUE       FALSE     717 C4 fraction, PFT fractions
-#> 6         FALSE   TRUE    TRUE        TRUE    1200 C4 fraction, PFT fractions
-#>   data_package data_cached data_status
-#> 1         TRUE       FALSE  In package
-#> 2         TRUE       FALSE  In package
-#> 3         TRUE       FALSE  In package
-#> 4         TRUE       FALSE  In package
-#> 5         TRUE       FALSE  In package
-#> 6         TRUE       FALSE  In package
+#> 3    baseline_env                        OIPC + precipitation-amount effect
+#> 4 baseline_env_sp             OIPC + precipitation-amount + spatial effects
+#> 5    baseline_veg            OIPC + vegetation interaction effects (C4/PFT)
+#> 6 baseline_veg_sp          OIPC + vegetation interactions + spatial effects
+#>   has_elevation has_precip has_c4 has_pft has_spatial size_mb
+#> 1         FALSE      FALSE  FALSE   FALSE       FALSE     581
+#> 2         FALSE      FALSE  FALSE   FALSE        TRUE     917
+#> 3         FALSE       TRUE  FALSE   FALSE       FALSE     639
+#> 4         FALSE       TRUE  FALSE   FALSE        TRUE     992
+#> 5         FALSE      FALSE   TRUE    TRUE       FALSE     717
+#> 6         FALSE      FALSE   TRUE    TRUE        TRUE    1200
+#>                     requires data_package data_cached data_status
+#> 1                       none         TRUE       FALSE  In package
+#> 2                       none         TRUE       FALSE  In package
+#> 3                       none         TRUE       FALSE  In package
+#> 4                       none         TRUE       FALSE  In package
+#> 5 C4 fraction, PFT fractions         TRUE       FALSE  In package
+#> 6 C4 fraction, PFT fractions         TRUE       FALSE  In package
 # }
 ```

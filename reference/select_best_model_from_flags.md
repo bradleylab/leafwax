@@ -20,7 +20,9 @@ select_best_model_from_flags(
 
 - has_elevation:
 
-  Logical, whether elevation data is available
+  Logical, whether elevation data is available. Accepted for
+  compatibility; shipped v10 posteriors do not contain fitted elevation
+  coefficients, so elevation alone does not change the selected model.
 
 - has_c4:
 
