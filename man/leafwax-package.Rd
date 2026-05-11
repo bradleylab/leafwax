@@ -96,7 +96,7 @@ Zenodo concept DOI \doi{10.5281/zenodo.20085465}.
 Useful links:
 \itemize{
   \item \url{https://github.com/bradleylab/leafwax}
-  \item \url{https://bradleylab.github.io/leafwax}
+  \item \url{https://bradleylab.github.io/leafwax/}
   \item Report bugs at \url{https://github.com/bradleylab/leafwax/issues}
 }
 

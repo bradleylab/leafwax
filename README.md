@@ -77,12 +77,11 @@ derivation.
 ```r
 library(leafwax)
 
-# 1. Per-draw local slope at the site, with the simple-model ceiling
+# 1. Raw per-draw local slope at the site
 slope <- local_effective_slope(
   longitude  = -90,
   latitude   = 38,
-  model_name = "baseline_sp",
-  ceiling    = 0.88
+  model_name = "baseline_sp"
 )
 
 # 2. Inversion with the defended slope
@@ -164,7 +163,7 @@ The paleo workflow maps directly to the manuscript:
 | Manuscript section | Function |
 |--------------------|----------|
 | 4.5.3 detection threshold formula   | `detect_change()` |
-| 4.5.5 local slope ceiling           | `local_effective_slope(..., ceiling = 0.88)` |
+| 4.5.5 local slope posterior         | `local_effective_slope()` |
 | 4.5.6 four-level claim taxonomy     | `assess_claim()` |
 | Section S4 inversion machinery      | `invert_d2H()` |
 

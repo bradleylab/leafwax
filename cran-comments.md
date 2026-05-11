@@ -2,7 +2,7 @@
 
 ## Test environments
 
-- Local: macOS 14, R 4.4.1
+- Local: macOS 26.0.1, R 4.4.1
 - GitHub Actions R-CMD-check: macOS-latest, ubuntu-latest, windows-latest (R-release, R-devel, R-oldrel-1)
 
 ## R CMD check results
@@ -10,6 +10,10 @@
 0 errors | 0 warnings | 1 note
 
 * This is a new submission.
+
+Local `R CMD check --as-cran` also reported "unable to verify current
+time" on this machine. No source files have future timestamps, and this
+is not expected on CRAN's check infrastructure.
 
 ## Heavy data
 
