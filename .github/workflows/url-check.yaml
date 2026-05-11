@@ -1,0 +1,42 @@
+# Workflow derived from https://github.com/r-lib/actions/tree/v2/examples
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+
+name: URL-check
+
+permissions: read-all
+
+jobs:
+  url-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # The repository is private during pre-release. Enforce URL checks once
+    # the repo is public, and allow manual runs while private.
+    if: ${{ !github.event.repository.private || github.event_name == 'workflow_dispatch' }}
+    env:
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          extra-packages: any::urlchecker, local::.
+          needs: website
+
+      - name: Check URLs
+        run: |
+          results <- urlchecker::url_check()
+          if (NROW(results) > 0) {
+            print(results)
+            quit(status = 1)
+          }
+        shell: Rscript {0}

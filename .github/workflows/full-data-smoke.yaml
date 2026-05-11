@@ -1,0 +1,84 @@
+# Release-gate smoke test for the external full-posterior data path.
+on:
+  workflow_dispatch:
+  schedule:
+    # Weekly Monday run. This is intentionally not a PR gate because it
+    # depends on external release assets and network availability.
+    - cron: "23 11 * * 1"
+
+name: full-data-smoke
+
+permissions: read-all
+
+jobs:
+  full-data-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          extra-packages: local::.
+          needs: check
+
+      - name: Download full posterior and run smoke inversion
+        run: |
+          options(timeout = 600)
+          cache_dir <- file.path(Sys.getenv("RUNNER_TEMP"),
+                                 "leafwax-model-data")
+          options(leafwax.cache_dir = cache_dir)
+
+          ok <- leafwax::download_model_data(
+            "baseline_sp",
+            version = "v1.0.1",
+            overwrite = TRUE,
+            verify = FALSE,
+            verbose = TRUE
+          )
+          stopifnot(isTRUE(ok))
+          stopifnot(leafwax::check_data_cache("baseline_sp",
+                                              verbose = TRUE))
+
+          model <- leafwax::load_posteriors(
+            "baseline_sp",
+            n_draws = NULL,
+            verbose = FALSE
+          )
+          stopifnot(identical(model$metadata$tier, "cache"))
+          stopifnot(nrow(model$draws) >= 1000L)
+
+          slope <- leafwax::local_effective_slope(
+            longitude = -90,
+            latitude = 38,
+            model_name = "baseline_sp",
+            n_draws = 1000,
+            verbose = FALSE
+          )
+          stopifnot(length(slope) == 1000L)
+          stopifnot(!("ceiling" %in%
+                        names(formals(leafwax::local_effective_slope))))
+
+          recon <- leafwax::invert_d2H(
+            d2H_wax = -180,
+            d2H_wax_sd = 3,
+            longitude = -90,
+            latitude = 38,
+            model_name = "baseline_sp",
+            slope = slope,
+            n_posterior_draws = 1000,
+            return_full = TRUE,
+            verbose = FALSE
+          )
+          stopifnot(is.list(recon))
+          stopifnot(nrow(recon$posterior_draws) == 1000L)
+          stopifnot(ncol(recon$posterior_draws) == 1L)
+          stopifnot(is.finite(recon$summary$d2h_precip_mean))
+        shell: Rscript {0}
