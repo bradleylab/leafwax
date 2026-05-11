@@ -28,6 +28,6 @@
   "notes": {
     "primary_archive": "https://github.com/bradleylab/leafwax-data",
     "doi_archive":     "Zenodo, archived via GitHub integration on every tagged release.",
-    "url_strategy":    "Direct downloads use per-tag raw.githubusercontent.com URLs for CDN performance and per-file granularity. The Zenodo deposit holds a source ZIP of the same tag as a durable archive; concept_doi is the citable identifier."
+    "url_strategy":    "Direct downloads use per-tag raw.githubusercontent.com URLs for CDN performance and per-file granularity. The Zenodo deposit holds a source ZIP of the same tag as a durable archive; the Zenodo DOI is the citable identifier."
   }
 }
