@@ -27,9 +27,6 @@ navbar:
 home:
   sidebar:
     structure: [links, license, citation, authors, dev, toc]
-  links:
-    - text: Report a bug
-      href: https://github.com/bradleylab/leafwax/issues
 
 reference:
   - title: "Inversion"

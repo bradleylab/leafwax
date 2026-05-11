@@ -22,7 +22,7 @@ is not expected on CRAN's check infrastructure.
 runs the vignette without network access. Full 1000-draw posteriors
 (~14 MB total) are downloaded explicitly via
 `download_model_data()` from `bradleylab/leafwax-data` v1.0.1
-(Zenodo concept DOI 10.5281/zenodo.20085465) and cached under
+(Zenodo DOI 10.5281/zenodo.20085465) and cached under
 `tools::R_user_dir("leafwax", "data")`. The preview-tier fixture is
 intended only for code-path verification; loading it triggers a
 warning at every inferential layer.
