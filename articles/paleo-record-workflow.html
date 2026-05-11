@@ -65,9 +65,11 @@ any record is whether the difference in <code>d2H_precip</code> between
 two stratigraphic intervals can be distinguished from
 calibration-plus-analytical noise, and at what confidence level.</p>
 <p>The vignette runs the chain on two Iso2k records with different
-signal sizes and sampling structures. The package ships small CSV
-extracts for the examples, and the source records remain available from
-LiPDverse and NOAA/WDS Paleoclimatology:</p>
+signal sizes and sampling structures. Both examples use C29 n-alkane
+<code>d2H_wax</code>, matching the compound class used by the
+calibration. The package ships small CSV extracts containing finite C29
+rows from the source LiPD files; the extraction script is in
+<code>data-raw/</code>.</p>
 <table class="table">
 <colgroup>
 <col width="25%">
@@ -83,24 +85,22 @@ LiPDverse and NOAA/WDS Paleoclimatology:</p>
 </tr></thead>
 <tbody>
 <tr class="odd">
-<td><code>LS14FEZA_d2H.csv</code></td>
+<td><code>LS13WASU_C29_d2H.csv</code></td>
 <td>
-<a href="https://lipdverse.org/iso2k/1_0_0/LS14FEZA.html" class="external-link">LS14FEZA</a>, <a href="https://lipdverse.org/iso2k/1_0_0/LS14FEZA.lpd" class="external-link">LiPD</a>
+<a href="https://lipdverse.org/iso2k/1_0_0/LS13WASU.html" class="external-link">LS13WASU</a>, <a href="https://lipdverse.org/iso2k/1_0_0/LS13WASU.lpd" class="external-link">LiPD</a>
 </td>
-<td>Feakins et al. (2014), <a href="https://doi.org/10.1016/j.orggeochem.2013.10.015" class="external-link">doi:10.1016/j.orggeochem.2013.10.015</a>
+<td>Wang et al. (2013), <a href="https://doi.org/10.1177/0959683613486941" class="external-link">doi:10.1177/0959683613486941</a>
 </td>
-<td>NOAA/WDS, <a href="https://doi.org/10.25921/13bn-nd37" class="external-link">doi:10.25921/13bn-nd37</a>
-</td>
+<td>Iso2k LiPD source</td>
 </tr>
 <tr class="even">
-<td><code>LS16THQI01_d2H.csv</code></td>
+<td><code>LS14LASO_C29_d2H.csv</code></td>
 <td>
-<a href="https://lipdverse.org/iso2k/1_0_0/LS16THQI01.html" class="external-link">LS16THQI01</a>,
-<a href="https://lipdverse.org/iso2k/1_0_0/LS16THQI01.lpd" class="external-link">LiPD</a>
+<a href="https://lipdverse.org/iso2k/1_0_0/LS14LASO.html" class="external-link">LS14LASO</a>, <a href="https://lipdverse.org/iso2k/1_0_0/LS14LASO.lpd" class="external-link">LiPD</a>
 </td>
-<td>Thomas et al. (2016), <a href="https://doi.org/10.1016/j.quascirev.2015.11.003" class="external-link">doi:10.1016/j.quascirev.2015.11.003</a>
+<td>Lauterbach et al. (2014), <a href="https://doi.org/10.1177/0959683614534741" class="external-link">doi:10.1177/0959683614534741</a>
 </td>
-<td>NOAA/WDS, <a href="https://doi.org/10.25921/mnzv-kp03" class="external-link">doi:10.25921/mnzv-kp03</a>
+<td>PANGAEA, <a href="https://doi.org/10.1594/PANGAEA.834963" class="external-link">doi:10.1594/PANGAEA.834963</a>
 </td>
 </tr>
 </tbody>
@@ -148,27 +148,26 @@ contrast between intervals.</p>
 <span>  <span class="kw"><a href="https://rdrr.io/r/base/stop.html" class="external-link">stop</a></span><span class="op">(</span><span class="st">"Could not locate example record: "</span>, <span class="va">filename</span>, call. <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="op">}</span></span>
 <span></span>
-<span><span class="va">zaca_path</span> <span class="op">&lt;-</span> <span class="fu">example_record_path</span><span class="op">(</span><span class="st">"LS14FEZA_d2H.csv"</span><span class="op">)</span></span>
-<span><span class="va">zaca</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.csv</a></span><span class="op">(</span><span class="va">zaca_path</span><span class="op">)</span></span>
-<span><span class="va">zaca</span><span class="op">$</span><span class="va">d2h_wax</span> <span class="op">&lt;-</span> <span class="va">zaca</span><span class="op">$</span><span class="va">d2H_wax</span></span>
-<span><span class="va">zaca</span><span class="op">$</span><span class="va">age</span>     <span class="op">&lt;-</span> <span class="va">zaca</span><span class="op">$</span><span class="va">age_yrBP</span></span>
+<span><span class="va">sugan_path</span> <span class="op">&lt;-</span> <span class="fu">example_record_path</span><span class="op">(</span><span class="st">"LS13WASU_C29_d2H.csv"</span><span class="op">)</span></span>
+<span><span class="va">sugan</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.csv</a></span><span class="op">(</span><span class="va">sugan_path</span><span class="op">)</span></span>
+<span><span class="va">sugan</span><span class="op">$</span><span class="va">d2h_wax</span> <span class="op">&lt;-</span> <span class="va">sugan</span><span class="op">$</span><span class="va">d2H_wax</span></span>
+<span><span class="va">sugan</span><span class="op">$</span><span class="va">age</span>     <span class="op">&lt;-</span> <span class="va">sugan</span><span class="op">$</span><span class="va">age_yrBP</span></span>
 <span></span>
-<span><span class="va">qh_path</span> <span class="op">&lt;-</span> <span class="fu">example_record_path</span><span class="op">(</span><span class="st">"LS16THQI01_d2H.csv"</span><span class="op">)</span></span>
-<span><span class="va">qh</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.csv</a></span><span class="op">(</span><span class="va">qh_path</span><span class="op">)</span></span>
-<span><span class="va">qh</span><span class="op">$</span><span class="va">d2h_wax</span> <span class="op">&lt;-</span> <span class="va">qh</span><span class="op">$</span><span class="va">d2H_wax</span></span>
-<span><span class="va">qh</span><span class="op">$</span><span class="va">age</span>     <span class="op">&lt;-</span> <span class="va">qh</span><span class="op">$</span><span class="va">age_yrBP</span></span>
+<span><span class="va">sonk_path</span> <span class="op">&lt;-</span> <span class="fu">example_record_path</span><span class="op">(</span><span class="st">"LS14LASO_C29_d2H.csv"</span><span class="op">)</span></span>
+<span><span class="va">sonk</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.csv</a></span><span class="op">(</span><span class="va">sonk_path</span><span class="op">)</span></span>
+<span><span class="va">sonk</span><span class="op">$</span><span class="va">d2h_wax</span> <span class="op">&lt;-</span> <span class="va">sonk</span><span class="op">$</span><span class="va">d2H_wax</span></span>
+<span><span class="va">sonk</span><span class="op">$</span><span class="va">age</span>     <span class="op">&lt;-</span> <span class="va">sonk</span><span class="op">$</span><span class="va">age_yrBP</span></span>
 <span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>zaca_n        <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">zaca</span><span class="op">)</span>,</span>
-<span>  zaca_range_pm <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/diff.html" class="external-link">diff</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/range.html" class="external-link">range</a></span><span class="op">(</span><span class="va">zaca</span><span class="op">$</span><span class="va">d2h_wax</span><span class="op">)</span><span class="op">)</span>, <span class="fl">1</span><span class="op">)</span>,</span>
-<span>  qh_n            <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">qh</span><span class="op">)</span>,</span>
-<span>  qh_range_pm     <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/diff.html" class="external-link">diff</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/range.html" class="external-link">range</a></span><span class="op">(</span><span class="va">qh</span><span class="op">$</span><span class="va">d2h_wax</span><span class="op">)</span><span class="op">)</span>, <span class="fl">1</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt;        zaca_n zaca_range_pm          qh_n   qh_range_pm </span></span>
-<span><span class="co">#&gt;         518.0          77.0         240.0         131.3</span></span></code></pre></div>
-<p>Zaca Lake sits at 34.78° N, 120.04° W (730 m) on the southern
-California coast; Lake Qinghai at 37.0° N, 100.0° E (3,194 m) on the
-northeastern Tibetan Plateau. The Zaca series covers the last 3 kyr at
-roughly 6-yr resolution; the Qinghai series covers the glacial–Holocene
-transition at roughly 130-yr resolution.</p>
+<span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>sugan_n        <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">sugan</span><span class="op">)</span>,</span>
+<span>  sugan_range_pm <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/diff.html" class="external-link">diff</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/range.html" class="external-link">range</a></span><span class="op">(</span><span class="va">sugan</span><span class="op">$</span><span class="va">d2h_wax</span><span class="op">)</span><span class="op">)</span>, <span class="fl">1</span><span class="op">)</span>,</span>
+<span>  sonk_n         <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">sonk</span><span class="op">)</span>,</span>
+<span>  sonk_range_pm  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/diff.html" class="external-link">diff</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/range.html" class="external-link">range</a></span><span class="op">(</span><span class="va">sonk</span><span class="op">$</span><span class="va">d2h_wax</span><span class="op">)</span><span class="op">)</span>, <span class="fl">1</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt;        sugan_n sugan_range_pm         sonk_n  sonk_range_pm </span></span>
+<span><span class="co">#&gt;           78.0           31.0           98.0          107.3</span></span></code></pre></div>
+<p>Lake Sugan sits at 38.8667° N, 93.95° E (2,800 m) in the Qaidam
+Basin. Sonk11D sits at 41.7939° N, 75.1961° E (3,016 m) in the Central
+Tian Shan. In these extracts, Sugan spans -57 to 1657 yr BP, and Sonk11D
+spans -45 to 5989 yr BP.</p>
 </div>
 <div class="section level2">
 <h2 id="plot-the-leaf-wax-records">2. Plot the leaf-wax records<a class="anchor" aria-label="anchor" href="#plot-the-leaf-wax-records"></a>
@@ -193,8 +192,8 @@ below.</p>
 <span>  <span class="fu"><a href="https://rdrr.io/r/graphics/abline.html" class="external-link">abline</a></span><span class="op">(</span>v <span class="op">=</span> <span class="va">boundary</span>, lty <span class="op">=</span> <span class="fl">2</span>, col <span class="op">=</span> <span class="st">"red"</span><span class="op">)</span></span>
 <span><span class="op">}</span></span>
 <span></span>
-<span><span class="fu">plot_wax</span><span class="op">(</span><span class="va">zaca</span>, <span class="st">"Zaca Lake (LS14FEZA)"</span>, boundary <span class="op">=</span> <span class="fl">1000</span><span class="op">)</span></span>
-<span><span class="fu">plot_wax</span><span class="op">(</span><span class="va">qh</span>, <span class="st">"Lake Qinghai (LS16THQI01)"</span>, boundary <span class="op">=</span> <span class="fl">15000</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">plot_wax</span><span class="op">(</span><span class="va">sugan</span>, <span class="st">"Lake Sugan (LS13WASU, C29 n-alkane)"</span>, boundary <span class="op">=</span> <span class="fl">800</span><span class="op">)</span></span>
+<span><span class="fu">plot_wax</span><span class="op">(</span><span class="va">sonk</span>, <span class="st">"Sonk11D (LS14LASO, C29 n-alkane)"</span>, boundary <span class="op">=</span> <span class="fl">5000</span><span class="op">)</span></span></code></pre></div>
 <p><img src="paleo-record-workflow_files/figure-html/plot-wax-1.png" class="r-plt" alt="" width="672"></p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span></span>
@@ -270,28 +269,28 @@ draws. Passing the full vector to <code><a href="../reference/invert_d2h.html">i
 slope uncertainty through the reconstruction; passing a scalar, such as
 the posterior median, gives a point-slope sensitivity run.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">zaca_lon</span> <span class="op">&lt;-</span> <span class="op">-</span><span class="fl">120.0392</span>; <span class="va">zaca_lat</span> <span class="op">&lt;-</span> <span class="fl">34.7778</span></span>
-<span><span class="va">qh_lon</span>     <span class="op">&lt;-</span> <span class="fl">100</span>;     <span class="va">qh_lat</span>     <span class="op">&lt;-</span> <span class="fl">37</span></span>
+<code class="sourceCode R"><span><span class="va">sugan_lon</span> <span class="op">&lt;-</span> <span class="fl">93.95</span>;   <span class="va">sugan_lat</span> <span class="op">&lt;-</span> <span class="fl">38.8667</span></span>
+<span><span class="va">sonk_lon</span>  <span class="op">&lt;-</span> <span class="fl">75.1961</span>; <span class="va">sonk_lat</span>  <span class="op">&lt;-</span> <span class="fl">41.7939</span></span>
 <span></span>
-<span><span class="va">slope_zaca</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/warning.html" class="external-link">suppressWarnings</a></span><span class="op">(</span><span class="fu"><a href="../reference/local_effective_slope.html">local_effective_slope</a></span><span class="op">(</span></span>
-<span>  longitude <span class="op">=</span> <span class="va">zaca_lon</span>, latitude <span class="op">=</span> <span class="va">zaca_lat</span>,</span>
+<span><span class="va">slope_sugan</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/warning.html" class="external-link">suppressWarnings</a></span><span class="op">(</span><span class="fu"><a href="../reference/local_effective_slope.html">local_effective_slope</a></span><span class="op">(</span></span>
+<span>  longitude <span class="op">=</span> <span class="va">sugan_lon</span>, latitude <span class="op">=</span> <span class="va">sugan_lat</span>,</span>
 <span>  model_name <span class="op">=</span> <span class="st">"baseline_sp"</span>, n_draws <span class="op">=</span> <span class="fl">100</span>,</span>
 <span>  verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">slope_qh</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/warning.html" class="external-link">suppressWarnings</a></span><span class="op">(</span><span class="fu"><a href="../reference/local_effective_slope.html">local_effective_slope</a></span><span class="op">(</span></span>
-<span>  longitude <span class="op">=</span> <span class="va">qh_lon</span>, latitude <span class="op">=</span> <span class="va">qh_lat</span>,</span>
+<span><span class="va">slope_sonk</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/warning.html" class="external-link">suppressWarnings</a></span><span class="op">(</span><span class="fu"><a href="../reference/local_effective_slope.html">local_effective_slope</a></span><span class="op">(</span></span>
+<span>  longitude <span class="op">=</span> <span class="va">sonk_lon</span>, latitude <span class="op">=</span> <span class="va">sonk_lat</span>,</span>
 <span>  model_name <span class="op">=</span> <span class="st">"baseline_sp"</span>, n_draws <span class="op">=</span> <span class="fl">100</span>,</span>
 <span>  verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">rbind</a></span><span class="op">(</span></span>
-<span>  zaca  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/quantile.html" class="external-link">quantile</a></span><span class="op">(</span><span class="va">slope_zaca</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.025</span>, <span class="fl">0.5</span>, <span class="fl">0.975</span><span class="op">)</span><span class="op">)</span>,</span>
-<span>  qinghai <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/quantile.html" class="external-link">quantile</a></span><span class="op">(</span><span class="va">slope_qh</span>,     <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.025</span>, <span class="fl">0.5</span>, <span class="fl">0.975</span><span class="op">)</span><span class="op">)</span></span>
+<span>  sugan <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/quantile.html" class="external-link">quantile</a></span><span class="op">(</span><span class="va">slope_sugan</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.025</span>, <span class="fl">0.5</span>, <span class="fl">0.975</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  sonk  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/quantile.html" class="external-link">quantile</a></span><span class="op">(</span><span class="va">slope_sonk</span>,  <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.025</span>, <span class="fl">0.5</span>, <span class="fl">0.975</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
-<span><span class="co">#&gt;              2.5%       50%     97.5%</span></span>
-<span><span class="co">#&gt; zaca    0.4158966 0.5744484 0.7357822</span></span>
-<span><span class="co">#&gt; qinghai 0.2665229 0.4161201 0.5569460</span></span></code></pre></div>
+<span><span class="co">#&gt;            2.5%       50%     97.5%</span></span>
+<span><span class="co">#&gt; sugan 0.2453382 0.3878862 0.5338104</span></span>
+<span><span class="co">#&gt; sonk  0.3050322 0.4423601 0.5633999</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="bayesian-inversion-with-the-local-slope">5. Bayesian inversion with the local slope<a class="anchor" aria-label="anchor" href="#bayesian-inversion-with-the-local-slope"></a>
@@ -304,28 +303,28 @@ uses analytical uncertainty plus the model’s posterior residual SD; the
 same residual applies to within-record contrasts because the spatial GP
 intercept cancels in any difference between intervals.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">recon_zaca</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/warning.html" class="external-link">suppressWarnings</a></span><span class="op">(</span><span class="fu"><a href="../reference/invert_d2h.html">invert_d2H</a></span><span class="op">(</span></span>
-<span>  d2H_wax    <span class="op">=</span> <span class="va">zaca</span><span class="op">$</span><span class="va">d2h_wax</span>,</span>
-<span>  d2H_wax_sd <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">3</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">zaca</span><span class="op">)</span><span class="op">)</span>,</span>
-<span>  longitude  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="va">zaca_lon</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">zaca</span><span class="op">)</span><span class="op">)</span>,</span>
-<span>  latitude   <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="va">zaca_lat</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">zaca</span><span class="op">)</span><span class="op">)</span>,</span>
+<code class="sourceCode R"><span><span class="va">recon_sugan</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/warning.html" class="external-link">suppressWarnings</a></span><span class="op">(</span><span class="fu"><a href="../reference/invert_d2h.html">invert_d2H</a></span><span class="op">(</span></span>
+<span>  d2H_wax    <span class="op">=</span> <span class="va">sugan</span><span class="op">$</span><span class="va">d2h_wax</span>,</span>
+<span>  d2H_wax_sd <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">3</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">sugan</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  longitude  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="va">sugan_lon</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">sugan</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  latitude   <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="va">sugan_lat</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">sugan</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  model_name <span class="op">=</span> <span class="st">"baseline_sp"</span>,</span>
 <span>  n_posterior_draws <span class="op">=</span> <span class="fl">100</span>,</span>
-<span>  slope        <span class="op">=</span> <span class="va">slope_zaca</span>,</span>
-<span>  record_id    <span class="op">=</span> <span class="st">"LS14FEZA"</span>,</span>
+<span>  slope        <span class="op">=</span> <span class="va">slope_sugan</span>,</span>
+<span>  record_id    <span class="op">=</span> <span class="st">"LS13WASU"</span>,</span>
 <span>  return_full  <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  verbose      <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">recon_qh</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/warning.html" class="external-link">suppressWarnings</a></span><span class="op">(</span><span class="fu"><a href="../reference/invert_d2h.html">invert_d2H</a></span><span class="op">(</span></span>
-<span>  d2H_wax    <span class="op">=</span> <span class="va">qh</span><span class="op">$</span><span class="va">d2h_wax</span>,</span>
-<span>  d2H_wax_sd <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">3</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">qh</span><span class="op">)</span><span class="op">)</span>,</span>
-<span>  longitude  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="va">qh_lon</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">qh</span><span class="op">)</span><span class="op">)</span>,</span>
-<span>  latitude   <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="va">qh_lat</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">qh</span><span class="op">)</span><span class="op">)</span>,</span>
+<span><span class="va">recon_sonk</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/warning.html" class="external-link">suppressWarnings</a></span><span class="op">(</span><span class="fu"><a href="../reference/invert_d2h.html">invert_d2H</a></span><span class="op">(</span></span>
+<span>  d2H_wax    <span class="op">=</span> <span class="va">sonk</span><span class="op">$</span><span class="va">d2h_wax</span>,</span>
+<span>  d2H_wax_sd <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">3</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">sonk</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  longitude  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="va">sonk_lon</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">sonk</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  latitude   <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="va">sonk_lat</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">sonk</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  model_name <span class="op">=</span> <span class="st">"baseline_sp"</span>,</span>
 <span>  n_posterior_draws <span class="op">=</span> <span class="fl">100</span>,</span>
-<span>  slope        <span class="op">=</span> <span class="va">slope_qh</span>,</span>
-<span>  record_id    <span class="op">=</span> <span class="st">"LS16THQI01"</span>,</span>
+<span>  slope        <span class="op">=</span> <span class="va">slope_sonk</span>,</span>
+<span>  record_id    <span class="op">=</span> <span class="st">"LS14LASO"</span>,</span>
 <span>  return_full  <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  verbose      <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
@@ -351,24 +350,24 @@ they can help test whether a boundary or trend is independently
 supported, but they are not substitutes for the lag-1 <code>rho_t</code>
 used in the detection-threshold formula. A Lomb-Scargle estimator is
 planned for v0.3 (<code>method = "lomb_scargle"</code>).</p>
-<p>The Zaca record splits at 1000 yr BP. The Qinghai record splits at
-15,000 yr BP, late LGM to mid-Holocene, the boundary across which many
-Asian-monsoon records show a regional shift in source-water
-<code>d2H</code>.</p>
+<p>The Sugan example contrasts the last eight centuries with the older
+part of the record, a low-amplitude test case. The Sonk11D example
+contrasts adjacent 4-5 ka and 5-6 ka intervals, where the extracted C29
+n-alkane series has a much larger wax-isotope contrast.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">rho_zaca</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_temporal_autocorrelation.html">estimate_temporal_autocorrelation</a></span><span class="op">(</span></span>
-<span>  <span class="va">zaca</span><span class="op">$</span><span class="va">d2h_wax</span>, <span class="va">zaca</span><span class="op">$</span><span class="va">age</span>, method <span class="op">=</span> <span class="st">"ar1"</span></span>
+<code class="sourceCode R"><span><span class="va">rho_sugan</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_temporal_autocorrelation.html">estimate_temporal_autocorrelation</a></span><span class="op">(</span></span>
+<span>  <span class="va">sugan</span><span class="op">$</span><span class="va">d2h_wax</span>, <span class="va">sugan</span><span class="op">$</span><span class="va">age</span>, method <span class="op">=</span> <span class="st">"ar1"</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">dc_zaca</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/detect_change.html">detect_change</a></span><span class="op">(</span></span>
-<span>  reconstruction    <span class="op">=</span> <span class="va">recon_zaca</span>,</span>
-<span>  age               <span class="op">=</span> <span class="va">zaca</span><span class="op">$</span><span class="va">age</span>,</span>
-<span>  baseline_interval <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1000</span><span class="op">)</span>,</span>
-<span>  test_intervals    <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>post_1000 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1000</span>, <span class="fl">2000</span><span class="op">)</span><span class="op">)</span>,</span>
+<span><span class="va">dc_sugan</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/detect_change.html">detect_change</a></span><span class="op">(</span></span>
+<span>  reconstruction    <span class="op">=</span> <span class="va">recon_sugan</span>,</span>
+<span>  age               <span class="op">=</span> <span class="va">sugan</span><span class="op">$</span><span class="va">age</span>,</span>
+<span>  baseline_interval <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">100</span>, <span class="fl">800</span><span class="op">)</span>,</span>
+<span>  test_intervals    <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>older <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">800</span>, <span class="fl">1700</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  sigma_residual    <span class="op">=</span> <span class="fl">16</span>,</span>
 <span>  sigma_analytical  <span class="op">=</span> <span class="fl">3</span>,</span>
-<span>  rho_t             <span class="op">=</span> <span class="va">rho_zaca</span>,</span>
-<span>  beta_eff          <span class="op">=</span> <span class="fu">stats</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/stats/median.html" class="external-link">median</a></span><span class="op">(</span><span class="va">slope_zaca</span><span class="op">)</span>,</span>
+<span>  rho_t             <span class="op">=</span> <span class="va">rho_sugan</span>,</span>
+<span>  beta_eff          <span class="op">=</span> <span class="fu">stats</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/stats/median.html" class="external-link">median</a></span><span class="op">(</span><span class="va">slope_sugan</span><span class="op">)</span>,</span>
 <span>  confidence        <span class="op">=</span> <span class="fl">0.95</span>,</span>
 <span>  magnitudes        <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">10</span>, <span class="fl">30</span>, <span class="fl">50</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
@@ -377,19 +376,19 @@ Asian-monsoon records show a regional shift in source-water
 <span><span class="co">#&gt; this sample size; not suitable for inference. Run</span></span>
 <span><span class="co">#&gt; download_model_data("baseline_sp") for the full posterior.</span></span>
 <span></span>
-<span><span class="va">rho_qh</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_temporal_autocorrelation.html">estimate_temporal_autocorrelation</a></span><span class="op">(</span></span>
-<span>  <span class="va">qh</span><span class="op">$</span><span class="va">d2h_wax</span>, <span class="va">qh</span><span class="op">$</span><span class="va">age</span>, method <span class="op">=</span> <span class="st">"ar1"</span></span>
+<span><span class="va">rho_sonk</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_temporal_autocorrelation.html">estimate_temporal_autocorrelation</a></span><span class="op">(</span></span>
+<span>  <span class="va">sonk</span><span class="op">$</span><span class="va">d2h_wax</span>, <span class="va">sonk</span><span class="op">$</span><span class="va">age</span>, method <span class="op">=</span> <span class="st">"ar1"</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">dc_qh</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/detect_change.html">detect_change</a></span><span class="op">(</span></span>
-<span>  reconstruction    <span class="op">=</span> <span class="va">recon_qh</span>,</span>
-<span>  age               <span class="op">=</span> <span class="va">qh</span><span class="op">$</span><span class="va">age</span>,</span>
-<span>  baseline_interval <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">15000</span><span class="op">)</span>,</span>
-<span>  test_intervals    <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>lgm <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">15000</span>, <span class="fl">25000</span><span class="op">)</span><span class="op">)</span>,</span>
+<span><span class="va">dc_sonk</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/detect_change.html">detect_change</a></span><span class="op">(</span></span>
+<span>  reconstruction    <span class="op">=</span> <span class="va">recon_sonk</span>,</span>
+<span>  age               <span class="op">=</span> <span class="va">sonk</span><span class="op">$</span><span class="va">age</span>,</span>
+<span>  baseline_interval <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">4000</span>, <span class="fl">5000</span><span class="op">)</span>,</span>
+<span>  test_intervals    <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>early_holocene <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">5000</span>, <span class="fl">6000</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  sigma_residual    <span class="op">=</span> <span class="fl">16</span>,</span>
 <span>  sigma_analytical  <span class="op">=</span> <span class="fl">3</span>,</span>
-<span>  rho_t             <span class="op">=</span> <span class="va">rho_qh</span>,</span>
-<span>  beta_eff          <span class="op">=</span> <span class="fu">stats</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/stats/median.html" class="external-link">median</a></span><span class="op">(</span><span class="va">slope_qh</span><span class="op">)</span>,</span>
+<span>  rho_t             <span class="op">=</span> <span class="va">rho_sonk</span>,</span>
+<span>  beta_eff          <span class="op">=</span> <span class="fu">stats</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/stats/median.html" class="external-link">median</a></span><span class="op">(</span><span class="va">slope_sonk</span><span class="op">)</span>,</span>
 <span>  confidence        <span class="op">=</span> <span class="fl">0.95</span>,</span>
 <span>  magnitudes        <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">10</span>, <span class="fl">30</span>, <span class="fl">50</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
@@ -399,52 +398,47 @@ Asian-monsoon records show a regional shift in source-water
 <span><span class="co">#&gt; download_model_data("baseline_sp") for the full posterior.</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
-<span>  zaca  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>rho_t <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">rho_zaca</span>, <span class="fl">3</span><span class="op">)</span>,</span>
-<span>                 threshold_permil <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">dc_zaca</span><span class="op">$</span><span class="va">threshold</span>, <span class="fl">1</span><span class="op">)</span>,</span>
-<span>                 intervals        <span class="op">=</span> <span class="va">dc_zaca</span><span class="op">$</span><span class="va">intervals</span><span class="op">)</span>,</span>
-<span>  qinghai <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>rho_t <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">rho_qh</span>, <span class="fl">3</span><span class="op">)</span>,</span>
-<span>                 threshold_permil <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">dc_qh</span><span class="op">$</span><span class="va">threshold</span>, <span class="fl">1</span><span class="op">)</span>,</span>
-<span>                 intervals        <span class="op">=</span> <span class="va">dc_qh</span><span class="op">$</span><span class="va">intervals</span><span class="op">)</span></span>
+<span>  sugan <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>rho_t <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">rho_sugan</span>, <span class="fl">3</span><span class="op">)</span>,</span>
+<span>               threshold_permil <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">dc_sugan</span><span class="op">$</span><span class="va">threshold</span>, <span class="fl">1</span><span class="op">)</span>,</span>
+<span>               intervals        <span class="op">=</span> <span class="va">dc_sugan</span><span class="op">$</span><span class="va">intervals</span><span class="op">)</span>,</span>
+<span>  sonk <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>rho_t <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">rho_sonk</span>, <span class="fl">3</span><span class="op">)</span>,</span>
+<span>              threshold_permil <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">dc_sonk</span><span class="op">$</span><span class="va">threshold</span>, <span class="fl">1</span><span class="op">)</span>,</span>
+<span>              intervals        <span class="op">=</span> <span class="va">dc_sonk</span><span class="op">$</span><span class="va">intervals</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
-<span><span class="co">#&gt; $zaca</span></span>
-<span><span class="co">#&gt; $zaca$rho_t</span></span>
-<span><span class="co">#&gt; [1] 0.445</span></span>
+<span><span class="co">#&gt; $sugan</span></span>
+<span><span class="co">#&gt; $sugan$rho_t</span></span>
+<span><span class="co">#&gt; [1] 0.203</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $zaca$threshold_permil</span></span>
-<span><span class="co">#&gt; [1] 58.5</span></span>
+<span><span class="co">#&gt; $sugan$threshold_permil</span></span>
+<span><span class="co">#&gt; [1] 103.8</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $zaca$intervals</span></span>
-<span><span class="co">#&gt;    interval n_baseline n_test delta_mean delta_median delta_lower delta_upper</span></span>
-<span><span class="co">#&gt; 1 post_1000        257    127  0.1163509    0.5201522   -5.648273     6.10717</span></span>
-<span><span class="co">#&gt;   p_abs_delta_gt_10 p_abs_delta_gt_30 p_abs_delta_gt_50</span></span>
-<span><span class="co">#&gt; 1                 0                 0                 0</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $qinghai</span></span>
-<span><span class="co">#&gt; $qinghai$rho_t</span></span>
-<span><span class="co">#&gt; [1] 0.853</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $qinghai$threshold_permil</span></span>
-<span><span class="co">#&gt; [1] 41.6</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $qinghai$intervals</span></span>
+<span><span class="co">#&gt; $sugan$intervals</span></span>
 <span><span class="co">#&gt;   interval n_baseline n_test delta_mean delta_median delta_lower delta_upper</span></span>
-<span><span class="co">#&gt; 1      lgm        162     74  -38.50674    -37.18504   -59.10398   -24.23564</span></span>
+<span><span class="co">#&gt; 1    older         41     37  -9.301603    -7.864667   -31.47903    8.930941</span></span>
 <span><span class="co">#&gt;   p_abs_delta_gt_10 p_abs_delta_gt_30 p_abs_delta_gt_50</span></span>
-<span><span class="co">#&gt; 1                 1              0.82              0.13</span></span></code></pre></div>
-<p>The two records produce different verdicts. Zaca: lag-1
-autocorrelation 0.44, 95 percent detection threshold approximately 59
-per mil, posterior probability of a 30 per mil shift across 1000 yr BP
-0.00. Qinghai: lag-1 autocorrelation 0.85 (densely sampled and strongly
-persistent), threshold approximately 42 per mil, posterior probability
-of a 30 per mil shift across 15,000 yr BP 0.82. The Zaca record cannot
-distinguish a 30 per mil change in <code>d2H_precip</code> from
-calibration noise. The Qinghai record provides much stronger evidence
-for a large LGM-to-Holocene shift, but the 30 per mil quantitative claim
-remains below the 95 percent decision threshold. Two factors drive the
-contrast: Qinghai’s much larger LGM-to-Holocene <code>d2H_wax</code>
-shift, and its high autocorrelation, which reduces
-<code>sqrt(2(1-rho_t))</code> and pulls the threshold down.</p>
+<span><span class="co">#&gt; 1              0.48              0.04              0.01</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $sonk</span></span>
+<span><span class="co">#&gt; $sonk$rho_t</span></span>
+<span><span class="co">#&gt; [1] 0.716</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $sonk$threshold_permil</span></span>
+<span><span class="co">#&gt; [1] 54.4</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $sonk$intervals</span></span>
+<span><span class="co">#&gt;         interval n_baseline n_test delta_mean delta_median delta_lower</span></span>
+<span><span class="co">#&gt; 1 early_holocene         12     15  -137.2436    -137.8394   -200.0781</span></span>
+<span><span class="co">#&gt;   delta_upper p_abs_delta_gt_10 p_abs_delta_gt_30 p_abs_delta_gt_50</span></span>
+<span><span class="co">#&gt; 1    -94.7102                 1                 1                 1</span></span></code></pre></div>
+<p>The two records produce different verdicts. Sugan: lag-1
+autocorrelation 0.2, 95 percent detection threshold approximately 104
+per mil, posterior probability of a 30 per mil shift 0.04. Sonk11D:
+lag-1 autocorrelation 0.72, threshold approximately 54 per mil,
+posterior probability of a 30 per mil shift 1.00. The Sugan interval
+contrast is small relative to calibration noise. The Sonk11D interval
+contrast is large enough that the example quantitative claim passes the
+posterior-probability test.</p>
 </div>
 <div class="section level2">
 <h2 id="assess-a-published-claim">7. Assess a published claim<a class="anchor" aria-label="anchor" href="#assess-a-published-claim"></a>
@@ -483,50 +477,50 @@ record-specific literature review.</p>
 <span>  <span class="op">)</span></span>
 <span><span class="op">}</span></span>
 <span></span>
-<span><span class="va">zaca_record</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
-<span>  d2h_wax     <span class="op">=</span> <span class="va">zaca</span><span class="op">$</span><span class="va">d2h_wax</span>,</span>
-<span>  age         <span class="op">=</span> <span class="va">zaca</span><span class="op">$</span><span class="va">age</span>,</span>
-<span>  d2h_wax_err <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">3</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">zaca</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">sugan_record</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
+<span>  d2h_wax     <span class="op">=</span> <span class="va">sugan</span><span class="op">$</span><span class="va">d2h_wax</span>,</span>
+<span>  age         <span class="op">=</span> <span class="va">sugan</span><span class="op">$</span><span class="va">age</span>,</span>
+<span>  d2h_wax_err <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">3</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">sugan</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
-<span><span class="va">qh_record</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
-<span>  d2h_wax     <span class="op">=</span> <span class="va">qh</span><span class="op">$</span><span class="va">d2h_wax</span>,</span>
-<span>  age         <span class="op">=</span> <span class="va">qh</span><span class="op">$</span><span class="va">age</span>,</span>
-<span>  d2h_wax_err <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">3</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">qh</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">sonk_record</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
+<span>  d2h_wax     <span class="op">=</span> <span class="va">sonk</span><span class="op">$</span><span class="va">d2h_wax</span>,</span>
+<span>  age         <span class="op">=</span> <span class="va">sonk</span><span class="op">$</span><span class="va">age</span>,</span>
+<span>  d2h_wax_err <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">3</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">sonk</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">verdict_zaca</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/warning.html" class="external-link">suppressWarnings</a></span><span class="op">(</span><span class="fu"><a href="../reference/assess_claim.html">assess_claim</a></span><span class="op">(</span></span>
-<span>  record         <span class="op">=</span> <span class="va">zaca_record</span>,</span>
-<span>  claim          <span class="op">=</span> <span class="fu">build_claim</span><span class="op">(</span><span class="fu">stats</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/stats/median.html" class="external-link">median</a></span><span class="op">(</span><span class="va">slope_zaca</span><span class="op">)</span>,</span>
-<span>                                <span class="va">rho_zaca</span>,</span>
-<span>                                <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1000</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1000</span>, <span class="fl">2000</span><span class="op">)</span>,</span>
+<span><span class="va">verdict_sugan</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/warning.html" class="external-link">suppressWarnings</a></span><span class="op">(</span><span class="fu"><a href="../reference/assess_claim.html">assess_claim</a></span><span class="op">(</span></span>
+<span>  record         <span class="op">=</span> <span class="va">sugan_record</span>,</span>
+<span>  claim          <span class="op">=</span> <span class="fu">build_claim</span><span class="op">(</span><span class="fu">stats</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/stats/median.html" class="external-link">median</a></span><span class="op">(</span><span class="va">slope_sugan</span><span class="op">)</span>,</span>
+<span>                                <span class="va">rho_sugan</span>,</span>
+<span>                                <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">100</span>, <span class="fl">800</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">800</span>, <span class="fl">1700</span><span class="op">)</span>,</span>
 <span>                                magnitude_precip <span class="op">=</span> <span class="fl">30</span><span class="op">)</span>,</span>
-<span>  reconstruction <span class="op">=</span> <span class="va">recon_zaca</span></span>
+<span>  reconstruction <span class="op">=</span> <span class="va">recon_sugan</span></span>
 <span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">verdict_qh</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/warning.html" class="external-link">suppressWarnings</a></span><span class="op">(</span><span class="fu"><a href="../reference/assess_claim.html">assess_claim</a></span><span class="op">(</span></span>
-<span>  record         <span class="op">=</span> <span class="va">qh_record</span>,</span>
-<span>  claim          <span class="op">=</span> <span class="fu">build_claim</span><span class="op">(</span><span class="fu">stats</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/stats/median.html" class="external-link">median</a></span><span class="op">(</span><span class="va">slope_qh</span><span class="op">)</span>,</span>
-<span>                                <span class="va">rho_qh</span>,</span>
-<span>                                <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">15000</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">15000</span>, <span class="fl">25000</span><span class="op">)</span>,</span>
+<span><span class="va">verdict_sonk</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/warning.html" class="external-link">suppressWarnings</a></span><span class="op">(</span><span class="fu"><a href="../reference/assess_claim.html">assess_claim</a></span><span class="op">(</span></span>
+<span>  record         <span class="op">=</span> <span class="va">sonk_record</span>,</span>
+<span>  claim          <span class="op">=</span> <span class="fu">build_claim</span><span class="op">(</span><span class="fu">stats</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/stats/median.html" class="external-link">median</a></span><span class="op">(</span><span class="va">slope_sonk</span><span class="op">)</span>,</span>
+<span>                                <span class="va">rho_sonk</span>,</span>
+<span>                                <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">4000</span>, <span class="fl">5000</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">5000</span>, <span class="fl">6000</span><span class="op">)</span>,</span>
 <span>                                magnitude_precip <span class="op">=</span> <span class="fl">30</span><span class="op">)</span>,</span>
-<span>  reconstruction <span class="op">=</span> <span class="va">recon_qh</span></span>
+<span>  reconstruction <span class="op">=</span> <span class="va">recon_sonk</span></span>
 <span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>zaca_highest_level   <span class="op">=</span> <span class="va">verdict_zaca</span><span class="op">$</span><span class="va">highest_level</span>,</span>
-<span>  zaca_supported_at_4  <span class="op">=</span> <span class="va">verdict_zaca</span><span class="op">$</span><span class="va">asserted_supported</span>,</span>
-<span>  qinghai_highest_level  <span class="op">=</span> <span class="va">verdict_qh</span><span class="op">$</span><span class="va">highest_level</span>,</span>
-<span>  qinghai_supported_at_4 <span class="op">=</span> <span class="va">verdict_qh</span><span class="op">$</span><span class="va">asserted_supported</span><span class="op">)</span></span>
-<span><span class="co">#&gt;     zaca_highest_level    zaca_supported_at_4  qinghai_highest_level </span></span>
-<span><span class="co">#&gt;                      0                      0                      2 </span></span>
-<span><span class="co">#&gt; qinghai_supported_at_4 </span></span>
-<span><span class="co">#&gt;                      0</span></span></code></pre></div>
+<span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>sugan_highest_level  <span class="op">=</span> <span class="va">verdict_sugan</span><span class="op">$</span><span class="va">highest_level</span>,</span>
+<span>  sugan_supported_at_4 <span class="op">=</span> <span class="va">verdict_sugan</span><span class="op">$</span><span class="va">asserted_supported</span>,</span>
+<span>  sonk_highest_level   <span class="op">=</span> <span class="va">verdict_sonk</span><span class="op">$</span><span class="va">highest_level</span>,</span>
+<span>  sonk_supported_at_4  <span class="op">=</span> <span class="va">verdict_sonk</span><span class="op">$</span><span class="va">asserted_supported</span><span class="op">)</span></span>
+<span><span class="co">#&gt;  sugan_highest_level sugan_supported_at_4   sonk_highest_level </span></span>
+<span><span class="co">#&gt;                    0                    0                    4 </span></span>
+<span><span class="co">#&gt;  sonk_supported_at_4 </span></span>
+<span><span class="co">#&gt;                    1</span></span></code></pre></div>
 <p>Read each <code>verdict$levels</code> data frame top to bottom: every
 level above the highest one passed is reported with the reason it
-failed. The Zaca claim fails at the within-record noise step; the
-Qinghai claim clears Level 2 for the asserted 30 per mil Level 4 claim.
-It fails Level 3 because the posterior probability for a 30 per mil
-<code>d2H_precip</code> shift is below 0.95, even though the example
-supplies stationarity evidence for the Level 4 controls.</p>
+failed. The Sugan claim fails at the within-record noise step. The
+Sonk11D claim clears Level 4 in this API demonstration because the
+interval contrast is large and the example supplies stationarity
+evidence. Those stationarity strings are placeholders; a real Level 4
+claim requires record-specific evidence and citations.</p>
 </div>
 <div class="section level2">
 <h2 id="plot-the-reconstructions">8. Plot the reconstructions<a class="anchor" aria-label="anchor" href="#plot-the-reconstructions"></a>
@@ -556,12 +550,12 @@ supplies stationarity evidence for the Level 4 controls.</p>
 <span>  <span class="fu"><a href="https://rdrr.io/r/graphics/abline.html" class="external-link">abline</a></span><span class="op">(</span>v <span class="op">=</span> <span class="va">boundary</span>, lty <span class="op">=</span> <span class="fl">2</span>, col <span class="op">=</span> <span class="st">"red"</span><span class="op">)</span></span>
 <span><span class="op">}</span></span>
 <span></span>
-<span><span class="fu">plot_recon</span><span class="op">(</span><span class="va">recon_zaca</span>, <span class="va">zaca</span><span class="op">$</span><span class="va">age</span>,</span>
-<span>           <span class="st">"Zaca Lake (LS14FEZA): no detection at 95%"</span>,</span>
-<span>           boundary <span class="op">=</span> <span class="fl">1000</span><span class="op">)</span></span>
-<span><span class="fu">plot_recon</span><span class="op">(</span><span class="va">recon_qh</span>, <span class="va">qh</span><span class="op">$</span><span class="va">age</span>,</span>
-<span>           <span class="st">"Lake Qinghai (LS16THQI01): large LGM shift"</span>,</span>
-<span>           boundary <span class="op">=</span> <span class="fl">15000</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">plot_recon</span><span class="op">(</span><span class="va">recon_sugan</span>, <span class="va">sugan</span><span class="op">$</span><span class="va">age</span>,</span>
+<span>           <span class="st">"Lake Sugan (LS13WASU): small interval contrast"</span>,</span>
+<span>           boundary <span class="op">=</span> <span class="fl">800</span><span class="op">)</span></span>
+<span><span class="fu">plot_recon</span><span class="op">(</span><span class="va">recon_sonk</span>, <span class="va">sonk</span><span class="op">$</span><span class="va">age</span>,</span>
+<span>           <span class="st">"Sonk11D (LS14LASO): large 4-6 ka contrast"</span>,</span>
+<span>           boundary <span class="op">=</span> <span class="fl">5000</span><span class="op">)</span></span></code></pre></div>
 <p><img src="paleo-record-workflow_files/figure-html/plot-1.png" class="r-plt" alt="" width="672"></p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span></span>
@@ -582,11 +576,10 @@ depends on three quantities evaluated for that record: its within-record
 temporal autocorrelation. <code><a href="../reference/detect_change.html">detect_change()</a></code> packages these
 into a single threshold and a posterior probability;
 <code><a href="../reference/assess_claim.html">assess_claim()</a></code> walks them through the four-level taxonomy.
-Records like Zaca can fail at the initial within-record wax-change
-screen. Long, densely sampled records like Qinghai can clear directional
-hydroclimate-change claims and provide much stronger quantitative
-evidence, but the example 30 per mil Level 4 claim still requires
-posterior support at the chosen confidence level.</p>
+Low-amplitude contrasts can fail at the initial within-record wax-change
+screen. Larger contrasts can clear directional hydroclimate-change
+claims and provide stronger quantitative evidence, but a Level 4 claim
+still requires posterior support at the chosen confidence level.</p>
 </div>
 <div class="section level2">
 <h2 id="notes">Notes<a class="anchor" aria-label="anchor" href="#notes"></a>

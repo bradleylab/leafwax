@@ -88,7 +88,7 @@ photosynthesizing organisms. Annual Review of Earth and Planetary
 Sciences, 40, 221-249.
 [doi:10.1146/annurev-earth-042711-105535](https://doi.org/10.1146/annurev-earth-042711-105535)
 
-Bradley, A. (2026). leafwax v10 model posteriors. Zenodo concept DOI
+Bradley, A. (2026). leafwax v10 model posteriors. Zenodo DOI
 [doi:10.5281/zenodo.20085465](https://doi.org/10.5281/zenodo.20085465) .
 
 ## See also

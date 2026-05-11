@@ -414,7 +414,7 @@ Regression tests covering these fixes are in
 - [`download_model_data()`](https://bradleylab.github.io/leafwax/reference/download_model_data.md)
   now writes `<model>_posterior.rds` (singular) to match what
   [`load_posteriors()`](https://bradleylab.github.io/leafwax/reference/load_posteriors.md)
-  reads, and points at the bradleylab/leafwax-data archive (concept DOI
+  reads, and points at the bradleylab/leafwax-data archive (Zenodo DOI
   10.5281/zenodo.20085465; v1.0.1 version DOI 10.5281/zenodo.20086180).
   Per-tag raw GitHub URLs are used for direct downloads; Zenodo holds
   the durable archive.

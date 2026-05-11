@@ -35,7 +35,7 @@ leafwax::download_model_data("baseline_sp")
 
 Heavy posteriors come from
 [`bradleylab/leafwax-data`](https://github.com/bradleylab/leafwax-data)
-v1.0.1 (Zenodo concept DOI
+v1.0.1 (Zenodo DOI
 [10.5281/zenodo.20085465](https://doi.org/10.5281/zenodo.20085465)).
 Inversions done against the preview tier emit a loud warning naming the
 function context and the actual draw count; set

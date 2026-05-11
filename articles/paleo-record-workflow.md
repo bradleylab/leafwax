@@ -8,14 +8,15 @@ intervals can be distinguished from calibration-plus-analytical noise,
 and at what confidence level.
 
 The vignette runs the chain on two Iso2k records with different signal
-sizes and sampling structures. The package ships small CSV extracts for
-the examples, and the source records remain available from LiPDverse and
-NOAA/WDS Paleoclimatology:
+sizes and sampling structures. Both examples use C29 n-alkane `d2H_wax`,
+matching the compound class used by the calibration. The package ships
+small CSV extracts containing finite C29 rows from the source LiPD
+files; the extraction script is in `data-raw/`.
 
 | Package file | Iso2k record | Source study | Data archive |
 |----|----|----|----|
-| `LS14FEZA_d2H.csv` | [LS14FEZA](https://lipdverse.org/iso2k/1_0_0/LS14FEZA.html), [LiPD](https://lipdverse.org/iso2k/1_0_0/LS14FEZA.lpd) | Feakins et al. (2014), [doi:10.1016/j.orggeochem.2013.10.015](https://doi.org/10.1016/j.orggeochem.2013.10.015) | NOAA/WDS, [doi:10.25921/13bn-nd37](https://doi.org/10.25921/13bn-nd37) |
-| `LS16THQI01_d2H.csv` | [LS16THQI01](https://lipdverse.org/iso2k/1_0_0/LS16THQI01.html), [LiPD](https://lipdverse.org/iso2k/1_0_0/LS16THQI01.lpd) | Thomas et al. (2016), [doi:10.1016/j.quascirev.2015.11.003](https://doi.org/10.1016/j.quascirev.2015.11.003) | NOAA/WDS, [doi:10.25921/mnzv-kp03](https://doi.org/10.25921/mnzv-kp03) |
+| `LS13WASU_C29_d2H.csv` | [LS13WASU](https://lipdverse.org/iso2k/1_0_0/LS13WASU.html), [LiPD](https://lipdverse.org/iso2k/1_0_0/LS13WASU.lpd) | Wang et al. (2013), [doi:10.1177/0959683613486941](https://doi.org/10.1177/0959683613486941) | Iso2k LiPD source |
+| `LS14LASO_C29_d2H.csv` | [LS14LASO](https://lipdverse.org/iso2k/1_0_0/LS14LASO.html), [LiPD](https://lipdverse.org/iso2k/1_0_0/LS14LASO.lpd) | Lauterbach et al. (2014), [doi:10.1177/0959683614534741](https://doi.org/10.1177/0959683614534741) | PANGAEA, [doi:10.1594/PANGAEA.834963](https://doi.org/10.1594/PANGAEA.834963) |
 
 The Iso2k compilation is archived at
 [doi:10.25921/57j8-vs18](https://doi.org/10.25921/57j8-vs18).
@@ -65,29 +66,28 @@ example_record_path <- function(filename) {
   stop("Could not locate example record: ", filename, call. = FALSE)
 }
 
-zaca_path <- example_record_path("LS14FEZA_d2H.csv")
-zaca <- read.csv(zaca_path)
-zaca$d2h_wax <- zaca$d2H_wax
-zaca$age     <- zaca$age_yrBP
+sugan_path <- example_record_path("LS13WASU_C29_d2H.csv")
+sugan <- read.csv(sugan_path)
+sugan$d2h_wax <- sugan$d2H_wax
+sugan$age     <- sugan$age_yrBP
 
-qh_path <- example_record_path("LS16THQI01_d2H.csv")
-qh <- read.csv(qh_path)
-qh$d2h_wax <- qh$d2H_wax
-qh$age     <- qh$age_yrBP
+sonk_path <- example_record_path("LS14LASO_C29_d2H.csv")
+sonk <- read.csv(sonk_path)
+sonk$d2h_wax <- sonk$d2H_wax
+sonk$age     <- sonk$age_yrBP
 
-c(zaca_n        = nrow(zaca),
-  zaca_range_pm = round(diff(range(zaca$d2h_wax)), 1),
-  qh_n            = nrow(qh),
-  qh_range_pm     = round(diff(range(qh$d2h_wax)), 1))
-#>        zaca_n zaca_range_pm          qh_n   qh_range_pm 
-#>         518.0          77.0         240.0         131.3
+c(sugan_n        = nrow(sugan),
+  sugan_range_pm = round(diff(range(sugan$d2h_wax)), 1),
+  sonk_n         = nrow(sonk),
+  sonk_range_pm  = round(diff(range(sonk$d2h_wax)), 1))
+#>        sugan_n sugan_range_pm         sonk_n  sonk_range_pm 
+#>           78.0           31.0           98.0          107.3
 ```
 
-Zaca Lake sits at 34.78° N, 120.04° W (730 m) on the southern California
-coast; Lake Qinghai at 37.0° N, 100.0° E (3,194 m) on the northeastern
-Tibetan Plateau. The Zaca series covers the last 3 kyr at roughly 6-yr
-resolution; the Qinghai series covers the glacial–Holocene transition at
-roughly 130-yr resolution.
+Lake Sugan sits at 38.8667° N, 93.95° E (2,800 m) in the Qaidam Basin.
+Sonk11D sits at 41.7939° N, 75.1961° E (3,016 m) in the Central Tian
+Shan. In these extracts, Sugan spans -57 to 1657 yr BP, and Sonk11D
+spans -45 to 5989 yr BP.
 
 ## 2. Plot the leaf-wax records
 
@@ -112,8 +112,8 @@ plot_wax <- function(record, title, boundary) {
   abline(v = boundary, lty = 2, col = "red")
 }
 
-plot_wax(zaca, "Zaca Lake (LS14FEZA)", boundary = 1000)
-plot_wax(qh, "Lake Qinghai (LS16THQI01)", boundary = 15000)
+plot_wax(sugan, "Lake Sugan (LS13WASU, C29 n-alkane)", boundary = 800)
+plot_wax(sonk, "Sonk11D (LS14LASO, C29 n-alkane)", boundary = 5000)
 ```
 
 ![](paleo-record-workflow_files/figure-html/plot-wax-1.png)
@@ -159,28 +159,28 @@ run.
 
 ``` r
 
-zaca_lon <- -120.0392; zaca_lat <- 34.7778
-qh_lon     <- 100;     qh_lat     <- 37
+sugan_lon <- 93.95;   sugan_lat <- 38.8667
+sonk_lon  <- 75.1961; sonk_lat  <- 41.7939
 
-slope_zaca <- suppressWarnings(local_effective_slope(
-  longitude = zaca_lon, latitude = zaca_lat,
+slope_sugan <- suppressWarnings(local_effective_slope(
+  longitude = sugan_lon, latitude = sugan_lat,
   model_name = "baseline_sp", n_draws = 100,
   verbose = FALSE
 ))
 
-slope_qh <- suppressWarnings(local_effective_slope(
-  longitude = qh_lon, latitude = qh_lat,
+slope_sonk <- suppressWarnings(local_effective_slope(
+  longitude = sonk_lon, latitude = sonk_lat,
   model_name = "baseline_sp", n_draws = 100,
   verbose = FALSE
 ))
 
 rbind(
-  zaca  = quantile(slope_zaca, c(0.025, 0.5, 0.975)),
-  qinghai = quantile(slope_qh,     c(0.025, 0.5, 0.975))
+  sugan = quantile(slope_sugan, c(0.025, 0.5, 0.975)),
+  sonk  = quantile(slope_sonk,  c(0.025, 0.5, 0.975))
 )
-#>              2.5%       50%     97.5%
-#> zaca    0.4158966 0.5744484 0.7357822
-#> qinghai 0.2665229 0.4161201 0.5569460
+#>            2.5%       50%     97.5%
+#> sugan 0.2453382 0.3878862 0.5338104
+#> sonk  0.3050322 0.4423601 0.5633999
 ```
 
 ## 5. Bayesian inversion with the local slope
@@ -197,28 +197,28 @@ between intervals.
 
 ``` r
 
-recon_zaca <- suppressWarnings(invert_d2H(
-  d2H_wax    = zaca$d2h_wax,
-  d2H_wax_sd = rep(3, nrow(zaca)),
-  longitude  = rep(zaca_lon, nrow(zaca)),
-  latitude   = rep(zaca_lat, nrow(zaca)),
+recon_sugan <- suppressWarnings(invert_d2H(
+  d2H_wax    = sugan$d2h_wax,
+  d2H_wax_sd = rep(3, nrow(sugan)),
+  longitude  = rep(sugan_lon, nrow(sugan)),
+  latitude   = rep(sugan_lat, nrow(sugan)),
   model_name = "baseline_sp",
   n_posterior_draws = 100,
-  slope        = slope_zaca,
-  record_id    = "LS14FEZA",
+  slope        = slope_sugan,
+  record_id    = "LS13WASU",
   return_full  = TRUE,
   verbose      = FALSE
 ))
 
-recon_qh <- suppressWarnings(invert_d2H(
-  d2H_wax    = qh$d2h_wax,
-  d2H_wax_sd = rep(3, nrow(qh)),
-  longitude  = rep(qh_lon, nrow(qh)),
-  latitude   = rep(qh_lat, nrow(qh)),
+recon_sonk <- suppressWarnings(invert_d2H(
+  d2H_wax    = sonk$d2h_wax,
+  d2H_wax_sd = rep(3, nrow(sonk)),
+  longitude  = rep(sonk_lon, nrow(sonk)),
+  latitude   = rep(sonk_lat, nrow(sonk)),
   model_name = "baseline_sp",
   n_posterior_draws = 100,
-  slope        = slope_qh,
-  record_id    = "LS16THQI01",
+  slope        = slope_sonk,
+  record_id    = "LS14LASO",
   return_full  = TRUE,
   verbose      = FALSE
 ))
@@ -246,25 +246,26 @@ they are not substitutes for the lag-1 `rho_t` used in the
 detection-threshold formula. A Lomb-Scargle estimator is planned for
 v0.3 (`method = "lomb_scargle"`).
 
-The Zaca record splits at 1000 yr BP. The Qinghai record splits at
-15,000 yr BP, late LGM to mid-Holocene, the boundary across which many
-Asian-monsoon records show a regional shift in source-water `d2H`.
+The Sugan example contrasts the last eight centuries with the older part
+of the record, a low-amplitude test case. The Sonk11D example contrasts
+adjacent 4-5 ka and 5-6 ka intervals, where the extracted C29 n-alkane
+series has a much larger wax-isotope contrast.
 
 ``` r
 
-rho_zaca <- estimate_temporal_autocorrelation(
-  zaca$d2h_wax, zaca$age, method = "ar1"
+rho_sugan <- estimate_temporal_autocorrelation(
+  sugan$d2h_wax, sugan$age, method = "ar1"
 )
 
-dc_zaca <- detect_change(
-  reconstruction    = recon_zaca,
-  age               = zaca$age,
-  baseline_interval = c(0, 1000),
-  test_intervals    = list(post_1000 = c(1000, 2000)),
+dc_sugan <- detect_change(
+  reconstruction    = recon_sugan,
+  age               = sugan$age,
+  baseline_interval = c(-100, 800),
+  test_intervals    = list(older = c(800, 1700)),
   sigma_residual    = 16,
   sigma_analytical  = 3,
-  rho_t             = rho_zaca,
-  beta_eff          = stats::median(slope_zaca),
+  rho_t             = rho_sugan,
+  beta_eff          = stats::median(slope_sugan),
   confidence        = 0.95,
   magnitudes        = c(10, 30, 50)
 )
@@ -273,19 +274,19 @@ dc_zaca <- detect_change(
 #> this sample size; not suitable for inference. Run
 #> download_model_data("baseline_sp") for the full posterior.
 
-rho_qh <- estimate_temporal_autocorrelation(
-  qh$d2h_wax, qh$age, method = "ar1"
+rho_sonk <- estimate_temporal_autocorrelation(
+  sonk$d2h_wax, sonk$age, method = "ar1"
 )
 
-dc_qh <- detect_change(
-  reconstruction    = recon_qh,
-  age               = qh$age,
-  baseline_interval = c(0, 15000),
-  test_intervals    = list(lgm = c(15000, 25000)),
+dc_sonk <- detect_change(
+  reconstruction    = recon_sonk,
+  age               = sonk$age,
+  baseline_interval = c(4000, 5000),
+  test_intervals    = list(early_holocene = c(5000, 6000)),
   sigma_residual    = 16,
   sigma_analytical  = 3,
-  rho_t             = rho_qh,
-  beta_eff          = stats::median(slope_qh),
+  rho_t             = rho_sonk,
+  beta_eff          = stats::median(slope_sonk),
   confidence        = 0.95,
   magnitudes        = c(10, 30, 50)
 )
@@ -295,54 +296,48 @@ dc_qh <- detect_change(
 #> download_model_data("baseline_sp") for the full posterior.
 
 list(
-  zaca  = list(rho_t = round(rho_zaca, 3),
-                 threshold_permil = round(dc_zaca$threshold, 1),
-                 intervals        = dc_zaca$intervals),
-  qinghai = list(rho_t = round(rho_qh, 3),
-                 threshold_permil = round(dc_qh$threshold, 1),
-                 intervals        = dc_qh$intervals)
+  sugan = list(rho_t = round(rho_sugan, 3),
+               threshold_permil = round(dc_sugan$threshold, 1),
+               intervals        = dc_sugan$intervals),
+  sonk = list(rho_t = round(rho_sonk, 3),
+              threshold_permil = round(dc_sonk$threshold, 1),
+              intervals        = dc_sonk$intervals)
 )
-#> $zaca
-#> $zaca$rho_t
-#> [1] 0.445
+#> $sugan
+#> $sugan$rho_t
+#> [1] 0.203
 #> 
-#> $zaca$threshold_permil
-#> [1] 58.5
+#> $sugan$threshold_permil
+#> [1] 103.8
 #> 
-#> $zaca$intervals
-#>    interval n_baseline n_test delta_mean delta_median delta_lower delta_upper
-#> 1 post_1000        257    127  0.1163509    0.5201522   -5.648273     6.10717
-#>   p_abs_delta_gt_10 p_abs_delta_gt_30 p_abs_delta_gt_50
-#> 1                 0                 0                 0
-#> 
-#> 
-#> $qinghai
-#> $qinghai$rho_t
-#> [1] 0.853
-#> 
-#> $qinghai$threshold_permil
-#> [1] 41.6
-#> 
-#> $qinghai$intervals
+#> $sugan$intervals
 #>   interval n_baseline n_test delta_mean delta_median delta_lower delta_upper
-#> 1      lgm        162     74  -38.50674    -37.18504   -59.10398   -24.23564
+#> 1    older         41     37  -9.301603    -7.864667   -31.47903    8.930941
 #>   p_abs_delta_gt_10 p_abs_delta_gt_30 p_abs_delta_gt_50
-#> 1                 1              0.82              0.13
+#> 1              0.48              0.04              0.01
+#> 
+#> 
+#> $sonk
+#> $sonk$rho_t
+#> [1] 0.716
+#> 
+#> $sonk$threshold_permil
+#> [1] 54.4
+#> 
+#> $sonk$intervals
+#>         interval n_baseline n_test delta_mean delta_median delta_lower
+#> 1 early_holocene         12     15  -137.2436    -137.8394   -200.0781
+#>   delta_upper p_abs_delta_gt_10 p_abs_delta_gt_30 p_abs_delta_gt_50
+#> 1    -94.7102                 1                 1                 1
 ```
 
-The two records produce different verdicts. Zaca: lag-1 autocorrelation
-0.44, 95 percent detection threshold approximately 59 per mil, posterior
-probability of a 30 per mil shift across 1000 yr BP 0.00. Qinghai: lag-1
-autocorrelation 0.85 (densely sampled and strongly persistent),
-threshold approximately 42 per mil, posterior probability of a 30 per
-mil shift across 15,000 yr BP 0.82. The Zaca record cannot distinguish a
-30 per mil change in `d2H_precip` from calibration noise. The Qinghai
-record provides much stronger evidence for a large LGM-to-Holocene
-shift, but the 30 per mil quantitative claim remains below the 95
-percent decision threshold. Two factors drive the contrast: Qinghai’s
-much larger LGM-to-Holocene `d2H_wax` shift, and its high
-autocorrelation, which reduces `sqrt(2(1-rho_t))` and pulls the
-threshold down.
+The two records produce different verdicts. Sugan: lag-1 autocorrelation
+0.2, 95 percent detection threshold approximately 104 per mil, posterior
+probability of a 30 per mil shift 0.04. Sonk11D: lag-1 autocorrelation
+0.72, threshold approximately 54 per mil, posterior probability of a 30
+per mil shift 1.00. The Sugan interval contrast is small relative to
+calibration noise. The Sonk11D interval contrast is large enough that
+the example quantitative claim passes the posterior-probability test.
 
 ## 7. Assess a published claim
 
@@ -382,52 +377,52 @@ build_claim <- function(beta_eff, rho_t, baseline, test, magnitude_precip) {
   )
 }
 
-zaca_record <- data.frame(
-  d2h_wax     = zaca$d2h_wax,
-  age         = zaca$age,
-  d2h_wax_err = rep(3, nrow(zaca))
+sugan_record <- data.frame(
+  d2h_wax     = sugan$d2h_wax,
+  age         = sugan$age,
+  d2h_wax_err = rep(3, nrow(sugan))
 )
-qh_record <- data.frame(
-  d2h_wax     = qh$d2h_wax,
-  age         = qh$age,
-  d2h_wax_err = rep(3, nrow(qh))
+sonk_record <- data.frame(
+  d2h_wax     = sonk$d2h_wax,
+  age         = sonk$age,
+  d2h_wax_err = rep(3, nrow(sonk))
 )
 
-verdict_zaca <- suppressWarnings(assess_claim(
-  record         = zaca_record,
-  claim          = build_claim(stats::median(slope_zaca),
-                                rho_zaca,
-                                c(0, 1000), c(1000, 2000),
+verdict_sugan <- suppressWarnings(assess_claim(
+  record         = sugan_record,
+  claim          = build_claim(stats::median(slope_sugan),
+                                rho_sugan,
+                                c(-100, 800), c(800, 1700),
                                 magnitude_precip = 30),
-  reconstruction = recon_zaca
+  reconstruction = recon_sugan
 ))
 
-verdict_qh <- suppressWarnings(assess_claim(
-  record         = qh_record,
-  claim          = build_claim(stats::median(slope_qh),
-                                rho_qh,
-                                c(0, 15000), c(15000, 25000),
+verdict_sonk <- suppressWarnings(assess_claim(
+  record         = sonk_record,
+  claim          = build_claim(stats::median(slope_sonk),
+                                rho_sonk,
+                                c(4000, 5000), c(5000, 6000),
                                 magnitude_precip = 30),
-  reconstruction = recon_qh
+  reconstruction = recon_sonk
 ))
 
-c(zaca_highest_level   = verdict_zaca$highest_level,
-  zaca_supported_at_4  = verdict_zaca$asserted_supported,
-  qinghai_highest_level  = verdict_qh$highest_level,
-  qinghai_supported_at_4 = verdict_qh$asserted_supported)
-#>     zaca_highest_level    zaca_supported_at_4  qinghai_highest_level 
-#>                      0                      0                      2 
-#> qinghai_supported_at_4 
-#>                      0
+c(sugan_highest_level  = verdict_sugan$highest_level,
+  sugan_supported_at_4 = verdict_sugan$asserted_supported,
+  sonk_highest_level   = verdict_sonk$highest_level,
+  sonk_supported_at_4  = verdict_sonk$asserted_supported)
+#>  sugan_highest_level sugan_supported_at_4   sonk_highest_level 
+#>                    0                    0                    4 
+#>  sonk_supported_at_4 
+#>                    1
 ```
 
 Read each `verdict$levels` data frame top to bottom: every level above
-the highest one passed is reported with the reason it failed. The Zaca
-claim fails at the within-record noise step; the Qinghai claim clears
-Level 2 for the asserted 30 per mil Level 4 claim. It fails Level 3
-because the posterior probability for a 30 per mil `d2H_precip` shift is
-below 0.95, even though the example supplies stationarity evidence for
-the Level 4 controls.
+the highest one passed is reported with the reason it failed. The Sugan
+claim fails at the within-record noise step. The Sonk11D claim clears
+Level 4 in this API demonstration because the interval contrast is large
+and the example supplies stationarity evidence. Those stationarity
+strings are placeholders; a real Level 4 claim requires record-specific
+evidence and citations.
 
 ## 8. Plot the reconstructions
 
@@ -457,12 +452,12 @@ plot_recon <- function(rec, ages, title, boundary) {
   abline(v = boundary, lty = 2, col = "red")
 }
 
-plot_recon(recon_zaca, zaca$age,
-           "Zaca Lake (LS14FEZA): no detection at 95%",
-           boundary = 1000)
-plot_recon(recon_qh, qh$age,
-           "Lake Qinghai (LS16THQI01): large LGM shift",
-           boundary = 15000)
+plot_recon(recon_sugan, sugan$age,
+           "Lake Sugan (LS13WASU): small interval contrast",
+           boundary = 800)
+plot_recon(recon_sonk, sonk$age,
+           "Sonk11D (LS14LASO): large 4-6 ka contrast",
+           boundary = 5000)
 ```
 
 ![](paleo-record-workflow_files/figure-html/plot-1.png)
@@ -488,12 +483,11 @@ slope, and the lag-1 temporal autocorrelation.
 [`detect_change()`](https://bradleylab.github.io/leafwax/reference/detect_change.md)
 packages these into a single threshold and a posterior probability;
 [`assess_claim()`](https://bradleylab.github.io/leafwax/reference/assess_claim.md)
-walks them through the four-level taxonomy. Records like Zaca can fail
-at the initial within-record wax-change screen. Long, densely sampled
-records like Qinghai can clear directional hydroclimate-change claims
-and provide much stronger quantitative evidence, but the example 30 per
-mil Level 4 claim still requires posterior support at the chosen
-confidence level.
+walks them through the four-level taxonomy. Low-amplitude contrasts can
+fail at the initial within-record wax-change screen. Larger contrasts
+can clear directional hydroclimate-change claims and provide stronger
+quantitative evidence, but a Level 4 claim still requires posterior
+support at the chosen confidence level.
 
 ## Notes
 
