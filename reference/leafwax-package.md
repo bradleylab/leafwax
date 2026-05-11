@@ -97,7 +97,7 @@ Useful links:
 
 - <https://github.com/bradleylab/leafwax>
 
-- <https://bradleylab.github.io/leafwax>
+- <https://bradleylab.github.io/leafwax/>
 
 - Report bugs at <https://github.com/bradleylab/leafwax/issues>
 

@@ -91,12 +91,11 @@
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/bradleylab/leafwax" class="external-link">leafwax</a></span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># 1. Per-draw local slope at the site, with the simple-model ceiling</span></span>
+<span><span class="co"># 1. Raw per-draw local slope at the site</span></span>
 <span><span class="va">slope</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/local_effective_slope.html">local_effective_slope</a></span><span class="op">(</span></span>
 <span>  longitude  <span class="op">=</span> <span class="op">-</span><span class="fl">90</span>,</span>
 <span>  latitude   <span class="op">=</span> <span class="fl">38</span>,</span>
-<span>  model_name <span class="op">=</span> <span class="st">"baseline_sp"</span>,</span>
-<span>  ceiling    <span class="op">=</span> <span class="fl">0.88</span></span>
+<span>  model_name <span class="op">=</span> <span class="st">"baseline_sp"</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># 2. Inversion with the defended slope</span></span>
@@ -270,10 +269,6 @@
 </h2>
 <p>The paleo workflow maps directly to the manuscript:</p>
 <table class="table">
-<colgroup>
-<col width="66%">
-<col width="33%">
-</colgroup>
 <thead><tr>
 <th>Manuscript section</th>
 <th>Function</th>
@@ -284,8 +279,8 @@
 <td><code><a href="reference/detect_change.html">detect_change()</a></code></td>
 </tr>
 <tr>
-<td>4.5.5 local slope ceiling</td>
-<td><code>local_effective_slope(..., ceiling = 0.88)</code></td>
+<td>4.5.5 local slope posterior</td>
+<td><code><a href="reference/local_effective_slope.html">local_effective_slope()</a></code></td>
 </tr>
 <tr>
 <td>4.5.6 four-level claim taxonomy</td>

@@ -75,12 +75,11 @@ the manuscript Section 4.5.3 for the derivation.
 
 library(leafwax)
 
-# 1. Per-draw local slope at the site, with the simple-model ceiling
+# 1. Raw per-draw local slope at the site
 slope <- local_effective_slope(
   longitude  = -90,
   latitude   = 38,
-  model_name = "baseline_sp",
-  ceiling    = 0.88
+  model_name = "baseline_sp"
 )
 
 # 2. Inversion with the defended slope
@@ -162,7 +161,7 @@ The paleo workflow maps directly to the manuscript:
 | Manuscript section | Function |
 |----|----|
 | 4.5.3 detection threshold formula | [`detect_change()`](https://bradleylab.github.io/leafwax/reference/detect_change.md) |
-| 4.5.5 local slope ceiling | `local_effective_slope(..., ceiling = 0.88)` |
+| 4.5.5 local slope posterior | [`local_effective_slope()`](https://bradleylab.github.io/leafwax/reference/local_effective_slope.md) |
 | 4.5.6 four-level claim taxonomy | [`assess_claim()`](https://bradleylab.github.io/leafwax/reference/assess_claim.md) |
 | Section S4 inversion machinery | [`invert_d2H()`](https://bradleylab.github.io/leafwax/reference/invert_d2h.md) |
 
