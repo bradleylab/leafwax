@@ -108,15 +108,18 @@ Before estimating a precipitation-isotope signal, inspect the measured
 `d2H_wax` series and the interval boundaries used below.
 
 ```{r plot-wax, fig.height = 6, echo = TRUE}
-op <- par(mfrow = c(2, 1), mar = c(4, 4, 2, 1))
+op <- par(mfrow = c(2, 1), mar = c(4.5, 5.4, 2.2, 1), mgp = c(3.4, 0.8, 0))
 
-plot_wax <- function(record, title, boundary) {
+wax_ylim <- extendrange(c(sugan$d2h_wax, sonk$d2h_wax), f = 0.05)
+
+plot_wax <- function(record, title, boundary, ylim) {
   ord <- order(record$age)
   plot(
     record$age[ord],
     record$d2h_wax[ord],
     type = "o", pch = 16, col = "black",
     xlim = rev(range(record$age)),
+    ylim = ylim,
     xlab = "Age (yr BP)",
     ylab = expression(delta^2 * H[wax] ~ "(‰)"),
     main = title
@@ -124,8 +127,10 @@ plot_wax <- function(record, title, boundary) {
   abline(v = boundary, lty = 2, col = "red")
 }
 
-plot_wax(sugan, "Lake Sugan (LS13WASU, C29 n-alkane)", boundary = 800)
-plot_wax(sonk, "Sonk11D (LS14LASO, C29 n-alkane)", boundary = 5000)
+plot_wax(sugan, "Lake Sugan (LS13WASU, C29 n-alkane)",
+         boundary = 800, ylim = wax_ylim)
+plot_wax(sonk, "Sonk11D (LS14LASO, C29 n-alkane)",
+         boundary = 5000, ylim = wax_ylim)
 
 par(op)
 ```
@@ -386,17 +391,24 @@ requires record-specific evidence and citations.
 ## 8. Plot the reconstructions
 
 ```{r plot, fig.height = 6, echo = TRUE}
-op <- par(mfrow = c(2, 1), mar = c(4, 4, 2, 1))
+op <- par(mfrow = c(2, 1), mar = c(4.5, 5.4, 2.2, 1), mgp = c(3.4, 0.8, 0))
 
-plot_recon <- function(rec, ages, title, boundary) {
+precip_ylim <- extendrange(
+  c(recon_sugan$summary$d2h_precip_lower,
+    recon_sugan$summary$d2h_precip_upper,
+    recon_sonk$summary$d2h_precip_lower,
+    recon_sonk$summary$d2h_precip_upper),
+  f = 0.05
+)
+
+plot_recon <- function(rec, ages, title, boundary, ylim) {
   ord <- order(ages)
   plot(
     ages[ord],
     rec$summary$d2h_precip_median[ord],
-    type = "o", pch = 16, col = "black",
+    type = "n",
     xlim = rev(range(ages)),
-    ylim = range(c(rec$summary$d2h_precip_lower,
-                   rec$summary$d2h_precip_upper)),
+    ylim = ylim,
     xlab = "Age (yr BP)",
     ylab = expression(delta^2 * H[precipitation] ~ "(‰)"),
     main = title
@@ -407,15 +419,17 @@ plot_recon <- function(rec, ages, title, boundary) {
       rev(rec$summary$d2h_precip_upper[ord])),
     border = NA, col = adjustcolor("steelblue", alpha.f = 0.3)
   )
+  lines(ages[ord], rec$summary$d2h_precip_median[ord],
+        type = "o", pch = 16, col = "black")
   abline(v = boundary, lty = 2, col = "red")
 }
 
 plot_recon(recon_sugan, sugan$age,
            "Lake Sugan (LS13WASU): small interval contrast",
-           boundary = 800)
+           boundary = 800, ylim = precip_ylim)
 plot_recon(recon_sonk, sonk$age,
            "Sonk11D (LS14LASO): large 4-6 ka contrast",
-           boundary = 5000)
+           boundary = 5000, ylim = precip_ylim)
 
 par(op)
 ```
