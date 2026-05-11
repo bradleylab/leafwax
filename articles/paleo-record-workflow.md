@@ -7,33 +7,36 @@ whether the difference in `d2H_precip` between two stratigraphic
 intervals can be distinguished from calibration-plus-analytical noise,
 and at what confidence level.
 
-The vignette runs the chain on two Iso2k records with different
-inferential ceilings. Zaca Lake (LS14FEZA, Heusser et al.) has 518
-samples spanning the last 3 kyr in coastal southern California and an
-in-record `d2H_wax` range of approximately 77 per mil distributed
-without a coherent secular trend — a record where no plausible 30 per
-mil shift in `d2H_precip` can be distinguished from within-record noise
-across any reasonable interval split. Lake Qinghai (LS16THQI01, Thomas
-et al.) has 240 samples spanning 31 kyr of the glacial-to-Holocene
-transition on the northeastern Tibetan Plateau. Its large
-LGM-to-Holocene shift and strong sample-to-sample autocorrelation
-support a directional hydroclimate-change claim, but the example 30 per
-mil quantitative `d2H_precip` claim still does not clear the 95 percent
-Level 3 threshold.
+The vignette runs the chain on two Iso2k records with different signal
+sizes and sampling structures. The package ships small CSV extracts for
+the examples, and the source records remain available from LiPDverse and
+NOAA/WDS Paleoclimatology:
 
-The detection threshold from manuscript Section 4.5.3 is
+| Package file | Iso2k record | Source study | Data archive |
+|----|----|----|----|
+| `LS14FEZA_d2H.csv` | [LS14FEZA](https://lipdverse.org/iso2k/1_0_0/LS14FEZA.html), [LiPD](https://lipdverse.org/iso2k/1_0_0/LS14FEZA.lpd) | Feakins et al. (2014), [doi:10.1016/j.orggeochem.2013.10.015](https://doi.org/10.1016/j.orggeochem.2013.10.015) | NOAA/WDS, [doi:10.25921/13bn-nd37](https://doi.org/10.25921/13bn-nd37) |
+| `LS16THQI01_d2H.csv` | [LS16THQI01](https://lipdverse.org/iso2k/1_0_0/LS16THQI01.html), [LiPD](https://lipdverse.org/iso2k/1_0_0/LS16THQI01.lpd) | Thomas et al. (2016), [doi:10.1016/j.quascirev.2015.11.003](https://doi.org/10.1016/j.quascirev.2015.11.003) | NOAA/WDS, [doi:10.25921/mnzv-kp03](https://doi.org/10.25921/mnzv-kp03) |
+
+The Iso2k compilation is archived at
+[doi:10.25921/57j8-vs18](https://doi.org/10.25921/57j8-vs18).
+
+The per-sample detection threshold used by
+[`detect_change()`](https://bradleylab.github.io/leafwax/reference/detect_change.md)
+is
 
 ``` math
 \mathrm{threshold}_{\mathrm{precip}}
 = \frac{1.96 \sqrt{2(1 - \rho_t)}\, \sqrt{\sigma_{\mathrm{residual}}^2 + \sigma_{\mathrm{analytical}}^2}}{\beta_{\mathrm{eff}}}
 ```
 
-— the smallest `d2H_precip` change between two independent samples at
-this site that can be distinguished from within-record noise at 95
-percent confidence. `sigma_residual` (~16 per mil for the spatial
-models) is the calibration’s posterior residual SD; the spatial GP
-intercept contributes equally to every sample in the record and cancels
-in any contrast between intervals.
+where `rho_t` is the lag-1 temporal autocorrelation, `sigma_residual` is
+the calibration residual SD on the wax scale, `sigma_analytical` is the
+analytical uncertainty on the wax measurements, and `beta_eff` is the
+local effective slope. This is the smallest `d2H_precip` change between
+two independent samples at this site that can be distinguished from
+within-record noise at 95 percent confidence. The spatial GP intercept
+contributes equally to every sample in the record and cancels in any
+contrast between intervals.
 
 ## 1. Load both records
 
@@ -41,27 +44,33 @@ in any contrast between intervals.
 
 library(leafwax)
 
-record_path <- function(filename) {
-  path <- system.file(
+example_record_path <- function(filename) {
+  installed_path <- system.file(
     "extdata", "example_records", filename,
     package = "leafwax"
   )
-  if (nzchar(path)) return(path)
+  if (nzchar(installed_path)) {
+    return(installed_path)
+  }
 
-  local_path <- file.path(
-    "..", "inst", "extdata", "example_records", filename
+  source_paths <- file.path(
+    c("inst", file.path("..", "inst")),
+    "extdata", "example_records", filename
   )
-  if (file.exists(local_path)) return(local_path)
+  source_path <- source_paths[file.exists(source_paths)][1]
+  if (!is.na(source_path)) {
+    return(source_path)
+  }
 
-  stop("Could not locate example record: ", filename)
+  stop("Could not locate example record: ", filename, call. = FALSE)
 }
 
-zaca_path <- record_path("LS14FEZA_d2H.csv")
+zaca_path <- example_record_path("LS14FEZA_d2H.csv")
 zaca <- read.csv(zaca_path)
 zaca$d2h_wax <- zaca$d2H_wax
 zaca$age     <- zaca$age_yrBP
 
-qh_path <- record_path("LS16THQI01_d2H.csv")
+qh_path <- example_record_path("LS16THQI01_d2H.csv")
 qh <- read.csv(qh_path)
 qh$d2h_wax <- qh$d2H_wax
 qh$age     <- qh$age_yrBP
@@ -80,17 +89,73 @@ Tibetan Plateau. The Zaca series covers the last 3 kyr at roughly 6-yr
 resolution; the Qinghai series covers the glacial–Holocene transition at
 roughly 130-yr resolution.
 
-## 2. Local effective slope
+## 2. Plot the leaf-wax records
+
+Before estimating a precipitation-isotope signal, inspect the measured
+`d2H_wax` series and the interval boundaries used below.
+
+``` r
+
+op <- par(mfrow = c(2, 1), mar = c(4, 4, 2, 1))
+
+plot_wax <- function(record, title, boundary) {
+  ord <- order(record$age)
+  plot(
+    record$age[ord],
+    record$d2h_wax[ord],
+    type = "o", pch = 16, col = "black",
+    xlim = rev(range(record$age)),
+    xlab = "Age (yr BP)",
+    ylab = expression(delta^2 * H[wax] ~ "(‰)"),
+    main = title
+  )
+  abline(v = boundary, lty = 2, col = "red")
+}
+
+plot_wax(zaca, "Zaca Lake (LS14FEZA)", boundary = 1000)
+plot_wax(qh, "Lake Qinghai (LS16THQI01)", boundary = 15000)
+```
+
+![](paleo-record-workflow_files/figure-html/plot-wax-1.png)
+
+``` r
+
+
+par(op)
+```
+
+The dashed red lines mark the same interval boundaries used in the
+change-detection and claim-assessment examples.
+
+## 3. Claim levels used by `assess_claim()`
+
+[`assess_claim()`](https://bradleylab.github.io/leafwax/reference/assess_claim.md)
+reports the highest claim level supported by the record and the supplied
+evidence. A level only passes if every lower level has also passed.
+
+| Level | Claim being made | What must be supplied or demonstrated |
+|----|----|----|
+| 1 | A leaf-wax `d2H` change occurred between two intervals. | The interval-mean wax contrast exceeds analytical uncertainty at the chosen confidence level, after the requested `rho_t` adjustment. |
+| 2 | The wax change is consistent with a directional hydroclimate change. | Level 1 passes and `corroborating_proxies` contains named, non-empty evidence. |
+| 3 | The wax change supports a quantitative `d2H_precip` magnitude. | Level 2 passes, a defended `beta_eff` is supplied, the full inversion posterior is available, and the posterior probability of exceeding `magnitude_precip` meets the requested confidence level. |
+| 4 | The quantitative magnitude is uniquely attributable to precipitation isotopes. | Level 3 passes and independent evidence supports stationary vegetation, source-water seasonality, and evapotranspirative enrichment over the interval. |
+
+The functions enforce the structure of the evidence fields. They do not
+decide whether a proxy interpretation or stationarity argument is
+scientifically adequate; that still requires record-specific evidence
+and citations.
+
+## 4. Local effective slope
 
 [`local_effective_slope()`](https://bradleylab.github.io/leafwax/reference/local_effective_slope.md)
-returns the raw per-draw vector of the `d2H_wax`–`d2H_precip` slope at
-the site, combining the global posterior `beta_oipc` with the spatial
-slope GP. The function does not clip or filter the draws; it propagates
-the calibration’s posterior unchanged. A point-estimate workflow can
-pass the posterior median, and the simple two-pool stationarity bound (α
-≈ 0.88; manuscript Section 4.5.5) can be checked against the returned
-vector via `mean(slope > 0.88)` for a site-level read on how often the
-calibration implicates non-stationarity.
+returns posterior draws for the site-specific `d2H_wax`-`d2H_precip`
+slope, combining the global posterior `beta_oipc` with the spatial slope
+GP. The function does not apply a ceiling or otherwise filter the draws.
+Passing the full vector to
+[`invert_d2H()`](https://bradleylab.github.io/leafwax/reference/invert_d2h.md)
+propagates slope uncertainty through the reconstruction; passing a
+scalar, such as the posterior median, gives a point-slope sensitivity
+run.
 
 ``` r
 
@@ -118,17 +183,17 @@ rbind(
 #> qinghai 0.2665229 0.4161201 0.5569460
 ```
 
-## 3. Bayesian inversion with the local slope
+## 5. Bayesian inversion with the local slope
 
 [`invert_d2H()`](https://bradleylab.github.io/leafwax/reference/invert_d2h.md)
-accepts the slope vector from §2. The `record_id` argument enforces that
-all rows belong to one site; `return_full = TRUE` keeps the posterior
-draws matrix needed by
+accepts the slope vector from the previous section. The `record_id`
+argument enforces that all rows belong to one site; `return_full = TRUE`
+keeps the posterior draws matrix needed by
 [`detect_change()`](https://bradleylab.github.io/leafwax/reference/detect_change.md).
 Wax-error sampling uses analytical uncertainty plus the model’s
-posterior residual SD (supplement S4.1, Eq. 7); the same residual
-applies to within-record contrasts because the spatial GP intercept
-cancels in any difference between intervals (Section 4.5.3).
+posterior residual SD; the same residual applies to within-record
+contrasts because the spatial GP intercept cancels in any difference
+between intervals.
 
 ``` r
 
@@ -159,27 +224,30 @@ recon_qh <- suppressWarnings(invert_d2H(
 ))
 ```
 
-## 4. Detection threshold and posterior probability of change
+## 6. Detection threshold and posterior probability of change
 
 [`detect_change()`](https://bradleylab.github.io/leafwax/reference/detect_change.md)
-returns the Section 4.5.3 detection threshold and the posterior
-probability that the difference in mean `d2H_precip` between two
-intervals exceeds a target magnitude. The threshold uses the
-calibration’s posterior residual SD (`sigma_residual` ~16 per mil for
-spatial models; pull it from `model$draws$sigma` in your fit, or use the
-manuscript headline value).
+returns the per-sample detection threshold and the posterior probability
+that the difference in mean `d2H_precip` between two intervals exceeds a
+target magnitude. The example below passes `sigma_residual = 16`, the
+residual scale used for the package’s spatial-model examples; for a full
+analysis, use the residual SD from the fitted calibration being
+propagated.
 
 [`estimate_temporal_autocorrelation()`](https://bradleylab.github.io/leafwax/reference/estimate_temporal_autocorrelation.md)
 returns the lag-1 correlation of age-ordered residuals after a flat-mean
-detrend. This is a deliberately simple AR(1) estimator — accurate on
-regularly sampled records, approximate on irregular ones. For irregular
-paleo series, the standard tools are `astrochron` (REDFIT and tau-bias
-correction; Meyers and colleagues) or Mudelsee’s `pearsonT3`, which is
-bias-corrected for unevenly spaced data. A Lomb-Scargle estimator is
-planned for v0.3 (`method = "lomb_scargle"`).
+detrend. This is a deliberately simple AR(1) estimator: transparent for
+near-regular records and an approximation for irregular records. For
+irregular paleo series, treat `rho_t` as a sensitivity parameter or
+replace it with a method designed for uneven sampling. Change-point
+tools such as `bcp` and `Rbeast` answer a different question: they can
+help test whether a boundary or trend is independently supported, but
+they are not substitutes for the lag-1 `rho_t` used in the
+detection-threshold formula. A Lomb-Scargle estimator is planned for
+v0.3 (`method = "lomb_scargle"`).
 
 The Zaca record splits at 1000 yr BP. The Qinghai record splits at
-15,000 yr BP — late LGM to mid-Holocene, the boundary across which many
+15,000 yr BP, late LGM to mid-Holocene, the boundary across which many
 Asian-monsoon records show a regional shift in source-water `d2H`.
 
 ``` r
@@ -276,14 +344,13 @@ much larger LGM-to-Holocene `d2H_wax` shift, and its high
 autocorrelation, which reduces `sqrt(2(1-rho_t))` and pulls the
 threshold down.
 
-## 5. Assess a published claim
+## 7. Assess a published claim
 
-[`assess_claim()`](https://bradleylab.github.io/leafwax/reference/assess_claim.md)
-walks the four-level taxonomy from manuscript Section 4.5.6: Level 1
-reports the wax-only signal, Level 2 adds the calibration’s detection
-threshold, Level 3 converts to a magnitude in `d2H_precip`, Level 4
-layers in proxy stationarity and corroborating evidence. A claim is
-supported at the highest level where every prerequisite passes.
+The example below asks whether each record can support an asserted Level
+4 claim of a 30 per mil `d2H_precip` change. The strings supplied as
+corroborating and stationarity evidence demonstrate the required API
+structure; they are not a substitute for a record-specific literature
+review.
 
 ``` r
 
@@ -354,7 +421,7 @@ c(zaca_highest_level   = verdict_zaca$highest_level,
 #>                      0
 ```
 
-Read each `verdict$levels` data frame top to bottom — every level above
+Read each `verdict$levels` data frame top to bottom: every level above
 the highest one passed is reported with the reason it failed. The Zaca
 claim fails at the within-record noise step; the Qinghai claim clears
 Level 2 for the asserted 30 per mil Level 4 claim. It fails Level 3
@@ -362,7 +429,7 @@ because the posterior probability for a 30 per mil `d2H_precip` shift is
 below 0.95, even though the example supplies stationarity evidence for
 the Level 4 controls.
 
-## 6. Plot the reconstructions
+## 8. Plot the reconstructions
 
 ``` r
 
@@ -409,19 +476,20 @@ par(op)
 Each shaded band is the 90 percent credible interval per sample,
 propagating analytical uncertainty, regression-parameter uncertainty,
 the local slope posterior, and the calibration’s posterior residual SD.
-The dashed red line marks the interval boundary used in §4 and §5.
+The dashed red line marks the interval boundary used in the
+change-detection and claim-assessment examples.
 
 ## Takeaway
 
 A record’s ability to support a `d2H_precip`-change claim depends on
-three quantities computable from the record alone: its within-record
-`d2H_wax` interval-mean contrast relative to `sigma_residual`, the local
-effective slope, and the lag-1 temporal autocorrelation.
+three quantities evaluated for that record: its within-record `d2H_wax`
+interval-mean contrast relative to `sigma_residual`, the local effective
+slope, and the lag-1 temporal autocorrelation.
 [`detect_change()`](https://bradleylab.github.io/leafwax/reference/detect_change.md)
 packages these into a single threshold and a posterior probability;
 [`assess_claim()`](https://bradleylab.github.io/leafwax/reference/assess_claim.md)
-walks them through the four-level taxonomy. Records like Zaca do not
-clear Level 2 for plausible 30 per mil claims. Long, densely sampled
+walks them through the four-level taxonomy. Records like Zaca can fail
+at the initial within-record wax-change screen. Long, densely sampled
 records like Qinghai can clear directional hydroclimate-change claims
 and provide much stronger quantitative evidence, but the example 30 per
 mil Level 4 claim still requires posterior support at the chosen
@@ -432,8 +500,10 @@ confidence level.
 - The vignette uses 100 posterior draws for speed. Production
   reconstructions should use the full posterior (omit `n_draws` and
   `n_posterior_draws`).
-- For irregular paleo series, replace the built-in
+- The built-in
   [`estimate_temporal_autocorrelation()`](https://bradleylab.github.io/leafwax/reference/estimate_temporal_autocorrelation.md)
-  with `astrochron::redfit` or the bias-corrected `pearsonT3` from
-  Mudelsee (2002). The leafwax built-in is a flat-mean lag-1 estimator
-  and assumes near-regular spacing.
+  is a flat-mean lag-1 estimator and assumes near-regular spacing. For
+  irregular paleo series, use sensitivity analyses or a dedicated
+  uneven-sampling autocorrelation method for `rho_t`. Use `bcp` or
+  `Rbeast` for complementary change-point or trend checks, not as direct
+  `rho_t` estimators.
