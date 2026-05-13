@@ -1,0 +1,43 @@
+cff-version: 1.2.0
+message: "If you use this package, please cite both this software and the related manuscript."
+type: software
+title: "leafwax: spatially-aware paleo-precipitation reconstruction from leaf-wax hydrogen isotopes"
+authors:
+  - family-names: Bradley
+    given-names: Alex
+    orcid: "https://orcid.org/0000-0002-4044-2802"
+    affiliation: "Department of Earth, Environmental, and Planetary Sciences, Washington University in St. Louis"
+    email: abradley@wustl.edu
+abstract: >-
+  R package for reconstructing precipitation hydrogen isotope ratios
+  from sedimentary leaf-wax n-C29 alkane measurements using the
+  spatially-aware hierarchical Bayesian calibration of Bradley (2026).
+  Inverts the forward calibration with full uncertainty propagation,
+  combining analytical error, residual variance, slope posterior, and
+  the spatial Gaussian process intercept. Supports per-record change
+  detection with autocorrelation-adjusted thresholds and a four-level
+  claim taxonomy from measurement-level changes through uniquely-
+  attributable precipitation-isotope claims.
+keywords:
+  - leaf wax
+  - hydrogen isotopes
+  - paleoclimate
+  - Bayesian inversion
+  - R package
+  - precipitation reconstruction
+  - change detection
+  - uncertainty propagation
+license: MIT
+version: "0.2.3"
+date-released: "2026-05-13"
+repository-code: "https://github.com/bradleylab/leafwax"
+references:
+  - type: unpublished
+    title: >-
+      Spatial modeling improves the calibration of leaf wax hydrogen
+      isotopes to precipitation
+    authors:
+      - family-names: Bradley
+        given-names: Alex
+        orcid: "https://orcid.org/0000-0002-4044-2802"
+    year: 2026
