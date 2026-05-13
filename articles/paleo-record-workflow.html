@@ -270,6 +270,12 @@ returns the model draws directly; it does not cap or filter them.
 Passing the full vector to <code><a href="../reference/invert_d2h.html">invert_d2H()</a></code> carries slope
 uncertainty into the reconstruction. Passing one number, such as the
 posterior median, gives a point-slope sensitivity run.</p>
+<p>The examples below use <code>baseline_sp</code> (spatial intercepts +
+slope GP, no environmental predictors) for simplicity.
+<code>baseline_env_sp</code> is the companion variant whose detection
+thresholds appear in Figure 5 of the accompanying manuscript (Bradley
+2026); switching <code>model_name</code> is the only change needed to
+use it.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">sugan_lon</span> <span class="op">&lt;-</span> <span class="fl">93.95</span>;   <span class="va">sugan_lat</span> <span class="op">&lt;-</span> <span class="fl">38.8667</span></span>
 <span><span class="va">sonk_lon</span>  <span class="op">&lt;-</span> <span class="fl">75.1961</span>; <span class="va">sonk_lat</span>  <span class="op">&lt;-</span> <span class="fl">41.7939</span></span>

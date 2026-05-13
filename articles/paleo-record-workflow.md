@@ -159,6 +159,12 @@ them. Passing the full vector to
 carries slope uncertainty into the reconstruction. Passing one number,
 such as the posterior median, gives a point-slope sensitivity run.
 
+The examples below use `baseline_sp` (spatial intercepts + slope GP, no
+environmental predictors) for simplicity. `baseline_env_sp` is the
+companion variant whose detection thresholds appear in Figure 5 of the
+accompanying manuscript (Bradley 2026); switching `model_name` is the
+only change needed to use it.
+
 ``` r
 
 sugan_lon <- 93.95;   sugan_lat <- 38.8667
