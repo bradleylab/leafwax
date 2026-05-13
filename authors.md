@@ -8,7 +8,7 @@
 ## Citation
 
 Source:
-[`DESCRIPTION`](https://github.com/bradleylab/leafwax/blob/master/DESCRIPTION)
+[`DESCRIPTION`](https://github.com/bradleylab/leafwax/blob/v0.2.3/DESCRIPTION)
 
 Bradley A (2026). *leafwax: Bayesian Inversion of Leaf Wax Hydrogen
 Isotopes to Precipitation*. R package version 0.2.2,
