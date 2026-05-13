@@ -167,15 +167,30 @@ The paleo workflow maps directly to the manuscript:
 
 ## Citation
 
+Cite both the software archive and the related manuscript:
+
 ``` bibtex
-@article{bradley_leafwax_2026,
+@software{bradley_leafwax_pkg_2026,
   author  = {Bradley, Alexander S.},
-  title   = {Spatial modeling improves the calibration of leaf wax
-             hydrogen isotopes to precipitation},
-  journal = {Geochimica et Cosmochimica Acta},
-  year    = {2026}
+  title   = {leafwax: spatially-aware paleo-precipitation reconstruction
+             from leaf-wax hydrogen isotopes},
+  year    = {2026},
+  doi     = {10.5281/zenodo.20172570},
+  url     = {https://doi.org/10.5281/zenodo.20172570}
+}
+
+@unpublished{bradley_leafwax_paper_2026,
+  author = {Bradley, Alexander S.},
+  title  = {Spatial modeling improves the calibration of leaf wax
+            hydrogen isotopes to precipitation},
+  year   = {2026},
+  note   = {Manuscript in preparation}
 }
 ```
+
+The `@software` DOI is the concept DOI — it always resolves to the
+latest version. To cite a specific release, replace it with that
+release’s version DOI from the Zenodo deposit page.
 
 ## Help
 

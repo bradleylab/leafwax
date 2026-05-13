@@ -1,5 +1,26 @@
 # Changelog
 
+## leafwax 0.2.4
+
+### Documentation
+
+- Add Zenodo concept DOI (`10.5281/zenodo.20172570`) to `CITATION.cff`
+  and surface it as a badge in the README. The package can now be cited
+  as software in addition to the related manuscript.
+- Citation block in the README provides two BibTeX entries: a
+  `@software` entry for the Zenodo archive and an `@unpublished` entry
+  for the manuscript (the manuscript is in preparation).
+
+## leafwax 0.2.3
+
+### Documentation
+
+- Add `CITATION.cff` describing the package as software for the CFF
+  tooling ecosystem and GitHub’s “Cite this repository” button.
+- Paleo vignette: note that `baseline_sp` is used in the worked example
+  for simplicity and that `baseline_env_sp` is the companion variant for
+  matching detection-threshold figures elsewhere.
+
 ## leafwax 0.2.2
 
 ### Bug fixes (runtime correctness)
