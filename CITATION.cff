@@ -28,7 +28,7 @@ keywords:
   - change detection
   - uncertainty propagation
 license: MIT
-version: "0.2.4"
+version: "0.2.5"
 date-released: "2026-05-13"
 repository-code: "https://github.com/bradleylab/leafwax"
 url: "https://doi.org/10.5281/zenodo.20172570"

@@ -71,15 +71,19 @@ test_that("assess_claim: large wax shift clears L1 but no corroboration → L1 m
   expect_equal(out$highest_level, 1L)
 })
 
-test_that("assess_claim: corroborating proxies promote L1 → L2", {
+test_that("assess_claim: corroborating proxies + integrity gates promote L1 → L2", {
   rec <- .make_record(delta_wax = 50)
   claim <- list(
-    level                 = 4,
-    interval_baseline     = c(0, 5000),
-    interval_test         = c(5000, 10000),
-    sigma_analytical      = 3,
-    rho_t                 = 0,
-    confidence            = 0.95,
+    level                           = 4,
+    interval_baseline               = c(0, 5000),
+    interval_test                   = c(5000, 10000),
+    sigma_analytical                = 3,
+    rho_t                           = 0,
+    confidence                      = 0.95,
+    sediment_source_ruled_out       = list(value = TRUE,
+                                           evidence = "grain size + mineralogy stable across interval"),
+    depositional_artifact_ruled_out = list(value = TRUE,
+                                           evidence = "continuous varved sequence; no erosional unconformity"),
     corroborating_proxies = list(
       speleothem_d18O    = "matching dry shift in nearby cave",
       Br_Br_indicator_xrf = "marine vs terrestrial source consistent"
@@ -96,15 +100,19 @@ test_that("assess_claim: defended slope + magnitude reaches L3 when posterior ag
   rec <- .make_record(delta_wax = 80)
   rec_recon <- .make_reconstruction(rec, delta_precip = -50, sd_per_sample = 5)
   claim <- list(
-    level                 = 4,
-    interval_baseline     = c(0, 5000),
-    interval_test         = c(5000, 10000),
-    sigma_analytical      = 3,
-    rho_t                 = 0,
-    confidence            = 0.95,
-    beta_eff              = 0.55,
-    magnitude_precip      = 30,
-    corroborating_proxies = list(speleothem = "concordant dry shift")
+    level                           = 4,
+    interval_baseline               = c(0, 5000),
+    interval_test                   = c(5000, 10000),
+    sigma_analytical                = 3,
+    rho_t                           = 0,
+    confidence                      = 0.95,
+    beta_eff                        = 0.55,
+    magnitude_precip                = 30,
+    sediment_source_ruled_out       = list(value = TRUE,
+                                           evidence = "grain size + mineralogy stable"),
+    depositional_artifact_ruled_out = list(value = TRUE,
+                                           evidence = "continuous varved sequence"),
+    corroborating_proxies           = list(speleothem = "concordant dry shift")
   )
   out <- assess_claim(record = rec, claim = claim,
                       reconstruction = rec_recon)
@@ -120,14 +128,18 @@ test_that("assess_claim: full stationarity evidence reaches L4", {
   rec <- .make_record(delta_wax = 80)
   rec_recon <- .make_reconstruction(rec, delta_precip = -50, sd_per_sample = 5)
   claim <- list(
-    level                 = 4,
-    interval_baseline     = c(0, 5000),
-    interval_test         = c(5000, 10000),
-    sigma_analytical      = 3,
-    rho_t                 = 0,
-    confidence            = 0.95,
-    beta_eff              = 0.55,
-    magnitude_precip      = 30,
+    level                           = 4,
+    interval_baseline               = c(0, 5000),
+    interval_test                   = c(5000, 10000),
+    sigma_analytical                = 3,
+    rho_t                           = 0,
+    confidence                      = 0.95,
+    beta_eff                        = 0.55,
+    magnitude_precip                = 30,
+    sediment_source_ruled_out       = list(value = TRUE,
+                                           evidence = "grain size + mineralogy stable"),
+    depositional_artifact_ruled_out = list(value = TRUE,
+                                           evidence = "continuous varved sequence"),
     corroborating_proxies = list(speleothem = "concordant"),
     vegetation_stationary = list(value = TRUE,
                                  evidence = "biomarker chain length distributions stable across the interval"),
@@ -147,13 +159,17 @@ test_that("assess_claim: missing L3 magnitude blocks promotion", {
   rec <- .make_record(delta_wax = 80)
   rec_recon <- .make_reconstruction(rec, delta_precip = -50)
   claim <- list(
-    level                 = 3,
-    interval_baseline     = c(0, 5000),
-    interval_test         = c(5000, 10000),
-    sigma_analytical      = 3,
-    confidence            = 0.95,
-    beta_eff              = 0.55,
+    level                           = 3,
+    interval_baseline               = c(0, 5000),
+    interval_test                   = c(5000, 10000),
+    sigma_analytical                = 3,
+    confidence                      = 0.95,
+    beta_eff                        = 0.55,
     # magnitude_precip intentionally omitted
+    sediment_source_ruled_out       = list(value = TRUE,
+                                           evidence = "stable"),
+    depositional_artifact_ruled_out = list(value = TRUE,
+                                           evidence = "continuous"),
     corroborating_proxies = list(speleothem = "concordant")
   )
   out <- assess_claim(record = rec, claim = claim,
@@ -183,12 +199,16 @@ test_that("assess_claim: rejects bad inputs", {
 test_that("assess_claim: empty / NA corroborating_proxies values do not pass L2", {
   rec <- .make_record(delta_wax = 50)
   base_claim <- list(
-    level             = 4,
-    interval_baseline = c(0, 5000),
-    interval_test     = c(5000, 10000),
-    sigma_analytical  = 3,
-    rho_t             = 0,
-    confidence        = 0.95
+    level                           = 4,
+    interval_baseline               = c(0, 5000),
+    interval_test                   = c(5000, 10000),
+    sigma_analytical                = 3,
+    rho_t                           = 0,
+    confidence                      = 0.95,
+    sediment_source_ruled_out       = list(value = TRUE,
+                                           evidence = "stable"),
+    depositional_artifact_ruled_out = list(value = TRUE,
+                                           evidence = "continuous")
   )
   # Empty string is not evidence.
   out_blank <- assess_claim(record = rec,
@@ -209,17 +229,21 @@ test_that("assess_claim: NA stationarity evidence does not pass L4", {
   rec <- .make_record(delta_wax = 80)
   rec_recon <- .make_reconstruction(rec, delta_precip = -50)
   claim <- list(
-    level                         = 4,
-    interval_baseline             = c(0, 5000),
-    interval_test                 = c(5000, 10000),
-    sigma_analytical              = 3,
-    rho_t                         = 0,
-    confidence                    = 0.95,
-    beta_eff                      = 0.55,
-    magnitude_precip              = 30,
-    corroborating_proxies         = list(speleothem = "concordant"),
-    vegetation_stationary         = list(value = TRUE,
-                                         evidence = NA_character_),
+    level                           = 4,
+    interval_baseline               = c(0, 5000),
+    interval_test                   = c(5000, 10000),
+    sigma_analytical                = 3,
+    rho_t                           = 0,
+    confidence                      = 0.95,
+    beta_eff                        = 0.55,
+    magnitude_precip                = 30,
+    sediment_source_ruled_out       = list(value = TRUE,
+                                           evidence = "stable"),
+    depositional_artifact_ruled_out = list(value = TRUE,
+                                           evidence = "continuous"),
+    corroborating_proxies           = list(speleothem = "concordant"),
+    vegetation_stationary           = list(value = TRUE,
+                                           evidence = NA_character_),
     seasonal_source_stationary    = list(value = TRUE,
                                          evidence = "speleothem stable"),
     evapotranspirative_stationary = list(value = TRUE,
@@ -279,4 +303,167 @@ test_that("assess_claim: rho_t > 0 lowers the L1 threshold", {
                                   claim = c(base_claim, list(rho_t = 0.8)))
   expect_false(out_independent$levels$passed[1])
   expect_true(out_correlated$levels$passed[1])
+})
+
+# ---- Level 2 path-b (vegetation envelope) and gate tests ----------------
+# Manuscript §4.5.6 requires sediment-source and depositional artifact
+# to be ruled out by independent evidence regardless of which Level 2
+# path is used. Path (a) uses corroborating_proxies; path (b) uses
+# level2_vegetation_path$vegetation_scenario + oipc_ref.
+
+.l2_base_claim <- function(level = 2) {
+  list(
+    level                           = level,
+    interval_baseline               = c(0, 5000),
+    interval_test                   = c(5000, 10000),
+    sigma_analytical                = 3,
+    rho_t                           = 0,
+    confidence                      = 0.95,
+    sediment_source_ruled_out       = list(value = TRUE,
+                                           evidence = "grain size + mineralogy stable"),
+    depositional_artifact_ruled_out = list(value = TRUE,
+                                           evidence = "continuous varved sequence")
+  )
+}
+
+test_that("L2 requires sediment_source_ruled_out (gate failure blocks path a)", {
+  rec <- .make_record(delta_wax = 50)
+  # Both proxies supplied but sediment-source gate is FALSE.
+  claim <- c(.l2_base_claim(),
+             list(corroborating_proxies = list(speleothem = "concordant")))
+  claim$sediment_source_ruled_out <- list(
+    value = FALSE,
+    evidence = "grain-size change suggests provenance shift"
+  )
+  out <- assess_claim(record = rec, claim = claim)
+  expect_true(out$levels$passed[1])     # L1 still clears
+  expect_false(out$levels$passed[2])    # L2 blocked by the gate
+  expect_match(out$levels$summary[2],
+               "integrity gates not satisfied")
+  expect_match(out$levels$summary[2], "sediment_source_ruled_out")
+})
+
+test_that("L2 requires depositional_artifact_ruled_out (gate failure blocks path a)", {
+  rec <- .make_record(delta_wax = 50)
+  claim <- c(.l2_base_claim(),
+             list(corroborating_proxies = list(speleothem = "concordant")))
+  claim$depositional_artifact_ruled_out <- list(
+    value = FALSE,
+    evidence = "unconformity at the boundary"
+  )
+  out <- assess_claim(record = rec, claim = claim)
+  expect_false(out$levels$passed[2])
+  expect_match(out$levels$summary[2], "depositional_artifact_ruled_out")
+})
+
+test_that("L2 fails when gates pass but neither path attempted", {
+  rec <- .make_record(delta_wax = 50)
+  claim <- .l2_base_claim()
+  out <- assess_claim(record = rec, claim = claim)
+  expect_false(out$levels$passed[2])
+  expect_match(out$levels$summary[2], "no Level 2 path attempted")
+})
+
+test_that("L2 path (b) passes when |delta_wax| > vegetation envelope", {
+  # 50 permil wax shift far exceeds the envelope for a plausible
+  # 30 percentage-point woody-to-grass transition; manuscript §4.5.3.
+  rec <- .make_record(delta_wax = 50)
+  claim <- c(.l2_base_claim(), list(
+    oipc_ref = -60,
+    level2_vegetation_path = list(
+      vegetation_scenario = list(
+        from = c(tree = 0.4, shrub = 0.3, grass = 0.2, C4 = 0.05),
+        to   = c(tree = 0.1, shrub = 0.2, grass = 0.5, C4 = 0.20),
+        evidence = "hypothetical 30-pp woody-to-grass scenario"
+      )
+    )
+  ))
+  out <- assess_claim(record = rec, claim = claim)
+  expect_true(out$levels$passed[2])
+  expect_match(out$levels$summary[2],
+               "Vegetation-only null rejected")
+  # §4.5.3 caveat must be present (verdict text must not over-claim).
+  expect_match(out$levels$summary[2],
+               "does not identify the hydroclimate mechanism")
+  expect_match(out$levels$summary[2],
+               "quantify precipitation")
+  # Regression-guard: the deprecated phrasing must NOT appear.
+  expect_false(grepl("non-vegetation hydroclimate interpretation warranted",
+                     out$levels$summary[2]))
+  # Sanity on the recorded envelope.
+  expect_gt(out$details$L2$path_b_envelope$envelope_p975_abs, 0)
+  expect_true(out$details$L2$path_b_passed)
+})
+
+test_that("L2 path (b) fails when |delta_wax| does not exceed envelope", {
+  # Small wax shift over a 30 pp PFT-swing scenario: the envelope's
+  # 97.5% upper bound exceeds the observed |delta_wax|, so the
+  # vegetation-only null cannot be rejected. sigma_analytical = 1
+  # lowers the L1 threshold to ~2.8 permil so the L1 gate clears
+  # while |delta_wax| remains inside the envelope.
+  rec <- .make_record(delta_wax = 4, sd_per_sample = 0.1)
+  claim <- .l2_base_claim()
+  claim$sigma_analytical <- 1
+  claim <- c(claim, list(
+    oipc_ref = -60,
+    level2_vegetation_path = list(
+      vegetation_scenario = list(
+        from = c(tree = 0.1, shrub = 0.2, grass = 0.5, C4 = 0.20),
+        to   = c(tree = 0.4, shrub = 0.3, grass = 0.2, C4 = 0.05),
+        evidence = "hypothetical grass-to-woody scenario"
+      )
+    )
+  ))
+  out <- assess_claim(record = rec, claim = claim)
+  expect_true(out$levels$passed[1])   # 4 permil > L1 threshold ~2.8
+  expect_false(out$levels$passed[2])  # |Δwax|=4 < envelope ~5.7
+  expect_match(out$levels$summary[2],
+               "does not exceed vegetation-only envelope")
+})
+
+test_that("L2 path (b) verdict text does NOT contain the deprecated 'hydroclimate interpretation warranted' phrasing on any path", {
+  # Regression-guard across both successful paths. The exact phrase
+  # was removed during the magnitude-OR-evidence Level 2 redesign;
+  # codex [FIX-2] flagged it as overclaiming.
+  rec <- .make_record(delta_wax = 50)
+  # Path (a)
+  out_a <- assess_claim(rec, c(.l2_base_claim(),
+                               list(corroborating_proxies =
+                                      list(speleo = "concordant"))))
+  # Path (b)
+  out_b <- assess_claim(rec, c(.l2_base_claim(), list(
+    oipc_ref = -60,
+    level2_vegetation_path = list(
+      vegetation_scenario = list(
+        from = c(tree = 0.4, shrub = 0.3, grass = 0.2, C4 = 0.05),
+        to   = c(tree = 0.1, shrub = 0.2, grass = 0.5, C4 = 0.20)
+      )
+    )
+  )))
+  expect_true(out_a$levels$passed[2])
+  expect_true(out_b$levels$passed[2])
+  expect_false(grepl("non-vegetation hydroclimate interpretation warranted",
+                     out_a$levels$summary[2]))
+  expect_false(grepl("non-vegetation hydroclimate interpretation warranted",
+                     out_b$levels$summary[2]))
+})
+
+test_that("L2 path (b) propagates compute_vegetation_envelope() validation errors", {
+  rec <- .make_record(delta_wax = 50)
+  # Lowercase c4 — caught by compute_vegetation_envelope(); the message
+  # surfaces in assess_claim's Level 2 summary as a path-b failure.
+  claim <- c(.l2_base_claim(), list(
+    oipc_ref = -60,
+    level2_vegetation_path = list(
+      vegetation_scenario = list(
+        from = c(tree = 0.4, shrub = 0.3, grass = 0.2, c4 = 0.05),
+        to   = c(tree = 0.1, shrub = 0.2, grass = 0.5, c4 = 0.20)
+      )
+    )
+  ))
+  out <- assess_claim(rec, claim)
+  expect_false(out$levels$passed[2])
+  expect_match(out$levels$summary[2],
+               "envelope computation failed")
+  expect_match(out$details$L2$path_b_error, "case-sensitive")
 })

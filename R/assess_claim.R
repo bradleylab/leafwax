@@ -13,10 +13,16 @@
 #'     intervals. Defensible when the change exceeds analytical
 #'     uncertainty.
 #'   \item Level 2: the wax change is consistent with a directional
-#'     hydroclimate change. Requires corroborating evidence (multi-
-#'     proxy concordance, sedimentological context, or biomarker
-#'     evidence for vegetation stability) supplied via
-#'     `corroborating_proxies`.
+#'     hydroclimate change. Requires (i) sediment-source change ruled
+#'     out by independent evidence (`sediment_source_ruled_out`), AND
+#'     (ii) depositional artifact ruled out by independent evidence
+#'     (`depositional_artifact_ruled_out`), AND EITHER (a) named
+#'     corroborating evidence against vegetation reorganization via
+#'     `corroborating_proxies` (the original path), OR (b) demonstration
+#'     that the observed wax shift exceeds the vegetation-only
+#'     envelope computed from a user-supplied PFT-change scenario
+#'     (`level2_vegetation_path`; see [compute_vegetation_envelope()]
+#'     and manuscript Section 4.5.3).
 #'   \item Level 3: the wax change implies a quantitative
 #'     delta-2-H_precip magnitude. Requires a defended local effective
 #'     slope and explicit uncertainty propagation through the
@@ -47,8 +53,20 @@
 #'   `confidence` (default 0.95),
 #'   `magnitude_precip` (numeric, the precip-space magnitude the user
 #'     asserts; required at Level 3+),
-#'   `corroborating_proxies` (list, used at Level 2; the test is
-#'     non-empty + named),
+#'   `sediment_source_ruled_out`, `depositional_artifact_ruled_out`
+#'     (each a list with `value` (TRUE) and a non-empty `evidence`
+#'     string; BOTH required at Level 2+ regardless of which Level 2
+#'     path is used),
+#'   `corroborating_proxies` (list, used at Level 2 path (a); the test
+#'     is non-empty + named),
+#'   `level2_vegetation_path` (list, used at Level 2 path (b); must
+#'     contain `vegetation_scenario = list(from, to)` with named
+#'     numeric vectors over `{tree, shrub, grass, C4}` and an optional
+#'     `evidence` string. The claim must also supply `oipc_ref`
+#'     (numeric scalar, calibration-period d2H_precip at the site, per
+#'     mil) at the top level. An optional
+#'     `level2_vegetation_path$model_name` selects the calibration
+#'     model used for the envelope; default `"full_interact_sp"`.),
 #'   `vegetation_stationary`, `seasonal_source_stationary`,
 #'   `evapotranspirative_stationary` (each a list with `value` (TRUE)
 #'     and a non-empty `evidence` string; required at Level 4).
@@ -183,17 +201,48 @@ assess_claim <- function(record,
     n_test               = length(test_idx)
   )
 
-  # --- Level 2: corroborating evidence supplied -----------------------
-  # Require each entry to be named AND to carry non-empty, non-NA
-  # evidence content. Strings must be non-empty after whitespace strip;
-  # any other object type passes the structural check (we accept
-  # arbitrary evidence objects, e.g., a tibble of proxy data, as long
-  # as they are not NA and have positive length).
+  # --- Level 2: integrity gates + (corroborating OR envelope) --------
+  # Manuscript §4.5.6 requires sediment-source change AND depositional
+  # artifact to be ruled out by independent record-specific evidence,
+  # AND EITHER (a) corroborating_proxies (path a) OR (b) the observed
+  # |delta_wax| to exceed the vegetation-only envelope computed from a
+  # user-supplied PFT scenario (path b; see manuscript §4.5.3 and
+  # compute_vegetation_envelope()).
+
+  # Helper: check a list(value = TRUE, evidence = <non-empty character>)
+  # entry. Mirrors the Level 4 stationarity-evidence convention.
+  .check_evidence_gate <- function(s, field) {
+    if (!is.list(s) || !isTRUE(s$value)) {
+      return(list(ok = FALSE,
+                  reason = sprintf("%s missing or value != TRUE", field)))
+    }
+    e <- s$evidence
+    if (!is.character(e) || length(e) != 1L ||
+        is.na(e) || !nzchar(trimws(e))) {
+      return(list(ok = FALSE,
+                  reason = sprintf("%s missing non-empty evidence string",
+                                   field)))
+    }
+    list(ok = TRUE, reason = NULL)
+  }
+
+  sed_gate <- .check_evidence_gate(claim$sediment_source_ruled_out,
+                                   "sediment_source_ruled_out")
+  dep_gate <- .check_evidence_gate(claim$depositional_artifact_ruled_out,
+                                   "depositional_artifact_ruled_out")
+
+  # Path (a): corroborating proxies. Require each entry to be named
+  # AND to carry non-empty, non-NA evidence content. Strings must be
+  # non-empty after whitespace strip; any other object type passes the
+  # structural check (we accept arbitrary evidence objects, e.g., a
+  # tibble of proxy data, as long as they are not NA and have positive
+  # length).
   cor_p <- claim$corroborating_proxies
+  has_cor_named <- is.list(cor_p) && length(cor_p) > 0L &&
+                   !is.null(names(cor_p)) && all(nzchar(names(cor_p)))
   has_cor <- FALSE
   bad_cor <- character(0)
-  if (is.list(cor_p) && length(cor_p) > 0L &&
-      !is.null(names(cor_p)) && all(nzchar(names(cor_p)))) {
+  if (has_cor_named) {
     cor_ok <- vapply(cor_p, function(v) {
       if (is.null(v) || (length(v) == 1L && is.na(v))) return(FALSE)
       if (is.character(v)) {
@@ -204,22 +253,108 @@ assess_claim <- function(record,
     has_cor <- all(cor_ok)
     if (!has_cor) bad_cor <- names(cor_p)[!cor_ok]
   }
-  l2_passed <- l1_passed && has_cor
+  path_a_attempted <- has_cor_named
+  path_a_passed    <- has_cor
+
+  # Path (b): vegetation-only envelope. The user supplies a PFT-change
+  # scenario; we compute the envelope and check whether the observed
+  # |delta_wax| exceeds the absolute 97.5% upper bound.
+  veg_path <- claim$level2_vegetation_path
+  path_b_attempted <- is.list(veg_path) &&
+                      !is.null(veg_path$vegetation_scenario)
+  path_b_passed       <- FALSE
+  path_b_envelope     <- NULL
+  path_b_error        <- NULL
+  if (path_b_attempted) {
+    scenario <- veg_path$vegetation_scenario
+    oipc_ref_val <- claim$oipc_ref
+    veg_model    <- veg_path$model_name %||% "full_interact_sp"
+    path_b_envelope <- tryCatch(
+      compute_vegetation_envelope(
+        oipc_ref   = oipc_ref_val,
+        from       = scenario$from,
+        to         = scenario$to,
+        model_name = veg_model,
+        n_draws    = NULL,
+        verbose    = FALSE
+      ),
+      error = function(e) {
+        path_b_error <<- conditionMessage(e)
+        NULL
+      }
+    )
+    if (!is.null(path_b_envelope)) {
+      path_b_passed <- abs(delta_wax) > path_b_envelope$envelope_p975_abs
+    }
+  }
+
+  gates_ok <- sed_gate$ok && dep_gate$ok
+  l2_passed <- l1_passed && gates_ok && (path_a_passed || path_b_passed)
+
+  # Verdict text [FIX-2]. Path (b) success wording must not claim
+  # the hydroclimate mechanism or precipitation-isotope magnitude is
+  # demonstrated; the rejection is of vegetation-only causation only.
   if (!l1_passed) {
     l2_summary <- "blocked by Level 1 failure"
-  } else if (!is.list(cor_p) || length(cor_p) == 0L ||
-             is.null(names(cor_p)) || !all(nzchar(names(cor_p)))) {
-    l2_summary <- "no named corroborating_proxies supplied"
-  } else if (!has_cor) {
+  } else if (!gates_ok) {
+    failed <- c(if (!sed_gate$ok) sed_gate$reason,
+                if (!dep_gate$ok) dep_gate$reason)
+    l2_summary <- paste0("integrity gates not satisfied: ",
+                         paste(failed, collapse = "; "))
+  } else if (!path_a_attempted && !path_b_attempted) {
+    l2_summary <- "no Level 2 path attempted: provide corroborating_proxies (path a) or level2_vegetation_path$vegetation_scenario (path b)"
+  } else if (path_a_attempted && !path_a_passed &&
+             !path_b_attempted) {
+    # Path (a) attempted but failed validation; no path (b) supplied.
+    if (!has_cor_named) {
+      l2_summary <- "no named corroborating_proxies supplied"
+    } else {
+      l2_summary <- sprintf(
+        "corroborating_proxies present but empty/NA for: %s",
+        paste(bad_cor, collapse = ", "))
+    }
+  } else if (path_a_passed) {
+    l2_summary <- "Level 2 passed via corroborating-evidence path."
+  } else if (path_b_passed) {
     l2_summary <- sprintf(
-      "corroborating_proxies present but empty/NA for: %s",
-      paste(bad_cor, collapse = ", "))
+      paste0("Level 2 passed via vegetation-only null rejection. ",
+             "Observed |delta_wax| = %.2f permil > vegetation-only ",
+             "envelope 97.5%% upper bound = %.2f permil. ",
+             "Vegetation-only null rejected; the wax contrast ",
+             "requires a non-vegetation contribution under the ",
+             "supplied scenario, but this does not identify the ",
+             "hydroclimate mechanism or quantify precipitation-",
+             "isotope change. Sediment-source and depositional ",
+             "alternatives addressed via independent evidence."),
+      abs(delta_wax), path_b_envelope$envelope_p975_abs
+    )
+  } else if (path_b_attempted && is.null(path_b_envelope)) {
+    l2_summary <- sprintf(
+      "level2_vegetation_path supplied but envelope computation failed: %s",
+      path_b_error)
+  } else if (path_b_attempted && !path_b_passed) {
+    l2_summary <- sprintf(
+      paste0("Level 2 path (b) failed: observed |delta_wax| = %.2f ",
+             "permil does not exceed vegetation-only envelope 97.5%% ",
+             "upper bound = %.2f permil. Vegetation reorganization ",
+             "under the supplied PFT scenario cannot be excluded."),
+      abs(delta_wax), path_b_envelope$envelope_p975_abs)
   } else {
-    l2_summary <- sprintf("corroborating_proxies supplied: %s",
-                          paste(names(cor_p), collapse = ", "))
+    # Defensive fallback; should not be reachable given the branches above.
+    l2_summary <- "Level 2 failed"
   }
+
   l2_details <- list(
-    corroborating_proxies = cor_p
+    sediment_source_ruled_out      = claim$sediment_source_ruled_out,
+    sediment_source_gate_ok        = sed_gate$ok,
+    depositional_artifact_ruled_out = claim$depositional_artifact_ruled_out,
+    depositional_artifact_gate_ok  = dep_gate$ok,
+    corroborating_proxies          = cor_p,
+    path_a_passed                  = path_a_passed,
+    path_b_attempted               = path_b_attempted,
+    path_b_passed                  = path_b_passed,
+    path_b_envelope                = path_b_envelope,
+    path_b_error                   = path_b_error
   )
 
   # --- Level 3: defended slope + propagated inversion ----------------

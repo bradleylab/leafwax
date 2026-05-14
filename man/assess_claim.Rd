@@ -30,8 +30,20 @@ Optional fields, used by higher levels:
 \code{confidence} (default 0.95),
 \code{magnitude_precip} (numeric, the precip-space magnitude the user
 asserts; required at Level 3+),
-\code{corroborating_proxies} (list, used at Level 2; the test is
-non-empty + named),
+\code{sediment_source_ruled_out}, \code{depositional_artifact_ruled_out}
+(each a list with \code{value} (TRUE) and a non-empty \code{evidence}
+string; BOTH required at Level 2+ regardless of which Level 2
+path is used),
+\code{corroborating_proxies} (list, used at Level 2 path (a); the test
+is non-empty + named),
+\code{level2_vegetation_path} (list, used at Level 2 path (b); must
+contain \code{vegetation_scenario = list(from, to)} with named
+numeric vectors over \verb{\{tree, shrub, grass, C4\}} and an optional
+\code{evidence} string. The claim must also supply \code{oipc_ref}
+(numeric scalar, calibration-period d2H_precip at the site, per
+mil) at the top level. An optional
+\code{level2_vegetation_path$model_name} selects the calibration
+model used for the envelope; default \code{"full_interact_sp"}.),
 \code{vegetation_stationary}, \code{seasonal_source_stationary},
 \code{evapotranspirative_stationary} (each a list with \code{value} (TRUE)
 and a non-empty \code{evidence} string; required at Level 4).}
@@ -68,10 +80,16 @@ reports the highest level a claim survives at. The taxonomy is:
 intervals. Defensible when the change exceeds analytical
 uncertainty.
 \item Level 2: the wax change is consistent with a directional
-hydroclimate change. Requires corroborating evidence (multi-
-proxy concordance, sedimentological context, or biomarker
-evidence for vegetation stability) supplied via
-\code{corroborating_proxies}.
+hydroclimate change. Requires (i) sediment-source change ruled
+out by independent evidence (\code{sediment_source_ruled_out}), AND
+(ii) depositional artifact ruled out by independent evidence
+(\code{depositional_artifact_ruled_out}), AND EITHER (a) named
+corroborating evidence against vegetation reorganization via
+\code{corroborating_proxies} (the original path), OR (b) demonstration
+that the observed wax shift exceeds the vegetation-only
+envelope computed from a user-supplied PFT-change scenario
+(\code{level2_vegetation_path}; see \code{\link[=compute_vegetation_envelope]{compute_vegetation_envelope()}}
+and manuscript Section 4.5.3).
 \item Level 3: the wax change implies a quantitative
 delta-2-H_precip magnitude. Requires a defended local effective
 slope and explicit uncertainty propagation through the

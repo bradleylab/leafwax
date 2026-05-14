@@ -1,3 +1,47 @@
+# leafwax 0.2.5
+
+## New features
+
+* `compute_vegetation_envelope()` (new exported function): bounds the
+  wax-isotope shift expected from a user-supplied PFT-change scenario
+  at a site, holding `d2H_precip` constant by construction. Combines
+  the calibration's four PFT main effects and four OIPC-by-PFT
+  interactions across all posterior draws and returns the absolute
+  97.5% upper bound (`envelope_p975_abs`) along with the full per-draw
+  envelope. Implements the magnitude path of the Level 2 claim taxonomy
+  described in the accompanying manuscript Section 4.5.3. Requires a
+  calibration model fitting all eight PFT coefficients; default is
+  `"full_interact_sp"`. The site's calibration-period `d2H_precip`
+  (per mil) is taken as a user-supplied scalar (`oipc_ref`); typically
+  obtained by extracting from the OIPC raster (Bowen and Wilkinson
+  2002) with `terra::extract()` outside the package.
+
+* `assess_claim()` Level 2 logic extended. Two new claim-spec fields,
+  `sediment_source_ruled_out` and `depositional_artifact_ruled_out`,
+  are now required at Level 2 and above regardless of which path is
+  used; each carries `list(value = TRUE, evidence = <non-empty
+  character>)`. The Level 2 promotion criterion is now: integrity
+  gates pass AND EITHER (a) `corroborating_proxies` contains named
+  non-empty evidence (the original path), OR (b)
+  `level2_vegetation_path$vegetation_scenario` is supplied along with
+  the top-level `oipc_ref`, and the observed `|delta_wax|` exceeds the
+  absolute 97.5% upper bound of the vegetation-only envelope. Path (b)
+  is the magnitude path; passing it rejects vegetation-only causation
+  for the supplied scenario but does not identify the hydroclimate
+  mechanism or quantify the precipitation-isotope change. Verdict text
+  for both paths is fixed and the path (b) wording reiterates the
+  caveats from manuscript Section 4.5.3.
+
+## Documentation
+
+* Paleo vignette: new section 7b "Magnitude path: rejecting vegetation
+  as the sole explanation" walks through `compute_vegetation_envelope()`
+  and the path (b) Level 2 claim spec. The existing Level 2 row in the
+  claim-levels table is updated to describe both paths.
+
+* README: feature list adds `compute_vegetation_envelope()` and links
+  it to manuscript Section 4.5.3.
+
 # leafwax 0.2.4
 
 ## Documentation

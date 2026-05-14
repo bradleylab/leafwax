@@ -163,10 +163,11 @@ The paleo workflow maps directly to the manuscript:
 
 | Manuscript section | Function |
 |--------------------|----------|
-| 4.5.3 detection threshold formula   | `detect_change()` |
-| 4.5.5 local slope posterior         | `local_effective_slope()` |
-| 4.5.6 four-level claim taxonomy     | `assess_claim()` |
-| Section S4 inversion machinery      | `invert_d2H()` |
+| 4.5.3 detection threshold formula           | `detect_change()` |
+| 4.5.3 vegetation-only envelope (Level 2 magnitude path) | `compute_vegetation_envelope()` |
+| 4.5.5 local slope posterior                 | `local_effective_slope()` |
+| 4.5.6 four-level claim taxonomy             | `assess_claim()` |
+| Section S4 inversion machinery              | `invert_d2H()` |
 
 ## Citation
 
@@ -198,7 +199,7 @@ release's version DOI from the Zenodo deposit page.
 ## Help
 
 * Function reference: `?invert_d2H`, `?local_effective_slope`,
-  `?detect_change`, `?assess_claim`.
+  `?detect_change`, `?assess_claim`, `?compute_vegetation_envelope`.
 * Vignette: `vignette("paleo-record-workflow", package = "leafwax")`.
 * Issues: <https://github.com/bradleylab/leafwax/issues>.
 
