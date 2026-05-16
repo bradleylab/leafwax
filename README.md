@@ -2,7 +2,7 @@
 
 <!-- badges: start -->
 [![R-CMD-check](https://github.com/bradleylab/leafwax/actions/workflows/R-CMD-check.yaml/badge.svg?branch=master)](https://github.com/bradleylab/leafwax/actions/workflows/R-CMD-check.yaml)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20172571.svg)](https://doi.org/10.5281/zenodo.20172570)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20172570.svg)](https://doi.org/10.5281/zenodo.20172570)
 <!-- badges: end -->
 
 Bayesian inversion of leaf-wax hydrogen isotope ratios
