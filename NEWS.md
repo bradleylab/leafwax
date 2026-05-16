@@ -366,8 +366,7 @@ Regression tests covering these fixes are in
 * `inst/extdata/model_info.json` description for `c4_fraction`
   rewritten to match the actual contract (fraction `[0, 1]` on the
   public API, converted to percent internally).
-* Drafting-history breadcrumbs ("Phase A", "Phase B", "Codex P2 on
-  Phase B") are removed from in-source comments. Substantive content
+* Drafting-history breadcrumbs ("Phase A", "Phase B") are removed from in-source comments. Substantive content
   is preserved.
 * `inst/examples/` (four v0.1 example scripts) and
   `data-raw/{copy_posteriors,prepare_external_data,prepare_external_data_quick,prepare_package_data,_legacy_extract_spatial_metadata_120knot}.R`
@@ -532,12 +531,6 @@ Status: 1 NOTE (extdata size ~10.6 MB, expected -- the shipped v10
 posteriors). All ERRORs and WARNINGs from the v0.1.0 baseline are
 resolved.
 
-### Codex review
-
-Each phase commit was reviewed via `codex review --commit HEAD` and
-the findings (1 P2 on Phase F, 2 P2s on Phase A, 2 P2s on Phase B,
-3 P2/P3s on Phase C, 3 P2s on Phase D) were addressed in dedicated
-follow-up commits. Phase E review returned clean.
 
 # leafwax 0.1.0
 
