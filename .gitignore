@@ -28,3 +28,7 @@ doc/
 docs/
 Meta/
 vignettes/*.html
+
+# Maintainer-only CRAN submission notes (kept local; .Rbuildignore-d
+# so they never enter the tarball)
+cran-comments.md
