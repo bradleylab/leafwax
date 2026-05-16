@@ -41,17 +41,20 @@ The Iso2k compilation is archived at
 
 \[
 \mathrm{threshold}_{\mathrm{precip}}
-= \frac{1.96 \sqrt{2(1 - \rho_t)}\, \sqrt{\sigma_{\mathrm{residual}}^2 + \sigma_{\mathrm{analytical}}^2}}{\beta_{\mathrm{eff}}}
+= \frac{1.96 \sqrt{2 \sigma_{\mathrm{residual}}^2 (1 - \rho_t) + 2 \sigma_{\mathrm{analytical}}^2}}{\beta_{\mathrm{eff}}}
 \]
 
 Here `rho_t` is the lag-1 temporal autocorrelation, `sigma_residual` is
 the calibration residual SD on the wax scale, `sigma_analytical` is the
 analytical uncertainty on the wax measurements, and `beta_eff` is the
-local effective slope. The threshold is the smallest `d2H_precip`
-difference between two independent samples at the site that can be
-distinguished from within-record noise at 95 percent confidence. The
-spatial GP intercept is shared by all samples from the same site, so it
-cancels when the package compares two intervals from one record.
+local effective slope. The autocorrelation factor enters only the
+residual term, because analytical measurement error is independent
+between samples by construction. The threshold is the smallest
+`d2H_precip` difference between two independent samples at the site
+that can be distinguished from within-record noise at 95 percent
+confidence. The spatial GP intercept is shared by all samples from the
+same site, so it cancels when the package compares two intervals from
+one record.
 
 ## 1. Load both records
 

@@ -179,13 +179,17 @@ assess_claim <- function(record,
 
   # --- Level 1: wax change exceeds analytical noise ------------------
   # Manuscript Section 4.5.3: L1 is defensible whenever the change
-  # exceeds analytical uncertainty. The mean-of-n_b vs mean-of-n_t
-  # contrast variance is sigma_a^2 * (1/n_b + 1/n_t), scaled by
-  # 2(1-rho_t) for autocorrelation; the per-sample formula here gives
-  # the same threshold for n_b = n_t = 1 and is a conservative ceiling
-  # for larger samples.
+  # exceeds analytical uncertainty. For two single measurements with
+  # independent analytical error, Var(X1 - X2) = 2 * sigma_a^2; the
+  # lag-1 residual autocorrelation rho_t does not apply because
+  # analytical measurement error is independent between samples by
+  # construction. The mean-of-n_b vs mean-of-n_t contrast variance
+  # is sigma_a^2 * (1/n_b + 1/n_t); the per-sample formula here is
+  # the n_b = n_t = 1 case and is a conservative ceiling for larger
+  # samples. rho_t is retained in l1_details for traceability with
+  # higher levels that do use it.
   z <- stats::qnorm(1 - (1 - conf) / 2)
-  threshold_wax <- z * sqrt(2 * (1 - rho_t)) * sigma_a
+  threshold_wax <- z * sqrt(2) * sigma_a
   l1_passed  <- abs(delta_wax) > threshold_wax
   l1_summary <- sprintf(
     "delta_wax = %.2f permil; %d%% threshold = %.2f permil (%s)",

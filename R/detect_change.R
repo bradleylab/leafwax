@@ -99,16 +99,19 @@ estimate_temporal_autocorrelation <- function(d2h_wax, age,
 #' 4.5.3:
 #'
 #' \deqn{\mathrm{threshold}_{precip} =
-#'       \frac{z_{\alpha/2}\, \sqrt{2(1 - \rho_t)}\,
-#'             \sqrt{\sigma_{residual}^2 + \sigma_{analytical}^2}}
+#'       \frac{z_{\alpha/2}\,
+#'             \sqrt{2 \sigma_{residual}^2 (1 - \rho_t)
+#'                   + 2 \sigma_{analytical}^2}}
 #'            {\beta_{\mathrm{eff}}}}
 #'
 #' The threshold is the smallest difference in `d2H_precip` between two
 #' independent samples that can be distinguished from within-record
-#' noise at the chosen confidence level. The spatial GP intercept
-#' contributes a constant to every sample in the record and cancels in
-#' the contrast; the same `sigma_residual` from the spatial calibration
-#' applies (manuscript Section 4.5.3).
+#' noise at the chosen confidence level. The lag-1 autocorrelation
+#' `rho_t` enters only the residual term, because analytical
+#' measurement error is independent between samples by construction.
+#' The spatial GP intercept contributes a constant to every sample in
+#' the record and cancels in the contrast; the same `sigma_residual`
+#' from the spatial calibration applies (manuscript Section 4.5.3).
 #'
 #' @param reconstruction Output of `invert_d2H(..., return_full = TRUE)`
 #'   on a downcore series. Must contain a `posterior_draws` matrix of
@@ -233,10 +236,21 @@ detect_change <- function(reconstruction,
   }
 
   # --- detection threshold (manuscript Section 4.5.3) -----------------
+  # The variance of the difference between two single samples
+  # decomposes into an autocorrelated residual term and an independent
+  # analytical term: Var(X1 - X2) = 2 sigma_residual^2 (1 - rho_t)
+  # + 2 sigma_analytical^2. Applying the (1 - rho_t) factor to the
+  # combined SD (as in versions <= 0.2.5) treats analytical
+  # measurement error as if it were temporally correlated, which
+  # understates the threshold in the high-rho_t regime.
   z <- stats::qnorm(1 - (1 - confidence) / 2)
-  sigma_combined <- sqrt(sigma_residual^2 + sigma_analytical^2)
-  threshold_wax    <- z * sqrt(2 * (1 - rho_t)) * sigma_combined
+  var_diff_wax     <- 2 * sigma_residual^2 * (1 - rho_t) +
+                      2 * sigma_analytical^2
+  threshold_wax    <- z * sqrt(var_diff_wax)
   threshold_precip <- threshold_wax / abs(beta_eff)
+  # sigma_combined is retained as a diagnostic for callers that
+  # logged it pre-0.2.6; it is NOT used in the threshold itself.
+  sigma_combined   <- sqrt(sigma_residual^2 + sigma_analytical^2)
 
   # --- per-interval posterior probabilities --------------------------
   intervals_df <- NULL

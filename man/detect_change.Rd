@@ -76,14 +76,17 @@ record 95\\% (or other) detection threshold from manuscript Section
 }
 \details{
 \deqn{\mathrm{threshold}_{precip} =
-      \frac{z_{\alpha/2}\, \sqrt{2(1 - \rho_t)}\,
-            \sqrt{\sigma_{residual}^2 + \sigma_{analytical}^2}}
+      \frac{z_{\alpha/2}\,
+            \sqrt{2 \sigma_{residual}^2 (1 - \rho_t)
+                  + 2 \sigma_{analytical}^2}}
            {\beta_{\mathrm{eff}}}}
 
 The threshold is the smallest difference in \code{d2H_precip} between two
 independent samples that can be distinguished from within-record
-noise at the chosen confidence level. The spatial GP intercept
-contributes a constant to every sample in the record and cancels in
-the contrast; the same \code{sigma_residual} from the spatial calibration
-applies (manuscript Section 4.5.3).
+noise at the chosen confidence level. The lag-1 autocorrelation
+\code{rho_t} enters only the residual term, because analytical
+measurement error is independent between samples by construction.
+The spatial GP intercept contributes a constant to every sample in
+the record and cancels in the contrast; the same \code{sigma_residual}
+from the spatial calibration applies (manuscript Section 4.5.3).
 }

@@ -1,3 +1,30 @@
+# leafwax 0.2.6
+
+## Bug fixes
+
+* `detect_change()` previously multiplied the entire combined-noise SD
+  by `sqrt(2 * (1 - rho_t))`, which incorrectly applied the lag-1
+  autocorrelation factor to the analytical-measurement-error term.
+  The detection threshold now decomposes the variance of the
+  difference between two single samples as
+  `2 * sigma_residual^2 * (1 - rho_t) + 2 * sigma_analytical^2`,
+  so the autocorrelation factor enters only the residual component.
+  The previous formula understated the threshold in the high-`rho_t`
+  regime. At `rho_t = 0` the two formulas coincide; at `rho_t = 0.5`
+  and `rho_t = 0.8`, with `sigma_residual = 16`, `sigma_analytical
+  = 3`, and `beta_eff = 0.55`, the corrected threshold rises from
+  ~57 to ~59 per mil and from ~36 to ~39 per mil, respectively.
+  The returned `formula$sigma_combined` is retained as a diagnostic
+  but is no longer used in the threshold calculation.
+
+* `assess_claim()` Level 1 carried the same conceptual error: the
+  analytical-noise threshold was scaled by `sqrt(2 * (1 - rho_t))`
+  even though analytical measurement error is independent between
+  samples. The Level 1 threshold is now
+  `z * sqrt(2) * sigma_analytical`, invariant to `rho_t`. Records
+  that previously cleared Level 1 only by virtue of a high `rho_t`
+  shrinking the threshold no longer clear it.
+
 # leafwax 0.2.5
 
 Initial CRAN release.

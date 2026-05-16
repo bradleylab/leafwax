@@ -285,11 +285,11 @@ test_that("assess_claim: invalid scalar fields error cleanly", {
   )
 })
 
-test_that("assess_claim: rho_t > 0 lowers the L1 threshold", {
-  # L1 threshold = z * sqrt(2*(1-rho_t)) * sigma_analytical.
-  # With sigma_analytical = 3: rho_t = 0 -> ~8.3 permil; rho_t = 0.8 ->
-  # ~3.7 permil. 5 permil is below the first, above the second.
-  rec <- .make_record(delta_wax = 5)
+test_that("assess_claim: L1 threshold is invariant to rho_t", {
+  # L1 threshold = z * sqrt(2) * sigma_analytical, independent of
+  # rho_t. With sigma_analytical = 3 the threshold is ~8.3 permil
+  # for every rho_t. A 5 permil shift is below it; a 10 permil
+  # shift is above it.
   base_claim <- list(
     level             = 1,
     interval_baseline = c(0, 5000),
@@ -297,12 +297,26 @@ test_that("assess_claim: rho_t > 0 lowers the L1 threshold", {
     sigma_analytical  = 3,
     confidence        = 0.95
   )
-  out_independent <- assess_claim(record = rec,
-                                  claim = c(base_claim, list(rho_t = 0)))
-  out_correlated  <- assess_claim(record = rec,
-                                  claim = c(base_claim, list(rho_t = 0.8)))
-  expect_false(out_independent$levels$passed[1])
-  expect_true(out_correlated$levels$passed[1])
+  rec_small <- .make_record(delta_wax = 5)
+  rec_large <- .make_record(delta_wax = 10)
+
+  small_indep <- assess_claim(record = rec_small,
+                              claim = c(base_claim, list(rho_t = 0)))
+  small_corr  <- assess_claim(record = rec_small,
+                              claim = c(base_claim, list(rho_t = 0.8)))
+  large_indep <- assess_claim(record = rec_large,
+                              claim = c(base_claim, list(rho_t = 0)))
+  large_corr  <- assess_claim(record = rec_large,
+                              claim = c(base_claim, list(rho_t = 0.8)))
+
+  expect_false(small_indep$levels$passed[1])
+  expect_false(small_corr$levels$passed[1])
+  expect_true(large_indep$levels$passed[1])
+  expect_true(large_corr$levels$passed[1])
+
+  expect_equal(small_indep$details$L1$threshold_wax,
+               small_corr$details$L1$threshold_wax,
+               tolerance = 1e-10)
 })
 
 # ---- Level 2 path-b (vegetation envelope) and gate tests ----------------

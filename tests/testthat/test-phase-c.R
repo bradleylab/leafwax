@@ -90,11 +90,11 @@ test_that("detect_change: threshold matches the manuscript formula at rho_t = 0"
     confidence        = 0.95
   )
   z <- stats::qnorm(0.975)
-  expected <- z * sqrt(2 * 1) * sqrt(16^2 + 3^2) / 0.55
+  expected <- z * sqrt(2 * 16^2 * 1 + 2 * 3^2) / 0.55
   expect_equal(out$threshold, expected, tolerance = 1e-10)
-  # Manuscript headline number is ~81 permil at this combination
-  # (the abstract reports 95% CI 67-105). Sanity-check the order
-  # of magnitude.
+  # Manuscript headline at this combination: ~82 permil (the
+  # abstract reports 95% CI 67-105). Sanity-check the order of
+  # magnitude.
   expect_gt(out$threshold, 70)
   expect_lt(out$threshold, 90)
 })
@@ -111,10 +111,11 @@ test_that("detect_change: positive autocorrelation lowers the threshold", {
   t8 <- do.call(detect_change, c(args, list(rho_t = 0.8)))$threshold
   expect_lt(t5, t0)
   expect_lt(t8, t5)
-  # Manuscript values: rho_t = 0 -> ~81; rho_t = 0.5 -> ~57;
-  # rho_t = 0.8 -> ~36. Loose sanity bounds.
-  expect_lt(abs(t5 - 57), 5)
-  expect_lt(abs(t8 - 36), 5)
+  # Manuscript values under the corrected formula
+  # (sigma_a independent of rho_t): rho_t = 0 -> ~82; rho_t = 0.5
+  # -> ~59; rho_t = 0.8 -> ~39. Loose sanity bounds.
+  expect_lt(abs(t5 - 59), 5)
+  expect_lt(abs(t8 - 39), 5)
 })
 
 test_that("detect_change: posterior probability of change is sane", {
