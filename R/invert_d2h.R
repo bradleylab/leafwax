@@ -38,7 +38,8 @@ NULL
 #'   intends within-record inference.
 #' @param slope Optional numeric override for the d2H_wax-d2H_precip
 #'   slope. NULL (default) uses the model's site-specific slope, i.e.,
-#'   `beta_oipc` plus the spatial slope GP perturbation at the site.
+#'   the local \eqn{\beta_{\delta^2 H_p}}{beta_d2Hp} calibration slope
+#'   including the spatial slope GP perturbation at the site.
 #'   A single numeric replaces the slope with a fixed point estimate
 #'   (broadcast across all posterior draws). A vector of length
 #'   `n_draws` is used per draw. Use `local_effective_slope()` to
@@ -72,27 +73,34 @@ NULL
 #' @export
 #' 
 #' @examples
-#' \dontrun{
-#' # Simple inversion with base model
-#' results <- invert_d2h(
-#'   d2h_wax = c(-150, -140, -130),
-#'   d2h_wax_err = c(3, 3, 3),
-#'   longitude = c(-120, -110, -100),
-#'   latitude = c(40, 35, 30),
-#'   elevation = c(1000, 1500, 500),
-#'   model = "baseline"
-#' )
+#' \donttest{
+#' local({
+#'   old <- options(leafwax.suppress_preview_warning = TRUE)
+#'   on.exit(options(old))
 #'
-#' # Inversion with spatial model
-#' results <- invert_d2h(
-#'   d2h_wax = c(-150, -140, -130),
-#'   d2h_wax_err = c(3, 3, 3),
-#'   longitude = c(-120, -110, -100),
-#'   latitude = c(40, 35, 30),
-#'   elevation = c(1000, 1500, 500),
-#'   model = "baseline_sp",
-#'   return_full = TRUE
-#' )
+#'   # Simple inversion with base model
+#'   results <- invert_d2h(
+#'     d2h_wax = c(-150, -140, -130),
+#'     d2h_wax_err = c(3, 3, 3),
+#'     longitude = c(-120, -110, -100),
+#'     latitude = c(40, 35, 30),
+#'     elevation = c(1000, 1500, 500),
+#'     model_name = "baseline",
+#'     verbose = FALSE
+#'   )
+#'
+#'   # Inversion with spatial model
+#'   results <- invert_d2h(
+#'     d2h_wax = c(-150, -140, -130),
+#'     d2h_wax_err = c(3, 3, 3),
+#'     longitude = c(-120, -110, -100),
+#'     latitude = c(40, 35, 30),
+#'     elevation = c(1000, 1500, 500),
+#'     model_name = "baseline_sp",
+#'     return_full = TRUE,
+#'     verbose = FALSE
+#'   )
+#' })
 #' }
 invert_d2h <- function(d2h_wax, d2h_wax_err = NULL,
                        longitude, latitude, elevation = NULL,
@@ -222,7 +230,7 @@ invert_d2h <- function(d2h_wax, d2h_wax_err = NULL,
   # Get base parameters
   base_params <- model$get_base_params()
   beta_0 <- base_params$beta_0
-  beta_oipc <- base_params$beta_oipc
+  beta_d2Hp <- base_params$beta_d2Hp
   sigma <- base_params$sigma
   
   # Get scale weights using lambda_decay
@@ -278,7 +286,7 @@ invert_d2h <- function(d2h_wax, d2h_wax_err = NULL,
 
   # Caller-supplied slope override. Length-1 broadcasts to all draws;
   # length-n_iter is used per draw. The override replaces the
-  # model's beta_oipc + slope_GP path entirely and applies uniformly to
+  # model's beta_d2Hp + slope_GP path entirely and applies uniformly to
   # every input row (no per-row spatial perturbation when overriding).
   use_slope_override <- !is.null(slope)
   if (use_slope_override) {
@@ -324,8 +332,8 @@ invert_d2h <- function(d2h_wax, d2h_wax_err = NULL,
 
   for (iter in 1:n_iter) {
     # Build the non-OIPC part of the linear predictor.
-    # The OIPC slope (with its spatially-varying perturbation) is handled
-    # separately during inversion below.
+    # The precipitation-isotope slope (with its spatially-varying
+    # perturbation) is handled separately during inversion below.
     mu_std <- beta_0[iter] +
       elev_effect[iter, ] +
       beta_c4[iter] * c4_std +
@@ -336,20 +344,20 @@ invert_d2h <- function(d2h_wax, d2h_wax_err = NULL,
 
     # Site-specific effective slope: global mean plus the spatially-varying
     # perturbation at this location for this draw. v10 fitted a slope GP
-    # (z_slope_spatial[*]) on top of the global beta_oipc. When a slope
+    # (z_slope_spatial[*]) on top of the global beta_d2Hp. When a slope
     # override is supplied, replace the per-row vector with the
     # caller's per-draw scalar (broadcast to every row).
     if (use_slope_override) {
-      beta_oipc_eff <- rep(slope_override[iter], n_obs)
+      beta_d2Hp_eff <- rep(slope_override[iter], n_obs)
     } else {
-      beta_oipc_eff <- beta_oipc[iter] + slope_effect[iter, ]
+      beta_d2Hp_eff <- beta_d2Hp[iter] + slope_effect[iter, ]
     }
 
     # Uncertainty propagation (manuscript supplement Eq. 7): the
     # wax-error draw combines analytical uncertainty with the model's
     # posterior residual SD `sigma`. Parameter and spatial uncertainty
     # enter through the per-iteration posterior draws of beta_0,
-    # beta_oipc, GP fields, etc. For within-record contrasts the
+    # beta_d2Hp, GP fields, etc. For within-record contrasts the
     # spatial GP intercept's contribution cancels in any difference
     # between time intervals computed downstream from `posterior_draws`
     # (manuscript Section 4.5.3); the same sigma applies in both
@@ -360,10 +368,10 @@ invert_d2h <- function(d2h_wax, d2h_wax_err = NULL,
       d2h_wax_with_error <- rnorm(1, d2h_wax_std[i], wax_sd_std)
 
       # Invert to get precipitation d2H (in standardized space). The
-      # /beta_oipc_eff[i] step naturally scales any wax-space noise
+      # /beta_d2Hp_eff[i] step naturally scales any wax-space noise
       # (measurement + within-record residual) by the local effective
       # slope.
-      d2h_precip_std <- (d2h_wax_with_error - mu_std[i]) / beta_oipc_eff[i]
+      d2h_precip_std <- (d2h_wax_with_error - mu_std[i]) / beta_d2Hp_eff[i]
 
       # Back-transform to original scale
       d2h_precip_post[iter, i] <- d2h_precip_std * scaling$oipc_sd + scaling$oipc_mean

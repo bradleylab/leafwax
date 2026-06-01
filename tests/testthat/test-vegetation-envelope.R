@@ -135,7 +135,7 @@ test_that("model without all 8 PFT coefficients errors with the missing column n
     error = function(e) conditionMessage(e)
   )
   expect_match(err, "beta_tree")
-  expect_match(err, "beta_oipc_x_c4")
+  expect_match(err, "beta_d2Hp_x_c4")
 })
 
 test_that("n_draws subsampling is deterministic", {

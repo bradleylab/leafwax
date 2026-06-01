@@ -37,11 +37,15 @@ Downloads model posterior draws and lookup tables from GitHub releases
 with progress tracking and integrity verification.
 }
 \examples{
-\dontrun{
-# Download latest data for a model
-download_model_data("baseline_sp", version = "latest")
-
-# Download specific version
-download_model_data("baseline_env", version = "v1.0.1")
+\donttest{
+cache_dir <- file.path(tempdir(), "leafwax_download_example")
+ok <- download_model_data(
+  "baseline",
+  version = "v1.0.1",
+  cache_dir = cache_dir,
+  verify = FALSE,
+  verbose = FALSE
+)
+\dontshow{unlink(cache_dir, recursive = TRUE, force = TRUE)}
 }
 }

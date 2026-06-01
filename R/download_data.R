@@ -16,12 +16,16 @@
 #' @return Logical indicating success
 #' @export
 #' @examples
-#' \dontrun{
-#' # Download latest data for a model
-#' download_model_data("baseline_sp", version = "latest")
-#'
-#' # Download specific version
-#' download_model_data("baseline_env", version = "v1.0.1")
+#' \donttest{
+#' cache_dir <- file.path(tempdir(), "leafwax_download_example")
+#' ok <- download_model_data(
+#'   "baseline",
+#'   version = "v1.0.1",
+#'   cache_dir = cache_dir,
+#'   verify = FALSE,
+#'   verbose = FALSE
+#' )
+#' \dontshow{unlink(cache_dir, recursive = TRUE, force = TRUE)}
 #' }
 download_model_data <- function(model_name,
                                version = "latest",
@@ -111,13 +115,11 @@ download_model_data <- function(model_name,
 #' @return List of download URLs and filenames
 #' @export
 #' @examples
-#' \dontrun{
 #' # Get URLs for latest version
 #' urls <- get_data_url("baseline_sp", "latest")
 #'
 #' # Get URLs for specific version
 #' urls <- get_data_url("baseline_sp", "v1.0.1")
-#' }
 get_data_url <- function(model_name, version = "latest",
                         data_type = c("posteriors")) {
 
@@ -328,12 +330,21 @@ get_data_manifest <- function() {
 #' @return Invisible NULL
 #' @export
 #' @examples
-#' \dontrun{
-#' # Clear cache for specific model
-#' clear_download_cache("baseline_sp")
+#' \donttest{
+#' local({
+#'   old <- options(leafwax.cache_dir = file.path(tempdir(), "leafwax_cache"))
+#'   on.exit({
+#'     unlink(getOption("leafwax.cache_dir"), recursive = TRUE, force = TRUE)
+#'     options(old)
+#'   })
 #'
-#' # Clear all cached data
-#' clear_download_cache(confirm = FALSE)
+#'   post_dir <- file.path(getOption("leafwax.cache_dir"), "posteriors")
+#'   dir.create(post_dir, recursive = TRUE, showWarnings = FALSE)
+#'   file.create(file.path(post_dir, "baseline_sp_posterior.rds"))
+#'
+#'   # Clear cache for a specific model without prompting
+#'   suppressMessages(clear_download_cache("baseline_sp", confirm = FALSE))
+#' })
 #' }
 clear_download_cache <- function(model_name = NULL,
                                 type = c("all", "posteriors"),

@@ -86,7 +86,8 @@ intends within-record inference.}
 
 \item{slope}{Optional numeric override for the d2H_wax-d2H_precip
 slope. NULL (default) uses the model's site-specific slope, i.e.,
-\code{beta_oipc} plus the spatial slope GP perturbation at the site.
+the local \eqn{\beta_{\delta^2 H_p}}{beta_d2Hp} calibration slope
+including the spatial slope GP perturbation at the site.
 A single numeric replaces the slope with a fixed point estimate
 (broadcast across all posterior draws). A vector of length
 \code{n_draws} is used per draw. Use \code{local_effective_slope()} to
@@ -138,26 +139,33 @@ to precipitation isotope values, accounting for all fitted model components
 including vegetation effects and spatial correlations where applicable.
 }
 \examples{
-\dontrun{
-# Simple inversion with base model
-results <- invert_d2h(
-  d2h_wax = c(-150, -140, -130),
-  d2h_wax_err = c(3, 3, 3),
-  longitude = c(-120, -110, -100),
-  latitude = c(40, 35, 30),
-  elevation = c(1000, 1500, 500),
-  model = "baseline"
-)
+\donttest{
+local({
+  old <- options(leafwax.suppress_preview_warning = TRUE)
+  on.exit(options(old))
 
-# Inversion with spatial model
-results <- invert_d2h(
-  d2h_wax = c(-150, -140, -130),
-  d2h_wax_err = c(3, 3, 3),
-  longitude = c(-120, -110, -100),
-  latitude = c(40, 35, 30),
-  elevation = c(1000, 1500, 500),
-  model = "baseline_sp",
-  return_full = TRUE
-)
+  # Simple inversion with base model
+  results <- invert_d2h(
+    d2h_wax = c(-150, -140, -130),
+    d2h_wax_err = c(3, 3, 3),
+    longitude = c(-120, -110, -100),
+    latitude = c(40, 35, 30),
+    elevation = c(1000, 1500, 500),
+    model_name = "baseline",
+    verbose = FALSE
+  )
+
+  # Inversion with spatial model
+  results <- invert_d2h(
+    d2h_wax = c(-150, -140, -130),
+    d2h_wax_err = c(3, 3, 3),
+    longitude = c(-120, -110, -100),
+    latitude = c(40, 35, 30),
+    elevation = c(1000, 1500, 500),
+    model_name = "baseline_sp",
+    return_full = TRUE,
+    verbose = FALSE
+  )
+})
 }
 }

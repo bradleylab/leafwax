@@ -107,13 +107,11 @@ LEAFWAX_DEFAULTS <- list(
 #' @return List of options or single option value
 #' @export
 #' @examples
-#' \dontrun{
 #' # Get all configuration options
-#' leafwax_config()
+#' cfg <- leafwax_config()
 #'
 #' # Get specific option
-#' leafwax_config("auto_download")
-#' }
+#' auto_download <- leafwax_config("auto_download")
 leafwax_config <- function(option = NULL) {
   all_options <- setNames(
     lapply(names(LEAFWAX_DEFAULTS),
@@ -142,16 +140,21 @@ leafwax_config <- function(option = NULL) {
 #' @return Invisible NULL
 #' @export
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' # Enable auto-download
-#' leafwax_set_config(auto_download = TRUE)
+#' old <- options()
+#' leafwax_set_config(auto_download = TRUE, persist = FALSE)
+#' options(old)
 #'
 #' # Set multiple options
+#' old <- options()
 #' leafwax_set_config(
 #'   auto_download = TRUE,
 #'   cache_dir = "~/my_leafwax_cache",
-#'   verbose = FALSE
+#'   verbose = FALSE,
+#'   persist = FALSE
 #' )
+#' options(old)
 #' }
 leafwax_set_config <- function(..., persist = TRUE) {
   args <- list(...)
@@ -171,16 +174,19 @@ leafwax_set_config <- function(..., persist = TRUE) {
   }
 
   if (persist && interactive()) {
-    cat("\nOptions set for current session.\n")
-    cat("To make permanent, add the following to your .Rprofile:\n\n")
-
-    for (opt in names(args)) {
+    profile_lines <- vapply(names(args), function(opt) {
       if (is.character(args[[opt]])) {
-        cat(sprintf("options(leafwax.%s = \"%s\")\n", opt, args[[opt]]))
+        sprintf("options(leafwax.%s = \"%s\")", opt, args[[opt]])
       } else {
-        cat(sprintf("options(leafwax.%s = %s)\n", opt, args[[opt]]))
+        sprintf("options(leafwax.%s = %s)", opt, args[[opt]])
       }
-    }
+    }, character(1))
+
+    message(
+      "\nOptions set for current session.\n",
+      "To make permanent, add the following to your .Rprofile:\n\n",
+      paste(profile_lines, collapse = "\n")
+    )
   }
 
   invisible()

@@ -21,7 +21,7 @@ package, including which covariates each model uses.
 \examples{
 \donttest{
 # List all models
-models <- list_models()
-head(models)
+models <- list_models(verbose = FALSE)
+models_head <- head(models)
 }
 }

@@ -64,7 +64,7 @@ invert_d2H_ensemble <- function(...,
 
   results <- list()
   for (model in models) {
-    cat("Running model:", model, "\n")
+    message("Running model: ", model)
     results[[model]] <- do.call(invert_d2H, c(
       extra_args,
       list(model_name = model, return_full = TRUE)

@@ -11,10 +11,10 @@
 # user-facing API use `C4`; the map is the single point that bridges
 # the two conventions. [FIX-4]
 PFT_COEF_MAP <- list(
-  tree  = c(main = "beta_tree",  interaction = "beta_oipc_x_tree"),
-  shrub = c(main = "beta_shrub", interaction = "beta_oipc_x_shrub"),
-  grass = c(main = "beta_grass", interaction = "beta_oipc_x_grass"),
-  C4    = c(main = "beta_c4",    interaction = "beta_oipc_x_c4")
+  tree  = c(main = "beta_tree",  interaction = "beta_d2Hp_x_tree"),
+  shrub = c(main = "beta_shrub", interaction = "beta_d2Hp_x_shrub"),
+  grass = c(main = "beta_grass", interaction = "beta_d2Hp_x_grass"),
+  C4    = c(main = "beta_c4",    interaction = "beta_d2Hp_x_c4")
 )
 
 # Required PFT labels in the user-facing scenario (exact set, exact
@@ -69,17 +69,19 @@ REQUIRED_PFT_LABELS <- c("tree", "shrub", "grass", "C4")
 #' a user-supplied PFT-change scenario, holding `d2H_precip` constant.
 #' This is the magnitude path of the Level 2 claim taxonomy described
 #' in the accompanying manuscript Section 4.5.3: the calibration's PFT
-#' main-effect and PFT-by-OIPC interaction coefficients are combined
-#' across all posterior draws to bound how much wax change vegetation
-#' reorganization alone can produce at the site, with no contribution
-#' from precipitation-isotope change.
+#' main-effect and PFT-by-\eqn{\delta^2 H_p}{d2Hp} interaction coefficients
+#' are combined across all posterior draws to bound how much wax change
+#' vegetation reorganization alone can produce at the site, with no
+#' contribution from precipitation-isotope change.
 #'
 #' For each posterior draw the per-draw envelope is
 #'   `envelope = sum_k beta_k * delta_pft_k +
-#'               sum_k beta_oipc_x_k * oipc_ref * delta_pft_k`
+#'               sum_k beta_d2Hp_x_k * oipc_ref * delta_pft_k`
 #' where `k` indexes the four PFT classes (`tree`, `shrub`, `grass`,
-#' `C4`) and `delta_pft_k = to[k] - from[k]`. The returned
-#' `envelope_p975_abs = quantile(abs(envelope_draws), 0.975)` is the
+#' `C4`) and `delta_pft_k = to[k] - from[k]`. The
+#' \eqn{\beta_{\delta^2 H_p} \times PFT}{beta_d2Hp-by-PFT} interaction terms
+#' are interactions with the precipitation-isotope calibration slope. The
+#' returned `envelope_p975_abs = quantile(abs(envelope_draws), 0.975)` is the
 #' absolute upper bound used by [assess_claim()] path (b) to test
 #' whether an observed `|delta_wax|` exceeds what the supplied PFT
 #' scenario alone can produce.
@@ -108,9 +110,8 @@ REQUIRED_PFT_LABELS <- c("tree", "shrub", "grass", "C4")
 #'   interval. Same name and value constraints as `from`.
 #' @param model_name Character, name of the calibration model to use.
 #'   Must contain all eight PFT coefficients
-#'   (`beta_{tree,shrub,grass,c4}` and
-#'   `beta_oipc_x_{tree,shrub,grass,c4}`). Default
-#'   `"full_interact_sp"` is the only shipped model that satisfies
+#'   (PFT main effects and PFT-by-\eqn{\delta^2 H_p}{d2Hp} interactions).
+#'   Default `"full_interact_sp"` is the only shipped model that satisfies
 #'   this requirement.
 #' @param n_draws Integer, number of posterior draws to use. `NULL`
 #'   (default) uses all available draws. Subsampling is deterministic
@@ -143,17 +144,22 @@ REQUIRED_PFT_LABELS <- c("tree", "shrub", "grass", "C4")
 #' @export
 #' @examples
 #' \donttest{
-#' # Hypothetical: a 30 percentage-point woody-to-grass transition at a
-#' # site where the OIPC raster lookup gave d2H_precip approximately -60 per mil.
-#' env <- compute_vegetation_envelope(
-#'   oipc_ref = -60,
-#'   from = c(tree = 0.4, shrub = 0.3, grass = 0.2, C4 = 0.05),
-#'   to   = c(tree = 0.1, shrub = 0.2, grass = 0.5, C4 = 0.20),
-#'   model_name = "full_interact_sp",
-#'   n_draws = 100,
-#'   verbose = FALSE
-#' )
-#' env$envelope_p975_abs   # absolute 97.5% upper bound of vegetation-only |Delta wax|
+#' local({
+#'   old <- options(leafwax.suppress_preview_warning = TRUE)
+#'   on.exit(options(old))
+#'
+#'   # Hypothetical: a 30 percentage-point woody-to-grass transition at a
+#'   # site where the OIPC raster lookup gave d2H_precip approximately -60 per mil.
+#'   env <- compute_vegetation_envelope(
+#'     oipc_ref = -60,
+#'     from = c(tree = 0.4, shrub = 0.3, grass = 0.2, C4 = 0.05),
+#'     to   = c(tree = 0.1, shrub = 0.2, grass = 0.5, C4 = 0.20),
+#'     model_name = "full_interact_sp",
+#'     n_draws = 100,
+#'     verbose = FALSE
+#'   )
+#'   vegetation_bound <- env$envelope_p975_abs
+#' })
 #' }
 compute_vegetation_envelope <- function(oipc_ref,
                                         from,
@@ -184,7 +190,7 @@ compute_vegetation_envelope <- function(oipc_ref,
   missing_cols  <- setdiff(required_cols, param_names)
   if (length(missing_cols) > 0L) {
     stop(sprintf(
-      "model '%s' is missing required PFT coefficient column(s): %s. The vegetation envelope requires all four main effects and all four OIPC-by-PFT interactions; use a model that fits them (e.g., 'full_interact_sp').",
+      "model '%s' is missing required PFT coefficient column(s): %s. The vegetation envelope requires all four main effects and all four d2H_p-by-PFT interactions; use a model that fits them (e.g., 'full_interact_sp').",
       model_name, paste(missing_cols, collapse = ", ")
     ), call. = FALSE)
   }
@@ -202,7 +208,7 @@ compute_vegetation_envelope <- function(oipc_ref,
   # classes. Vectorized: each row is one posterior draw, each column
   # one PFT class. `delta_pft` is recycled along rows by `*`. Manuscript
   # §4.5.3 formula:
-  #   envelope = Σ_k β_k·ΔPFT_k + Σ_k β_oipc_x_k·oipc_ref·ΔPFT_k
+  #   envelope = Σ_k β_k·ΔPFT_k + Σ_k β_d2Hp_x_k·oipc_ref·ΔPFT_k
   dv <- as.numeric(delta_pft[REQUIRED_PFT_LABELS])
   main_contrib <- sweep(beta_main, 2, dv, `*`)
   intr_contrib <- sweep(beta_intr * oipc_ref, 2, dv, `*`)

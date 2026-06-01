@@ -69,6 +69,25 @@ resolve_posterior_file <- function(model_name) {
   NULL
 }
 
+normalise_posterior_names <- function(draws) {
+  current_names <- c(
+    beta_oipc = "beta_d2Hp",
+    beta_oipc_x_c4 = "beta_d2Hp_x_c4",
+    beta_oipc_x_tree = "beta_d2Hp_x_tree",
+    beta_oipc_x_shrub = "beta_d2Hp_x_shrub",
+    beta_oipc_x_grass = "beta_d2Hp_x_grass"
+  )
+  draw_names <- names(draws)
+  for (old_name in names(current_names)) {
+    new_name <- current_names[[old_name]]
+    if (old_name %in% draw_names && !new_name %in% draw_names) {
+      draw_names[draw_names == old_name] <- new_name
+    }
+  }
+  names(draws) <- draw_names
+  draws
+}
+
 #' Load posterior draws for a model
 #'
 #' Loads posterior draws for one of the 14 leafwax v10 models. The
@@ -104,11 +123,16 @@ resolve_posterior_file <- function(model_name) {
 #'   "light"), optional `spatial`, and accessor closures.
 #' @export
 #' @examples
-#' # Load a model (preview tier on a fresh install)
-#' model <- load_posteriors("baseline")
+#' local({
+#'   old <- options(leafwax.suppress_preview_warning = TRUE)
+#'   on.exit(options(old))
 #'
-#' # Spatial model with limited draws
-#' model_fast <- load_posteriors("baseline_sp", n_draws = 50)
+#'   # Load a model (preview tier on a fresh install)
+#'   model <- load_posteriors("baseline", verbose = FALSE)
+#'
+#'   # Spatial model with limited draws
+#'   model_fast <- load_posteriors("baseline_sp", n_draws = 50, verbose = FALSE)
+#' })
 load_posteriors <- function(model_name, n_draws = NULL, verbose = TRUE) {
 
   if (verbose) {
@@ -125,6 +149,7 @@ load_posteriors <- function(model_name, n_draws = NULL, verbose = TRUE) {
 
   # Load posterior draws
   draws <- readRDS(posterior_file)
+  draws <- normalise_posterior_names(draws)
 
   if (verbose) {
     message("  Loaded ", nrow(draws), " draws, ", ncol(draws), " parameters")
@@ -171,10 +196,10 @@ load_posteriors <- function(model_name, n_draws = NULL, verbose = TRUE) {
     has_elevation = any(grepl("^beta_elev", param_names)),
     has_precip    = any(grepl("^beta_precip", param_names)),
     has_c4        = any(grepl("^beta_c4", param_names)) ||
-                    any(grepl("oipc.*c4|c4.*oipc", param_names, ignore.case = TRUE)),
+                    any(grepl("d2Hp.*c4|c4.*d2Hp", param_names, ignore.case = TRUE)),
     has_pft       = any(grepl("^beta_(tree|shrub|grass)", param_names)),
     has_gp        = grepl("(^|_)sp$", model_name),
-    has_interaction = any(grepl("oipc.*(tree|shrub|grass|c4)|(tree|shrub|grass|c4).*oipc",
+    has_interaction = any(grepl("d2Hp.*(tree|shrub|grass|c4)|(tree|shrub|grass|c4).*d2Hp",
                                 param_names, ignore.case = TRUE))
   )
 
@@ -246,7 +271,7 @@ load_posteriors <- function(model_name, n_draws = NULL, verbose = TRUE) {
       get_base_params = function() {
         list(
           beta_0 = if ("beta_0" %in% names(draws)) draws$beta_0 else draws$b0,
-          beta_oipc = if ("beta_oipc" %in% names(draws)) draws$beta_oipc else draws$b1,
+          beta_d2Hp = if ("beta_d2Hp" %in% names(draws)) draws$beta_d2Hp else draws$b1,
           sigma = draws$sigma,
           lambda_decay = if ("lambda_decay" %in% names(draws)) draws$lambda_decay else NULL,
           effective_scale_km = if ("effective_scale_km" %in% names(draws)) draws$effective_scale_km else NULL
@@ -297,6 +322,8 @@ load_posteriors <- function(model_name, n_draws = NULL, verbose = TRUE) {
 #' Print method for leafwax_posterior
 #' @param x A leafwax_posterior object
 #' @param ... Additional arguments
+#' @return The input `leafwax_posterior` object `x`, invisibly. Called for
+#'   its side effect of printing a one-line model summary to the console.
 #' @export
 print.leafwax_posterior <- function(x, ...) {
   cat("Leafwax Model:", x$metadata$model_name, "\n")

@@ -79,29 +79,37 @@ precipitation isotopes. Automatically selects appropriate model based on
 available data and returns results in a tidy format.
 }
 \examples{
-\dontrun{
-# Using data frame input
-data(example_data)
-results <- predict_d2h_precip(example_data)
+\donttest{
+local({
+  old <- options(leafwax.suppress_preview_warning = TRUE)
+  on.exit(options(old))
 
-# Using individual vectors
-results <- predict_d2h_precip(
-  d2h_wax = c(-150, -140, -130),
-  longitude = c(-120, -110, -100),
-  latitude = c(40, 35, 30),
-  elevation = c(1000, 1500, 500)
-)
+  # Using data frame input
+  data(example_data)
+  results <- predict_d2h_precip(example_data, verbose = FALSE)
 
-# Specify model explicitly
-results <- predict_d2h_precip(
-  example_data,
-  model = "baseline_env_sp"
-)
+  # Using individual vectors
+  results <- predict_d2h_precip(
+    d2h_wax = c(-150, -140, -130),
+    longitude = c(-120, -110, -100),
+    latitude = c(40, 35, 30),
+    elevation = c(1000, 1500, 500),
+    verbose = FALSE
+  )
 
-# Get full posterior draws
-results <- predict_d2h_precip(
-  example_data,
-  return_draws = TRUE
-)
+  # Specify model explicitly
+  results <- predict_d2h_precip(
+    example_data,
+    model = "baseline_env_sp",
+    verbose = FALSE
+  )
+
+  # Get full posterior draws
+  results <- predict_d2h_precip(
+    example_data,
+    return_draws = TRUE,
+    verbose = FALSE
+  )
+})
 }
 }

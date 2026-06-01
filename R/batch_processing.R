@@ -33,18 +33,32 @@
 #' @return Data frame with predictions for all sites
 #' @export
 #' @examples
-#' \dontrun{
-#' # Load a large dataset
-#' large_data <- read.csv("sites.csv")
+#' \donttest{
+#' local({
+#'   old <- options(leafwax.suppress_preview_warning = TRUE)
+#'   on.exit(options(old))
 #'
-#' # Process with progress bar
-#' results <- batch_predict(large_data, progress = TRUE)
+#'   data(example_data)
+#'   large_data <- example_data[rep(seq_len(nrow(example_data)), length.out = 12), ]
+#'   row.names(large_data) <- NULL
 #'
-#' # Process in parallel
-#' results <- batch_predict(large_data, parallel = TRUE, n_cores = 4)
+#'   # Process in chunks
+#'   results <- batch_predict(
+#'     large_data,
+#'     chunk_size = 6,
+#'     progress = FALSE,
+#'     verbose = FALSE
+#'   )
 #'
-#' # Process with specific model
-#' results <- batch_predict(large_data, model = "baseline_env_sp")
+#'   # Process with a specific model
+#'   results <- batch_predict(
+#'     large_data,
+#'     model = "baseline_sp",
+#'     chunk_size = 6,
+#'     progress = FALSE,
+#'     verbose = FALSE
+#'   )
+#' })
 #' }
 batch_predict <- function(data,
                          model = "auto",
@@ -281,21 +295,28 @@ process_parallel <- function(data, chunks, model, n_cores, progress, ...) {
 #' @return Data frame with ensemble predictions or list of all results
 #' @export
 #' @examples
-#' \dontrun{
-#' data(example_data)
+#' \donttest{
+#' local({
+#'   old <- options(leafwax.suppress_preview_warning = TRUE)
+#'   on.exit(options(old))
 #'
-#' # Compare multiple models
-#' comparison <- compare_models(
-#'   example_data,
-#'   models = c("baseline", "baseline_env", "baseline_sp")
-#' )
+#'   data(example_data)
 #'
-#' # Get all individual model results
-#' all_results <- compare_models(
-#'   example_data,
-#'   models = c("baseline", "baseline_env"),
-#'   return_all = TRUE
-#' )
+#'   # Compare multiple models
+#'   comparison <- compare_models(
+#'     example_data,
+#'     models = c("baseline", "baseline_env", "baseline_sp"),
+#'     progress = FALSE
+#'   )
+#'
+#'   # Get all individual model results
+#'   all_results <- compare_models(
+#'     example_data,
+#'     models = c("baseline", "baseline_env"),
+#'     return_all = TRUE,
+#'     progress = FALSE
+#'   )
+#' })
 #' }
 compare_models <- function(data,
                           models = NULL,
@@ -451,4 +472,3 @@ compare_models <- function(data,
     return(ensemble_results)
   }
 }
-

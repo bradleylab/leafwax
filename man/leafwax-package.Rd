@@ -64,18 +64,24 @@ covariates the caller has supplied; otherwise pick a model name from
 }
 
 \examples{
-# List available models
-models <- available_models()
-print(models)
+local({
+  old <- options(leafwax.suppress_preview_warning = TRUE)
+  on.exit(options(old))
 
-# Simple single-location inversion
-result <- invert_d2H(
-  d2H_wax = -150,
-  d2H_wax_sd = 3,
-  longitude = -120,
-  latitude = 40,
-  model_name = "baseline"
-)
+  # List available models
+  models <- available_models()
+  n_models <- length(models)
+
+  # Simple single-location inversion
+  result <- invert_d2H(
+    d2H_wax = -150,
+    d2H_wax_sd = 3,
+    longitude = -120,
+    latitude = 40,
+    model_name = "baseline",
+    verbose = FALSE
+  )
+})
 
 }
 \references{

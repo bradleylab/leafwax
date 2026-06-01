@@ -47,9 +47,14 @@ cache and then call \code{load_posteriors()} again -- the cache tier wins
 over the preview tier and no further downloads are needed.
 }
 \examples{
-# Load a model (preview tier on a fresh install)
-model <- load_posteriors("baseline")
+local({
+  old <- options(leafwax.suppress_preview_warning = TRUE)
+  on.exit(options(old))
 
-# Spatial model with limited draws
-model_fast <- load_posteriors("baseline_sp", n_draws = 50)
+  # Load a model (preview tier on a fresh install)
+  model <- load_posteriors("baseline", verbose = FALSE)
+
+  # Spatial model with limited draws
+  model_fast <- load_posteriors("baseline_sp", n_draws = 50, verbose = FALSE)
+})
 }

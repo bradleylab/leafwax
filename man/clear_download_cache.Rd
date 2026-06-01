@@ -24,11 +24,20 @@ Invisible NULL
 Removes downloaded model data from the local cache.
 }
 \examples{
-\dontrun{
-# Clear cache for specific model
-clear_download_cache("baseline_sp")
+\donttest{
+local({
+  old <- options(leafwax.cache_dir = file.path(tempdir(), "leafwax_cache"))
+  on.exit({
+    unlink(getOption("leafwax.cache_dir"), recursive = TRUE, force = TRUE)
+    options(old)
+  })
 
-# Clear all cached data
-clear_download_cache(confirm = FALSE)
+  post_dir <- file.path(getOption("leafwax.cache_dir"), "posteriors")
+  dir.create(post_dir, recursive = TRUE, showWarnings = FALSE)
+  file.create(file.path(post_dir, "baseline_sp_posterior.rds"))
+
+  # Clear cache for a specific model without prompting
+  suppressMessages(clear_download_cache("baseline_sp", confirm = FALSE))
+})
 }
 }

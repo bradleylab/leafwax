@@ -11,6 +11,10 @@
 
 \item{...}{Additional arguments}
 }
+\value{
+The input \code{leafwax_posterior} object \code{x}, invisibly. Called for
+its side effect of printing a one-line model summary to the console.
+}
 \description{
 Print method for leafwax_posterior
 }
