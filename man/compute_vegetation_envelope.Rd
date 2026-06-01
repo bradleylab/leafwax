@@ -30,9 +30,8 @@ interval. Same name and value constraints as \code{from}.}
 
 \item{model_name}{Character, name of the calibration model to use.
 Must contain all eight PFT coefficients
-(\verb{beta_\{tree,shrub,grass,c4\}} and
-\verb{beta_oipc_x_\{tree,shrub,grass,c4\}}). Default
-\code{"full_interact_sp"} is the only shipped model that satisfies
+(PFT main effects and PFT-by-\eqn{\delta^2 H_p}{d2Hp} interactions).
+Default \code{"full_interact_sp"} is the only shipped model that satisfies
 this requirement.}
 
 \item{n_draws}{Integer, number of posterior draws to use. \code{NULL}
@@ -65,17 +64,19 @@ Computes the posterior-propagated wax-shift envelope expected under
 a user-supplied PFT-change scenario, holding \code{d2H_precip} constant.
 This is the magnitude path of the Level 2 claim taxonomy described
 in the accompanying manuscript Section 4.5.3: the calibration's PFT
-main-effect and PFT-by-OIPC interaction coefficients are combined
-across all posterior draws to bound how much wax change vegetation
-reorganization alone can produce at the site, with no contribution
-from precipitation-isotope change.
+main-effect and PFT-by-\eqn{\delta^2 H_p}{d2Hp} interaction coefficients
+are combined across all posterior draws to bound how much wax change
+vegetation reorganization alone can produce at the site, with no
+contribution from precipitation-isotope change.
 }
 \details{
 For each posterior draw the per-draw envelope is
-\verb{envelope = sum_k beta_k * delta_pft_k + sum_k beta_oipc_x_k * oipc_ref * delta_pft_k}
+\verb{envelope = sum_k beta_k * delta_pft_k + sum_k beta_d2Hp_x_k * oipc_ref * delta_pft_k}
 where \code{k} indexes the four PFT classes (\code{tree}, \code{shrub}, \code{grass},
-\code{C4}) and \code{delta_pft_k = to[k] - from[k]}. The returned
-\code{envelope_p975_abs = quantile(abs(envelope_draws), 0.975)} is the
+\code{C4}) and \code{delta_pft_k = to[k] - from[k]}. The
+\eqn{\beta_{\delta^2 H_p} \times PFT}{beta_d2Hp-by-PFT} interaction terms
+are interactions with the precipitation-isotope calibration slope. The
+returned \code{envelope_p975_abs = quantile(abs(envelope_draws), 0.975)} is the
 absolute upper bound used by \code{\link[=assess_claim]{assess_claim()}} path (b) to test
 whether an observed \verb{|delta_wax|} exceeds what the supplied PFT
 scenario alone can produce.
@@ -100,16 +101,21 @@ Section 4.5.6 places it in the Level 2 claim taxonomy.
 
 \examples{
 \donttest{
-# Hypothetical: a 30 percentage-point woody-to-grass transition at a
-# site where the OIPC raster lookup gave d2H_precip approximately -60 per mil.
-env <- compute_vegetation_envelope(
-  oipc_ref = -60,
-  from = c(tree = 0.4, shrub = 0.3, grass = 0.2, C4 = 0.05),
-  to   = c(tree = 0.1, shrub = 0.2, grass = 0.5, C4 = 0.20),
-  model_name = "full_interact_sp",
-  n_draws = 100,
-  verbose = FALSE
-)
-env$envelope_p975_abs   # absolute 97.5\% upper bound of vegetation-only |Delta wax|
+local({
+  old <- options(leafwax.suppress_preview_warning = TRUE)
+  on.exit(options(old))
+
+  # Hypothetical: a 30 percentage-point woody-to-grass transition at a
+  # site where the OIPC raster lookup gave d2H_precip approximately -60 per mil.
+  env <- compute_vegetation_envelope(
+    oipc_ref = -60,
+    from = c(tree = 0.4, shrub = 0.3, grass = 0.2, C4 = 0.05),
+    to   = c(tree = 0.1, shrub = 0.2, grass = 0.5, C4 = 0.20),
+    model_name = "full_interact_sp",
+    n_draws = 100,
+    verbose = FALSE
+  )
+  vegetation_bound <- env$envelope_p975_abs
+})
 }
 }

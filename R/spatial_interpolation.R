@@ -132,7 +132,8 @@ predict_one_gp_mpp <- function(coords_new, knot_coords, z_knots,
 #' @param scaling list with `lon_mean`, `lon_sd`, `lat_mean`, `lat_sd`.
 #' @return list with two matrices, each n_draws x n_obs:
 #'   `intercept` (additive contribution to beta_0 in standardized
-#'   d2H_wax space) and `slope` (additive contribution to beta_oipc).
+#'   d2H_wax space) and `slope` (additive contribution to the local
+#'   \eqn{\beta_{\delta^2 H_p}}{beta_d2Hp} slope).
 #' @keywords internal
 #' @export
 predict_spatial_dual_gp <- function(coords_new, knot_coords, draws, scaling) {
@@ -181,4 +182,3 @@ predict_spatial_dual_gp <- function(coords_new, knot_coords, draws, scaling) {
                                    draws[[ls_col]], scaling)
   )
 }
-

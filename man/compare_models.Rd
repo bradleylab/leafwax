@@ -33,20 +33,27 @@ Data frame with ensemble predictions or list of all results
 Runs predictions using multiple models and compares results.
 }
 \examples{
-\dontrun{
-data(example_data)
+\donttest{
+local({
+  old <- options(leafwax.suppress_preview_warning = TRUE)
+  on.exit(options(old))
 
-# Compare multiple models
-comparison <- compare_models(
-  example_data,
-  models = c("baseline", "baseline_env", "baseline_sp")
-)
+  data(example_data)
 
-# Get all individual model results
-all_results <- compare_models(
-  example_data,
-  models = c("baseline", "baseline_env"),
-  return_all = TRUE
-)
+  # Compare multiple models
+  comparison <- compare_models(
+    example_data,
+    models = c("baseline", "baseline_env", "baseline_sp"),
+    progress = FALSE
+  )
+
+  # Get all individual model results
+  all_results <- compare_models(
+    example_data,
+    models = c("baseline", "baseline_env"),
+    return_all = TRUE,
+    progress = FALSE
+  )
+})
 }
 }

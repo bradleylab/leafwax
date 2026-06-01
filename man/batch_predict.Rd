@@ -40,17 +40,31 @@ Processes multiple sites with progress indicators and optional parallelization.
 Handles large datasets efficiently by processing in chunks.
 }
 \examples{
-\dontrun{
-# Load a large dataset
-large_data <- read.csv("sites.csv")
+\donttest{
+local({
+  old <- options(leafwax.suppress_preview_warning = TRUE)
+  on.exit(options(old))
 
-# Process with progress bar
-results <- batch_predict(large_data, progress = TRUE)
+  data(example_data)
+  large_data <- example_data[rep(seq_len(nrow(example_data)), length.out = 12), ]
+  row.names(large_data) <- NULL
 
-# Process in parallel
-results <- batch_predict(large_data, parallel = TRUE, n_cores = 4)
+  # Process in chunks
+  results <- batch_predict(
+    large_data,
+    chunk_size = 6,
+    progress = FALSE,
+    verbose = FALSE
+  )
 
-# Process with specific model
-results <- batch_predict(large_data, model = "baseline_env_sp")
+  # Process with a specific model
+  results <- batch_predict(
+    large_data,
+    model = "baseline_sp",
+    chunk_size = 6,
+    progress = FALSE,
+    verbose = FALSE
+  )
+})
 }
 }

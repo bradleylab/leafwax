@@ -18,15 +18,20 @@ Invisible NULL
 Sets configuration options for the leafwax package.
 }
 \examples{
-\dontrun{
+\donttest{
 # Enable auto-download
-leafwax_set_config(auto_download = TRUE)
+old <- options()
+leafwax_set_config(auto_download = TRUE, persist = FALSE)
+options(old)
 
 # Set multiple options
+old <- options()
 leafwax_set_config(
   auto_download = TRUE,
   cache_dir = "~/my_leafwax_cache",
-  verbose = FALSE
+  verbose = FALSE,
+  persist = FALSE
 )
+options(old)
 }
 }

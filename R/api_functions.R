@@ -41,30 +41,38 @@
 #'
 #' @export
 #' @examples
-#' \dontrun{
-#' # Using data frame input
-#' data(example_data)
-#' results <- predict_d2h_precip(example_data)
+#' \donttest{
+#' local({
+#'   old <- options(leafwax.suppress_preview_warning = TRUE)
+#'   on.exit(options(old))
 #'
-#' # Using individual vectors
-#' results <- predict_d2h_precip(
-#'   d2h_wax = c(-150, -140, -130),
-#'   longitude = c(-120, -110, -100),
-#'   latitude = c(40, 35, 30),
-#'   elevation = c(1000, 1500, 500)
-#' )
+#'   # Using data frame input
+#'   data(example_data)
+#'   results <- predict_d2h_precip(example_data, verbose = FALSE)
 #'
-#' # Specify model explicitly
-#' results <- predict_d2h_precip(
-#'   example_data,
-#'   model = "baseline_env_sp"
-#' )
+#'   # Using individual vectors
+#'   results <- predict_d2h_precip(
+#'     d2h_wax = c(-150, -140, -130),
+#'     longitude = c(-120, -110, -100),
+#'     latitude = c(40, 35, 30),
+#'     elevation = c(1000, 1500, 500),
+#'     verbose = FALSE
+#'   )
 #'
-#' # Get full posterior draws
-#' results <- predict_d2h_precip(
-#'   example_data,
-#'   return_draws = TRUE
-#' )
+#'   # Specify model explicitly
+#'   results <- predict_d2h_precip(
+#'     example_data,
+#'     model = "baseline_env_sp",
+#'     verbose = FALSE
+#'   )
+#'
+#'   # Get full posterior draws
+#'   results <- predict_d2h_precip(
+#'     example_data,
+#'     return_draws = TRUE,
+#'     verbose = FALSE
+#'   )
+#' })
 #' }
 predict_d2h_precip <- function(data = NULL,
                               d2h_wax = NULL,
@@ -289,8 +297,8 @@ select_best_model_from_flags <- function(has_elevation = FALSE,
 #' @examples
 #' \donttest{
 #' # List all models
-#' models <- list_models()
-#' head(models)
+#' models <- list_models(verbose = FALSE)
+#' models_head <- head(models)
 #' }
 list_models <- function(check_data = TRUE, verbose = TRUE) {
 

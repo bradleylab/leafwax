@@ -17,8 +17,13 @@ Returns the path to the local cache directory for leafwax model data.
 Uses rappdirs for platform-specific paths or a user-specified directory.
 }
 \examples{
-\dontrun{
-cache_dir <- get_cache_dir()
-list.files(cache_dir)
+\donttest{
+local({
+  old <- options(leafwax.cache_dir = file.path(tempdir(), "leafwax_cache"))
+  on.exit(options(old))
+
+  cache_dir <- get_cache_dir(create = FALSE)
+  dir.exists(cache_dir)
+})
 }
 }

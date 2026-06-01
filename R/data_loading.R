@@ -9,9 +9,14 @@
 #' @return Character string with the cache directory path
 #' @export
 #' @examples
-#' \dontrun{
-#' cache_dir <- get_cache_dir()
-#' list.files(cache_dir)
+#' \donttest{
+#' local({
+#'   old <- options(leafwax.cache_dir = file.path(tempdir(), "leafwax_cache"))
+#'   on.exit(options(old))
+#'
+#'   cache_dir <- get_cache_dir(create = FALSE)
+#'   dir.exists(cache_dir)
+#' })
 #' }
 get_cache_dir <- function(create = TRUE) {
   # Check for user-specified cache directory
@@ -77,8 +82,13 @@ get_data_path <- function(filename, data_source = "auto") {
 #' @return Logical indicating whether the cached posterior file exists.
 #' @export
 #' @examples
-#' \dontrun{
-#' exists <- check_data_cache("baseline_sp")
+#' \donttest{
+#' local({
+#'   old <- options(leafwax.cache_dir = file.path(tempdir(), "leafwax_cache"))
+#'   on.exit(options(old))
+#'
+#'   exists <- check_data_cache("baseline_sp", verbose = FALSE)
+#' })
 #' }
 check_data_cache <- function(model_name,
                              data_type = c("minimal", "standard", "full"),
@@ -114,12 +124,17 @@ check_data_cache <- function(model_name,
 #' @return Character vector of available model names
 #' @export
 #' @examples
-#' \dontrun{
-#' # List all cached models
-#' models <- list_cached_models()
+#' \donttest{
+#' local({
+#'   old <- options(leafwax.cache_dir = file.path(tempdir(), "leafwax_cache"))
+#'   on.exit(options(old))
 #'
-#' # List models with full data
-#' models_full <- list_cached_models(data_type = "full")
+#'   # List all cached models
+#'   models <- list_cached_models(verbose = FALSE)
+#'
+#'   # List models with full data
+#'   models_full <- list_cached_models(data_type = "full", verbose = FALSE)
+#' })
 #' }
 list_cached_models <- function(data_type = NULL, verbose = TRUE) {
 
@@ -181,12 +196,17 @@ get_cache_files <- function(model_name, data_type, cache_dir) {
 #' @return Data frame with cache size information
 #' @export
 #' @examples
-#' \dontrun{
-#' # Get total cache size
-#' cache_info <- get_cache_info()
+#' \donttest{
+#' local({
+#'   old <- options(leafwax.cache_dir = file.path(tempdir(), "leafwax_cache"))
+#'   on.exit(options(old))
 #'
-#' # Get size by model and type
-#' cache_info <- get_cache_info(by_model = TRUE, by_type = TRUE)
+#'   # Get total cache size
+#'   cache_info <- get_cache_info()
+#'
+#'   # Get size by model and type
+#'   cache_info <- get_cache_info(by_model = TRUE, by_type = TRUE)
+#' })
 #' }
 get_cache_info <- function(by_model = FALSE, by_type = FALSE) {
 
@@ -258,4 +278,3 @@ get_cache_info <- function(by_model = FALSE, by_type = FALSE) {
     return(summary[order(summary$model, summary$type), ])
   }
 }
-

@@ -28,7 +28,12 @@ Checks whether the heavy posterior file for a model is present in
 the user cache populated by \code{\link[=download_model_data]{download_model_data()}}.
 }
 \examples{
-\dontrun{
-exists <- check_data_cache("baseline_sp")
+\donttest{
+local({
+  old <- options(leafwax.cache_dir = file.path(tempdir(), "leafwax_cache"))
+  on.exit(options(old))
+
+  exists <- check_data_cache("baseline_sp", verbose = FALSE)
+})
 }
 }

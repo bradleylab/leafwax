@@ -161,11 +161,12 @@ record-specific evidence and citations.
 ## 4. Local effective slope
 
 `local_effective_slope()` returns one slope value for each posterior
-draw at the site. Each value combines the global `beta_oipc` draw with
-the spatial slope GP. The function returns the model draws directly; it
-does not cap or filter them. Passing the full vector to `invert_d2H()`
-carries slope uncertainty into the reconstruction. Passing one number,
-such as the posterior median, gives a point-slope sensitivity run.
+draw at the site. Each value combines the global `beta_d2Hp`
+precipitation-isotope calibration slope with the spatial slope GP. The
+function returns the model draws directly; it does not cap or filter them.
+Passing the full vector to `invert_d2H()` carries slope uncertainty into
+the reconstruction. Passing one number, such as the posterior median, gives
+a point-slope sensitivity run.
 
 The examples below use `baseline_sp` (spatial intercepts + slope GP,
 no environmental predictors) for simplicity. `baseline_env_sp` is the

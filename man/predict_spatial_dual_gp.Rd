@@ -22,7 +22,8 @@ and one of \code{ls_intercept_km} / \code{ls_slope_km}.}
 \value{
 list with two matrices, each n_draws x n_obs:
 \code{intercept} (additive contribution to beta_0 in standardized
-d2H_wax space) and \code{slope} (additive contribution to beta_oipc).
+d2H_wax space) and \code{slope} (additive contribution to the local
+\eqn{\beta_{\delta^2 H_p}}{beta_d2Hp} slope).
 }
 \description{
 v10 carries two independent GPs. Both share knot coordinates and a

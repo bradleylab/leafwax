@@ -8,11 +8,12 @@
 
 #' Local effective slope at a paleo-reconstruction site
 #'
-#' Returns a per-draw vector of the d2H_wax-d2H_precip slope at a
-#' single site, combining the global posterior `beta_oipc` with the
-#' spatial slope GP prediction at that site. The returned vector is
-#' the raw posterior at the site; every draw the calibration produced
-#' is preserved without modification.
+#' Returns a per-draw vector of the local
+#' \eqn{\beta_{\delta^2 H_p}}{beta_d2Hp} calibration slope at a single
+#' site, combining the global precipitation-isotope slope with the spatial
+#' slope GP prediction at that site. The returned vector is the raw posterior
+#' at the site; every draw the calibration produced is preserved without
+#' modification.
 #'
 #' Two modes:
 #' \itemize{
@@ -52,35 +53,41 @@
 #' @export
 #' @examples
 #' \donttest{
-#' # St. Louis with the baseline_sp model
-#' s <- local_effective_slope(
-#'   longitude = -90, latitude = 38,
-#'   model_name = "baseline_sp",
-#'   n_draws = 200
-#' )
-#' summary(s)
+#' local({
+#'   old <- options(leafwax.suppress_preview_warning = TRUE)
+#'   on.exit(options(old))
 #'
-#' # How often does the calibration imply a slope above the simple-model
-#' # stationarity bound at this site?
-#' mean(s > 0.88)
+#'   # St. Louis with the baseline_sp model
+#'   s <- local_effective_slope(
+#'     longitude = -90, latitude = 38,
+#'     model_name = "baseline_sp",
+#'     n_draws = 200
+#'   )
+#'   slope_summary <- summary(s)
 #'
-#' # Override with a defended local slope
-#' s_fixed <- local_effective_slope(
-#'   longitude = -90, latitude = 38,
-#'   model_name = "baseline_sp",
-#'   override = 0.55
-#' )
+#'   # How often does the calibration imply a slope above the simple-model
+#'   # stationarity bound at this site?
+#'   fraction_above_bound <- mean(s > 0.88)
 #'
-#' # Pass through to the inversion. The slope vector and the
-#' # inversion's posterior must use the same n_draws: pair
-#' # local_effective_slope(..., n_draws = N) with
-#' # invert_d2H(..., n_posterior_draws = N, slope = s), or pass a
-#' # single point estimate (e.g., median(s)).
-#' invert_d2H(d2H_wax = -180, d2H_wax_sd = 3,
-#'            longitude = -90, latitude = 38,
-#'            model_name = "baseline_sp",
-#'            n_posterior_draws = 200,
-#'            slope = s)
+#'   # Override with a defended local slope
+#'   s_fixed <- local_effective_slope(
+#'     longitude = -90, latitude = 38,
+#'     model_name = "baseline_sp",
+#'     override = 0.55
+#'   )
+#'
+#'   # Pass through to the inversion. The slope vector and the
+#'   # inversion's posterior must use the same n_draws: pair
+#'   # local_effective_slope(..., n_draws = N) with
+#'   # invert_d2H(..., n_posterior_draws = N, slope = s), or pass a
+#'   # single point estimate (e.g., median(s)).
+#'   result <- invert_d2H(d2H_wax = -180, d2H_wax_sd = 3,
+#'                        longitude = -90, latitude = 38,
+#'                        model_name = "baseline_sp",
+#'                        n_posterior_draws = 200,
+#'                        slope = s,
+#'                        verbose = FALSE)
+#' })
 #' }
 local_effective_slope <- function(longitude,
                                   latitude,
@@ -99,12 +106,12 @@ local_effective_slope <- function(longitude,
   model <- load_posteriors(model_name, n_draws = n_draws, verbose = verbose)
   draws <- model$draws
 
-  if (!"beta_oipc" %in% colnames(draws)) {
-    stop("model '", model_name, "' has no beta_oipc parameter; ",
+  if (!"beta_d2Hp" %in% colnames(draws)) {
+    stop("model '", model_name, "' has no beta_d2Hp parameter; ",
          "cannot extract a slope")
   }
-  beta_oipc <- draws[["beta_oipc"]]
-  n_iter    <- length(beta_oipc)
+  beta_d2Hp <- draws[["beta_d2Hp"]]
+  n_iter    <- length(beta_d2Hp)
 
   # Site-specific slope perturbation from the spatial slope GP. For
   # non-spatial models the perturbation is identically zero.
@@ -127,12 +134,12 @@ local_effective_slope <- function(longitude,
     slope_pert <- as.numeric(dual$slope[, 1])
     if (length(slope_pert) != n_iter) {
       stop("internal: spatial slope perturbation length (",
-           length(slope_pert), ") does not match beta_oipc length (",
+           length(slope_pert), ") does not match beta_d2Hp length (",
            n_iter, ")")
     }
   }
 
-  slope <- beta_oipc + slope_pert
+  slope <- beta_d2Hp + slope_pert
 
   # Override replaces the model slope with a user-supplied value or
   # vector. The override is the user's decision; the package does not

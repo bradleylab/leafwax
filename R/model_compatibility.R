@@ -1,4 +1,4 @@
-# R/model_compatibility.R - Model compatibility and parameter mapping
+# R/model_compatibility.R - Model compatibility and parameter metadata
 
 #' Get model parameters
 #'
@@ -11,7 +11,7 @@
 get_model_parameters <- function(model_name) {
 
   # Base parameters that all models have
-  base_params <- c("beta_0", "beta_oipc", "sigma")
+  base_params <- c("beta_0", "beta_d2Hp", "sigma")
 
   # Initialize capabilities. The v10 fits did not produce beta_elev
   # coefficients despite the historical "elevation_*" / "env" naming;
@@ -50,12 +50,12 @@ get_model_parameters <- function(model_name) {
 
   if (capabilities$has_interaction) {
     if (capabilities$has_c4) {
-      expected_params <- c(expected_params, "beta_oipc_x_c4")
+      expected_params <- c(expected_params, "beta_d2Hp_x_c4")
     }
     if (capabilities$has_pft) {
       expected_params <- c(
         expected_params,
-        "beta_oipc_x_tree", "beta_oipc_x_shrub", "beta_oipc_x_grass"
+        "beta_d2Hp_x_tree", "beta_d2Hp_x_shrub", "beta_d2Hp_x_grass"
       )
     }
   }

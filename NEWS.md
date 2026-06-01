@@ -1,3 +1,19 @@
+# leafwax 0.2.7
+
+CRAN resubmission polish.
+
+* Updated `DESCRIPTION` formatting for CRAN: software/service names are quoted
+  as `'Stan'` and `'Zenodo'`, and the data-deposit reference now uses
+  `Bradley (2026) <doi:10.5281/zenodo.20085465>`.
+* Replaced `\dontrun{}` examples with executable `\donttest{}` or unwrapped
+  examples, with temporary cache directories and quiet output where examples
+  touch downloads or cache state.
+* Added the missing return-value documentation for
+  `print.leafwax_posterior()`.
+* Converted the remaining unguarded ensemble progress output to `message()`.
+* Updated package documentation for the precipitation-isotope calibration
+  slope.
+
 # leafwax 0.2.6
 
 Initial CRAN release.

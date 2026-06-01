@@ -13,9 +13,9 @@ test_that("local_effective_slope: spatial model returns per-draw vector", {
   expect_gt(stats::sd(s), 0)
 })
 
-test_that("local_effective_slope: non-spatial model returns global beta_oipc", {
+test_that("local_effective_slope: non-spatial model returns global beta_d2Hp", {
   # baseline (no _sp) has no spatial slope perturbation, so the local
-  # effective slope reduces to beta_oipc. Use all draws so we are not
+  # effective slope reduces to beta_d2Hp. Use all draws so we are not
   # comparing two different random subsets from load_posteriors().
   s_local <- local_effective_slope(
     longitude = -90, latitude = 38,
@@ -23,7 +23,7 @@ test_that("local_effective_slope: non-spatial model returns global beta_oipc", {
     n_draws = NULL, verbose = FALSE
   )
   beta <- as.numeric(load_posteriors("baseline", n_draws = NULL,
-                                     verbose = FALSE)$draws$beta_oipc)
+                                     verbose = FALSE)$draws$beta_d2Hp)
   expect_equal(length(s_local), length(beta))
   expect_equal(s_local, beta, tolerance = 1e-10)
 })
@@ -37,7 +37,7 @@ test_that("local_effective_slope: matches a hand-rolled extraction", {
                                   m$spatial$knot_locs,
                                   m$draws,
                                   m$scaling)
-  hand <- as.numeric(m$draws$beta_oipc) + as.numeric(dual$slope[, 1])
+  hand <- as.numeric(m$draws$beta_d2Hp) + as.numeric(dual$slope[, 1])
 
   # load_posteriors() uses deterministic stratified thinning, so the
   # public helper should be exactly the same posterior slice.
@@ -63,11 +63,11 @@ test_that("local_effective_slope: returns raw posterior, no clipping", {
     n_draws = 200, verbose = FALSE
   )
   beta <- as.numeric(load_posteriors("baseline_sp", n_draws = 200,
-                                     verbose = FALSE)$draws$beta_oipc)
+                                     verbose = FALSE)$draws$beta_d2Hp)
   # The function must not expose a `ceiling` argument that would
   # induce post-hoc modification of the draws.
   expect_false("ceiling" %in% names(formals(local_effective_slope)))
-  # Raw beta_oipc draws above 0.88 must propagate through the
+  # Raw beta_d2Hp draws above 0.88 must propagate through the
   # public API without being clipped.
   if (any(beta > 0.88)) {
     expect_true(any(s > 0.88))
@@ -154,7 +154,7 @@ test_that("load_posteriors: subsampling is deterministic across calls", {
   # invert_d2H() pair draws by position correctly.
   m1 <- load_posteriors("baseline_sp", n_draws = 60, verbose = FALSE)
   m2 <- load_posteriors("baseline_sp", n_draws = 60, verbose = FALSE)
-  expect_identical(m1$draws$beta_oipc, m2$draws$beta_oipc)
+  expect_identical(m1$draws$beta_d2Hp, m2$draws$beta_d2Hp)
   expect_identical(m1$draws[["z_intercept_spatial[1]"]],
                    m2$draws[["z_intercept_spatial[1]"]])
 })
