@@ -1,3 +1,20 @@
+# leafwax 0.3.0
+
+Posterior data update.
+
+* Posteriors re-fit on the frozen analysis run `c2_run_20260626`
+  (n = 1128 calibration observations; Africa 142). This supersedes the
+  earlier v10 / n = 1129 lineage. All 14 model posteriors, the shipped
+  100-draw preview tier, and the spatial-model knot metadata were
+  regenerated from the frozen run.
+* Three interaction models changed their coefficient set to match the
+  frozen Stan specifications: `elevation_c4_interact_sp` now carries the
+  `beta_oipc_x_c4` interaction term (previously absent), while `full` and
+  `full_sp` no longer carry `beta_oipc_x_c4` (retaining the plant-functional-type
+  interactions `beta_oipc_x_grass`, `beta_oipc_x_shrub`, `beta_oipc_x_tree`).
+* The full posteriors are downloaded from the `bradleylab/leafwax-data`
+  v2.0.0 deposit.
+
 # leafwax 0.2.7
 
 CRAN resubmission polish.

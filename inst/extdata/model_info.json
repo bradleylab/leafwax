@@ -139,17 +139,17 @@
     },
     "elevation_c4_interact_sp": {
       "name": "elevation_c4_interact_sp",
-      "description": "OIPC + C4 + spatial effects (historical elevation/interaction-context variant; no fitted elevation or interaction coefficient)",
+      "description": "OIPC + C4 + OIPC x C4 interaction + spatial effects (no fitted elevation coefficient)",
       "is_spatial": true,
       "required_predictors": ["longitude", "latitude", "c4_fraction"],
       "optional_predictors": [],
-      "parameters": ["beta_0", "beta_oipc", "sigma", "beta_c4", "lambda_decay", "effective_scale_km", "spatial_effects"],
+      "parameters": ["beta_0", "beta_oipc", "sigma", "beta_c4", "beta_oipc_x_c4", "lambda_decay", "effective_scale_km", "spatial_effects"],
       "capabilities": {
         "elevation": false,
         "precipitation_amount": false,
         "c4": true,
         "vegetation": false,
-        "interaction": false
+        "interaction": true
       }
     },
     "full": {
@@ -158,7 +158,7 @@
       "is_spatial": false,
       "required_predictors": ["c4_fraction", "pft_tree", "pft_shrub", "pft_grass"],
       "optional_predictors": ["precipitation_amount"],
-      "parameters": ["beta_0", "beta_oipc", "sigma", "beta_precip", "beta_c4", "beta_tree", "beta_shrub", "beta_grass", "beta_oipc_x_c4", "beta_oipc_x_tree", "beta_oipc_x_shrub", "beta_oipc_x_grass"],
+      "parameters": ["beta_0", "beta_oipc", "sigma", "beta_precip", "beta_c4", "beta_tree", "beta_shrub", "beta_grass", "beta_oipc_x_tree", "beta_oipc_x_shrub", "beta_oipc_x_grass"],
       "capabilities": {
         "elevation": false,
         "precipitation_amount": true,
@@ -173,7 +173,7 @@
       "is_spatial": true,
       "required_predictors": ["longitude", "latitude", "c4_fraction", "pft_tree", "pft_shrub", "pft_grass"],
       "optional_predictors": ["precipitation_amount"],
-      "parameters": ["beta_0", "beta_oipc", "sigma", "beta_precip", "beta_c4", "beta_tree", "beta_shrub", "beta_grass", "beta_oipc_x_c4", "beta_oipc_x_tree", "beta_oipc_x_shrub", "beta_oipc_x_grass", "lambda_decay", "effective_scale_km", "spatial_effects"],
+      "parameters": ["beta_0", "beta_oipc", "sigma", "beta_precip", "beta_c4", "beta_tree", "beta_shrub", "beta_grass", "beta_oipc_x_tree", "beta_oipc_x_shrub", "beta_oipc_x_grass", "lambda_decay", "effective_scale_km", "spatial_effects"],
       "capabilities": {
         "elevation": false,
         "precipitation_amount": true,

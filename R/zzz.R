@@ -38,9 +38,12 @@ warn_preview_tier <- function(model_name, n_draws, context = NULL) {
 # enumerate the same names without duplication.
 LEAFWAX_DEFAULTS <- list(
   # Default data URL for downloading model data. Points at the
-  # bradleylab/leafwax-data archive, pinned to release v1.0.1.
-  # Zenodo DOI: 10.5281/zenodo.20085465.
-  data_url = "https://raw.githubusercontent.com/bradleylab/leafwax-data/v1.0.1",
+  # bradleylab/leafwax-data archive, pinned to release v2.0.0
+  # (frozen run c2_run_20260626, n = 1128).
+  # Zenodo concept DOI: 10.5281/zenodo.20085465 (always resolves to the
+  # latest version). The v2.0.0 version DOI is:
+  # 10.5281/zenodo.21286445 (Zenodo record 21286445).
+  data_url = "https://raw.githubusercontent.com/bradleylab/leafwax-data/v2.0.0",
 
   # Default cache directory (NULL means use rappdirs default)
   cache_dir = NULL,

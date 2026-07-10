@@ -16,7 +16,7 @@
 #'     \item \code{c4_only_sp}: C4 vegetation effects only (spatial)
 #'     \item \code{elevation_only_sp}: Historical elevation-context variant (spatial)
 #'     \item \code{elevation_c4_sp}: Historical elevation-context + C4 variant
-#'     \item \code{elevation_c4_interact_sp}: Historical elevation/C4-interaction name; C4 effect only
+#'     \item \code{elevation_c4_interact_sp}: C4 effect + OIPC x C4 interaction (spatial; no fitted elevation coefficient)
 #'     \item \code{full}: Precipitation amount + vegetation interactions without spatial component
 #'     \item \code{full_sp}: Precipitation amount + vegetation interactions with spatial component
 #'     \item \code{full_interact}: Precipitation amount + vegetation interactions
@@ -142,9 +142,10 @@ get_all_model_metadata <- function() {
 
     elevation_c4_interact_sp = model_meta(
       "elevation_c4_interact_sp",
-      "OIPC + C4 + spatial effects (historical elevation/interaction-context variant; no fitted elevation or interaction coefficient)",
+      "OIPC + C4 + OIPC x C4 interaction + spatial effects (no fitted elevation coefficient)",
       has_spatial = TRUE,
       has_c4 = TRUE,
+      has_interaction = TRUE,
       size_mb = 1300
     ),
 

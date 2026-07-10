@@ -26,7 +26,7 @@ get_model_parameters <- function(model_name) {
     has_precip = grepl("env", model_name) || grepl("^full", model_name),
     has_c4 = grepl("(c4|veg|^full)", model_name),
     has_pft = grepl("(veg|^full)", model_name),
-    has_interaction = grepl("(veg|^full)", model_name)
+    has_interaction = grepl("(veg|^full|interact)", model_name)
   )
 
   # Expected parameters based on model type
