@@ -16,37 +16,45 @@
   do.call(rbind, padded)
 }
 
-#' Batch predict precipitation d2H for multiple sites
+#' Jointly invert multiple observations from one record
 #'
-#' Processes multiple sites with progress indicators and optional parallelization.
-#' Handles large datasets efficiently by processing in chunks.
+#' Sends all rows through one joint Bayesian inversion so they coherently
+#' reweight the shared calibration draws. Chunked and parallel processing are
+#' deliberately disabled because splitting a record changes that joint target.
 #'
-#' @param data Data frame containing all measurements
+#' @param data Data frame containing observations from one same-site record. A
+#'   `record_id` column is required when there is more than one row.
 #' @param model Model name or "auto" for automatic selection
-#' @param chunk_size Number of sites to process at once (default 100)
-#' @param parallel Logical whether to use parallel processing
-#' @param n_cores Number of cores for parallel processing (NULL for auto)
+#' @param chunk_size Retained for compatibility and recorded in diagnostics;
+#'   it does not split the joint inversion.
+#' @param parallel Must be `FALSE`; parallel chunks would change the target.
+#' @param n_cores Retained for compatibility and diagnostics.
 #' @param progress Logical whether to show progress bar
 #' @param return_diagnostics Logical whether to return diagnostic information
 #' @param ... Additional arguments passed to predict_d2h_precip
 #'
-#' @return Data frame with predictions for all sites
+#' @return A `leafwax_inverse` object for the jointly inverted rows.
 #' @export
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' local({
 #'   old <- options(leafwax.suppress_preview_warning = TRUE)
 #'   on.exit(options(old))
 #'
 #'   data(example_data)
+#'   prior <- d2h_prior_normal(mean = -70, sd = 30)
 #'   large_data <- example_data[rep(seq_len(nrow(example_data)), length.out = 12), ]
 #'   row.names(large_data) <- NULL
+#'   large_data$longitude <- large_data$longitude[[1]]
+#'   large_data$latitude <- large_data$latitude[[1]]
+#'   large_data$record_id <- "example_record"
 #'
 #'   # Process in chunks
 #'   results <- batch_predict(
 #'     large_data,
 #'     chunk_size = 6,
 #'     progress = FALSE,
+#'     prior = prior,
 #'     verbose = FALSE
 #'   )
 #'
@@ -56,6 +64,7 @@
 #'     model = "baseline_sp",
 #'     chunk_size = 6,
 #'     progress = FALSE,
+#'     prior = prior,
 #'     verbose = FALSE
 #'   )
 #' })
@@ -68,59 +77,37 @@ batch_predict <- function(data,
                          progress = TRUE,
                          return_diagnostics = FALSE,
                          ...) {
-
   n_sites <- nrow(data)
-
-  if (n_sites == 0) {
+  if (n_sites == 0L) {
     stop("Data frame is empty")
   }
-
-  # For small datasets, just use regular predict
-  if (n_sites <= 10) {
-    return(predict_d2h_precip(data, model = model, progress = FALSE, ...))
-  }
-
-  if (progress) {
-    cat("Batch processing", n_sites, "sites\n")
-  }
-
-  # Determine chunks
-  n_chunks <- ceiling(n_sites / chunk_size)
-  chunks <- split(seq_len(n_sites), ceiling(seq_len(n_sites) / chunk_size))
-
-  if (progress) {
-    cat("Processing in", n_chunks, "chunks of up to", chunk_size, "sites\n")
-  }
-
-  # Process chunks
-  if (parallel && n_sites > 100) {
-    results <- process_parallel(data, chunks, model, n_cores, progress, ...)
-  } else {
-    results <- process_sequential(data, chunks, model, progress, ...)
-  }
-
-  # Combine results. Use a column-tolerant rbind so a chunk that hit the
-  # error-fallback path (smaller column set) does not abort the overall
-  # batch with "numbers of columns of arguments do not match".
-  combined_results <- .rbind_chunks(results)
-
-  # Add diagnostics if requested
-  if (return_diagnostics) {
-    attr(combined_results, "diagnostics") <- list(
-      n_sites = n_sites,
-      n_chunks = n_chunks,
-      chunk_size = chunk_size,
-      parallel = parallel,
-      model_used = if (length(unique(combined_results$model_used)) == 1) {
-        unique(combined_results$model_used)
-      } else {
-        "mixed"
-      },
-      processing_time = attr(results, "processing_time")
+  if (isTRUE(parallel)) {
+    stop(
+      "parallel batch inversion is unavailable because splitting rows would ",
+      "change the joint calibration-draw posterior.",
+      call. = FALSE
     )
   }
-
-  return(combined_results)
+  if (progress) {
+    message("Jointly inverting ", n_sites, " observations.")
+  }
+  result <- predict_d2h_precip(
+    data = data,
+    model = model,
+    progress = FALSE,
+    verbose = FALSE,
+    ...
+  )
+  if (return_diagnostics) {
+    result$diagnostics$batch <- list(
+      n_sites = n_sites,
+      joint_call = TRUE,
+      chunking_disabled = TRUE,
+      requested_chunk_size = chunk_size,
+      requested_cores = n_cores
+    )
+  }
+  result
 }
 
 #' Process chunks sequentially with progress bar
@@ -295,24 +282,27 @@ process_parallel <- function(data, chunks, model, n_cores, progress, ...) {
 #' @return Data frame with ensemble predictions or list of all results
 #' @export
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' local({
 #'   old <- options(leafwax.suppress_preview_warning = TRUE)
 #'   on.exit(options(old))
 #'
 #'   data(example_data)
+#'   prior <- d2h_prior_normal(mean = -70, sd = 30)
 #'
 #'   # Compare multiple models
 #'   comparison <- compare_models(
 #'     example_data,
-#'     models = c("baseline", "baseline_env", "baseline_sp"),
+#'     models = c("baseline", "baseline_sp"),
+#'     prior = prior,
 #'     progress = FALSE
 #'   )
 #'
 #'   # Get all individual model results
 #'   all_results <- compare_models(
 #'     example_data,
-#'     models = c("baseline", "baseline_env"),
+#'     models = c("baseline", "baseline_sp"),
+#'     prior = prior,
 #'     return_all = TRUE,
 #'     progress = FALSE
 #'   )
@@ -325,11 +315,14 @@ compare_models <- function(data,
                           progress = TRUE,
                           ...) {
 
-  # Default to a small structurally diverse comparison set rather than
-  # all 14 v10 models. Users wanting an exhaustive sweep should pass
-  # available_models() explicitly.
   if (is.null(models)) {
-    models <- c("baseline", "baseline_sp", "full_sp")
+    stop("models must be supplied explicitly; no default scientific comparison is defined.",
+         call. = FALSE)
+  }
+  unsupported <- setdiff(models, .supported_bayesian_inverse_models)
+  if (length(unsupported)) {
+    stop("Unsupported Bayesian-inversion comparison model(s): ",
+         paste(unsupported, collapse = ", "), call. = FALSE)
   }
 
   # Validate `...` against predict_d2h_precip's formals up front. R's
@@ -342,6 +335,10 @@ compare_models <- function(data,
   # supplied twice in the do.call below.
   pdp_formals <- names(formals(predict_d2h_precip))
   extra_args <- list(...)
+  if (is.null(extra_args$prior)) {
+    stop("A proper prior must be supplied explicitly to compare_models().",
+         call. = FALSE)
+  }
   if (length(extra_args) > 0L) {
     bad <- setdiff(names(extra_args), pdp_formals)
     if (length(bad) > 0L) {
@@ -363,7 +360,10 @@ compare_models <- function(data,
   ]]
 
   if (length(models_with_data) == 0) {
-    stop("No model data available. Download with download_model_data()")
+    stop(
+      "No complete model data available. Use a validated working checkout; ",
+      "public download wiring is pending final validation."
+    )
   }
 
   if (length(models_with_data) < length(models)) {
@@ -423,35 +423,17 @@ compare_models <- function(data,
 
   # Combine results
   if (return_all) {
-    # Return all individual model results. Apply the per-model column
-    # rename here so the cbind product carries unambiguous,
-    # model-tagged column names.
-    rename_cols <- function(df, mname) {
-      keep <- names(df) == ".row_id"
-      names(df)[!keep] <- paste0(names(df)[!keep], "_", mname)
-      df
-    }
-    combined <- rename_cols(model_results[[1]], names(model_results)[1])
-    if (length(model_results) > 1) {
-      for (i in 2:length(model_results)) {
-        combined <- cbind(
-          combined,
-          rename_cols(model_results[[i]], names(model_results)[i])
-        )
-      }
-    }
-    return(combined)
+    return(model_results)
   } else {
     # Compute ensemble summary
-    mean_cols <- grep("mean", names(model_results[[1]]), value = TRUE)
-    median_cols <- grep("median", names(model_results[[1]]), value = TRUE)
-
-    # Extract predictions from each model. sapply() returns a vector
-    # (no dim) when each model contributes a length-1 prediction; coerce
-    # to a 1 x n_models matrix so the row-wise apply() below works for
-    # both single-site and multi-site inputs.
-    means <- sapply(model_results, function(x) x[[mean_cols[1]]])
-    medians <- sapply(model_results, function(x) x[[median_cols[1]]])
+    means <- sapply(
+      model_results,
+      function(x) x$summary$d2h_precip_mean
+    )
+    medians <- sapply(
+      model_results,
+      function(x) x$summary$d2h_precip_median
+    )
     if (is.null(dim(means)))   means   <- matrix(means,   nrow = 1)
     if (is.null(dim(medians))) medians <- matrix(medians, nrow = 1)
 

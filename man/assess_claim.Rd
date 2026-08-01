@@ -57,8 +57,9 @@ and a non-empty \code{evidence} string; required at Level 4).}
 \item{model_name}{Model to use when running the inversion (default
 "baseline_sp").}
 
-\item{...}{Additional args forwarded to \code{invert_d2H()} (e.g.,
-elevation, c4_fraction, pft_*, n_posterior_draws).}
+\item{...}{Additional args forwarded to \code{invert_d2H()}. For an internally
+constructed Level 3+ reconstruction these must include an explicit \code{prior},
+positive \code{n_inverse_samples}, and \code{seed}.}
 }
 \value{
 A list with elements:

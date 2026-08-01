@@ -1,9 +1,11 @@
-# R/download_data.R - Functions for downloading model data from GitHub releases
+# R/download_data.R - Functions for downloading validated model data releases
 
-#' Download model data from GitHub releases
+#' Download model data from the configured public release
 #'
-#' Downloads model posterior draws and lookup tables from GitHub releases
-#' with progress tracking and integrity verification.
+#' Downloads model posterior draws from the release configured in
+#' `inst/extdata/data_urls.json`. Development builds fail closed while
+#' `release_ready` is false, preventing an older incompatible posterior deposit
+#' from being mixed with the current package.
 #'
 #' @param model_name Character string specifying the model name
 #' @param version Version tag to download (default "latest")
@@ -16,11 +18,11 @@
 #' @return Logical indicating success
 #' @export
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' cache_dir <- file.path(tempdir(), "leafwax_download_example")
 #' ok <- download_model_data(
 #'   "baseline",
-#'   version = "v1.0.1",
+#'   version = "latest",
 #'   cache_dir = cache_dir,
 #'   verify = FALSE,
 #'   verbose = FALSE
@@ -106,7 +108,7 @@ download_model_data <- function(model_name,
 
 #' Get data download URLs
 #'
-#' Constructs download URLs for model data from GitHub releases.
+#' Constructs download URLs for the configured model-data release.
 #'
 #' @param model_name Character string specifying the model name
 #' @param version Version tag (e.g., "v1.0.0" or "latest")
@@ -115,11 +117,9 @@ download_model_data <- function(model_name,
 #' @return List of download URLs and filenames
 #' @export
 #' @examples
-#' # Get URLs for latest version
+#' \dontrun{
 #' urls <- get_data_url("baseline_sp", "latest")
-#'
-#' # Get URLs for specific version
-#' urls <- get_data_url("baseline_sp", "v1.0.1")
+#' }
 get_data_url <- function(model_name, version = "latest",
                         data_type = c("posteriors")) {
 
@@ -127,6 +127,13 @@ get_data_url <- function(model_name, version = "latest",
 
   # Load URL configuration
   url_config <- get_url_config()
+  if (!isTRUE(url_config$release_ready)) {
+    stop(
+      "Public posterior download wiring is disabled in this development build ",
+      "until the coordinated chordal data release passes final validation.",
+      call. = FALSE
+    )
+  }
 
   # Get base URL for version
   if (version == "latest") {
@@ -253,16 +260,11 @@ get_url_config <- function() {
   config_file <- system.file("extdata", "data_urls.json",
                             package = "leafwax")
 
-  if (file.exists(config_file)) {
-    config <- jsonlite::fromJSON(config_file)
-  } else {
-    # Fallback for broken installs where data_urls.json is missing from extdata.
-    config <- list(
-      base_url_latest = "https://github.com/bradleylab/leafwax-data/releases/latest/download",
-      base_url_version = "https://github.com/bradleylab/leafwax-data/releases/download/{version}",
-      manifest_url = "https://github.com/bradleylab/leafwax-data/releases/latest/download/manifest.json"
-    )
+  if (!file.exists(config_file)) {
+    stop("Package data URL configuration is missing; refusing an unverified fallback URL.",
+         call. = FALSE)
   }
+  config <- jsonlite::fromJSON(config_file)
 
   return(config)
 }
@@ -290,6 +292,13 @@ get_data_manifest <- function() {
       difftime(Sys.time(), file.info(manifest_file)$mtime, units = "days") > 1) {
 
     url_config <- get_url_config()
+    if (!isTRUE(url_config$release_ready)) {
+      warning(
+        "Public data manifest is unavailable while release wiring is disabled.",
+        call. = FALSE
+      )
+      return(NULL)
+    }
 
     download_err <- NULL
     tryCatch({

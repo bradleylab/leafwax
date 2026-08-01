@@ -379,6 +379,7 @@ test_that("L2 fails when gates pass but neither path attempted", {
 })
 
 test_that("L2 path (b) passes when |delta_wax| > vegetation envelope", {
+  skip_if_preview_posteriors("full_interact_sp")
   # 50 permil wax shift far exceeds the envelope for a plausible
   # 30 percentage-point woody-to-grass transition; manuscript §4.5.3.
   rec <- .make_record(delta_wax = 50)
@@ -410,12 +411,17 @@ test_that("L2 path (b) passes when |delta_wax| > vegetation envelope", {
 })
 
 test_that("L2 path (b) fails when |delta_wax| does not exceed envelope", {
+  skip_if_preview_posteriors("full_interact_sp")
   # Small wax shift over a 30 pp PFT-swing scenario: the envelope's
   # 97.5% upper bound exceeds the observed |delta_wax|, so the
   # vegetation-only null cannot be rejected. sigma_analytical = 1
   # lowers the L1 threshold to ~2.8 permil so the L1 gate clears
   # while |delta_wax| remains inside the envelope.
-  rec <- .make_record(delta_wax = 4, sd_per_sample = 0.1)
+  #
+  # delta_wax must sit above the analytical L1 threshold and below the
+  # full-posterior vegetation envelope. The preview fixture is not allowed to
+  # produce this inferential envelope.
+  rec <- .make_record(delta_wax = 3.0, sd_per_sample = 0.1)
   claim <- .l2_base_claim()
   claim$sigma_analytical <- 1
   claim <- c(claim, list(
@@ -429,13 +435,18 @@ test_that("L2 path (b) fails when |delta_wax| does not exceed envelope", {
     )
   ))
   out <- assess_claim(record = rec, claim = claim)
-  expect_true(out$levels$passed[1])   # 4 permil > L1 threshold ~2.8
-  expect_false(out$levels$passed[2])  # |Δwax|=4 < envelope ~5.7
+  # Guard the band explicitly: delta_wax (3.0) must sit below the envelope on
+  # the complete tier, so a drifted envelope fails here with a clear
+  # signal instead of flipping the L2 outcome below.
+  expect_gt(out$details$L2$path_b_envelope$envelope_p975_abs, 3.0)
+  expect_true(out$levels$passed[1])   # 3.0 permil > L1 threshold ~2.8
+  expect_false(out$levels$passed[2])  # |Δwax|=3.0 < complete-tier envelope
   expect_match(out$levels$summary[2],
                "does not exceed vegetation-only envelope")
 })
 
 test_that("L2 path (b) verdict text does NOT contain the deprecated 'hydroclimate interpretation warranted' phrasing on any path", {
+  skip_if_preview_posteriors("full_interact_sp")
   # Regression-guard across both successful paths. The exact phrase
   # was removed during the magnitude-OR-evidence Level 2 redesign;
   # codex [FIX-2] flagged it as overclaiming.

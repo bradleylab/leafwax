@@ -1,10 +1,10 @@
 cff-version: 1.2.0
-message: "If you use this package, please cite both this software and the related manuscript."
+message: "Development metadata only; release-specific citation metadata is pending final validation."
 type: software
 title: "leafwax: spatially-aware paleo-precipitation reconstruction from leaf-wax hydrogen isotopes"
 authors:
   - family-names: Bradley
-    given-names: Alex
+    given-names: Alexander S.
     orcid: "https://orcid.org/0000-0002-4044-2802"
     affiliation: "Department of Earth, Environmental, and Planetary Sciences, Washington University in St. Louis"
     email: abradley@wustl.edu
@@ -12,9 +12,9 @@ abstract: >-
   R package for reconstructing precipitation hydrogen isotope ratios
   from sedimentary leaf-wax n-C29 alkane measurements using the
   spatially-aware hierarchical Bayesian calibration of Bradley (2026).
-  Inverts the forward calibration with full uncertainty propagation,
-  combining analytical error, residual variance, slope posterior, and
-  the spatial Gaussian process intercept. Supports per-record change
+  Performs likelihood-based Bayesian inversion over paired frozen
+  calibration draws and an explicit proper reconstruction prior,
+  retaining zero and negative slope draws. Supports per-record change
   detection with autocorrelation-adjusted thresholds and a four-level
   claim taxonomy from measurement-level changes through uniquely-
   attributable precipitation-isotope claims.
@@ -28,21 +28,14 @@ keywords:
   - change detection
   - uncertainty propagation
 license: MIT
-version: "0.2.7"
-date-released: "2026-06-07"
 repository-code: "https://github.com/bradleylab/leafwax"
-url: "https://doi.org/10.5281/zenodo.20172570"
-identifiers:
-  - type: doi
-    value: "10.5281/zenodo.20172570"
-    description: Concept DOI (always resolves to latest version)
 references:
   - type: unpublished
     title: >-
-      Spatial modeling improves the calibration of leaf wax hydrogen
-      isotopes to precipitation
+      Geography limits the transferability of global leaf-wax isotope
+      calibrations
     authors:
       - family-names: Bradley
-        given-names: Alex
+        given-names: Alexander S.
         orcid: "https://orcid.org/0000-0002-4044-2802"
     year: 2026

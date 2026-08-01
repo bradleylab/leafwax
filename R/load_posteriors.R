@@ -27,8 +27,8 @@ generate_fibonacci_sphere <- function(n_points = N_SPATIAL_KNOTS) {
 
 #' Locate a posterior .rds file across the three tiers
 #'
-#' Tries (1) heavy posteriors shipped with the development install,
-#' (2) the user cache populated by `download_model_data()`, and
+#' Tries (1) heavy posteriors present in a validated development checkout,
+#' (2) the user cache populated by a validated release, and
 #' (3) the lightweight posteriors that always ship with the package.
 #' Returns `NULL` if no file is found.
 #'
@@ -40,8 +40,8 @@ generate_fibonacci_sphere <- function(n_points = N_SPATIAL_KNOTS) {
 resolve_posterior_file <- function(model_name) {
   fname <- paste0(model_name, "_posterior.rds")
 
-  # Tier 1: heavy posteriors. Excluded from the CRAN tarball via
-  # .Rbuildignore but present on a development install (and visible
+  # Tier 1: heavy posteriors. Excluded from the built package via
+  # .Rbuildignore but present in a development checkout (and visible
   # under devtools::load_all() because it shadows system.file() to
   # the source tree).
   heavy <- system.file("extdata", "posteriors", fname, package = "leafwax")
@@ -49,7 +49,7 @@ resolve_posterior_file <- function(model_name) {
     return(list(path = heavy, tier = "heavy"))
   }
 
-  # Tier 2: user cache populated by `download_model_data()`. The
+  # Tier 2: user cache populated by a validated release. The
   # downloader writes to <cache>/posteriors/<model>_posterior.rds.
   cache_path <- file.path(get_cache_dir(create = FALSE),
                           "posteriors", fname)
@@ -58,8 +58,8 @@ resolve_posterior_file <- function(model_name) {
   }
 
   # Tier 3: preview posteriors. Always shipped (100-draw fixture).
-  # Sufficient for examples, tests, and the vignette to compile, but
-  # callers downstream warn loudly that it is not for inference.
+  # Sufficient for code-path tests and vignette rendering only;
+  # inferential functions stop.
   light <- system.file("extdata", "posteriors_light", fname,
                        package = "leafwax")
   if (light != "" && file.exists(light)) {
@@ -93,23 +93,22 @@ normalise_posterior_names <- function(draws) {
 #' Loads posterior draws for one of the 14 leafwax v10 models. The
 #' function searches three tiers in order:
 #'
-#' 1. **Heavy** posteriors at `inst/extdata/posteriors/` (1000 draws,
-#'    development install only; excluded from the CRAN tarball).
-#' 2. **Cache** populated by [download_model_data()] under
+#' 1. **Heavy** posteriors at `inst/extdata/posteriors/` (complete retained
+#'    draws in a validated development checkout; excluded from the tarball).
+#' 2. **Cache** populated by a validated public data release under
 #'    [get_cache_dir()].
 #' 3. **Preview** posteriors at `inst/extdata/posteriors_light/`. These
 #'    are a 100-draw stratified subsample shipped with every install
 #'    so examples and tests run offline. They are intended as a
 #'    fixture for code-path verification, **not** for inference: tail
 #'    probabilities and 95% credible intervals are noisy at this
-#'    sample size. The package issues a warning whenever the preview
-#'    tier is in use; downstream functions ([invert_d2H()],
-#'    [assess_claim()], [detect_change()]) repeat the warning so it is
-#'    visible at the call that actually matters.
+#'    sample size. The package warns when this tier is loaded, and inferential
+#'    functions fail closed.
 #'
-#' For inference, run [download_model_data()] once to populate the
-#' cache and then call `load_posteriors()` again -- the cache tier wins
-#' over the preview tier and no further downloads are needed.
+#' Public download wiring is disabled in the current development build until
+#' the coordinated chordal data release passes final validation. For current
+#' inference, use a validated working checkout containing the complete
+#' posterior deposit.
 #'
 #' @param model_name Character string specifying the model name.
 #' @param n_draws Integer number of posterior draws to use, or `NULL`
@@ -147,9 +146,13 @@ load_posteriors <- function(model_name, n_draws = NULL, verbose = TRUE) {
   }
   posterior_file <- loc$path
 
-  # Load posterior draws
-  draws <- readRDS(posterior_file)
-  draws <- normalise_posterior_names(draws)
+  # Load posterior draws. The spatial metric the posterior was FITTED under is
+  # read from a "spatial_metric" attribute stamped at deposit-build time. Legacy
+  # (frozen, standardized-fit) posteriors carry no attribute and resolve to
+  # "standardized" below, with a warning so the assumption stays visible.
+  raw_posterior <- readRDS(posterior_file)
+  spatial_metric_attr <- attr(raw_posterior, "spatial_metric")
+  draws <- normalise_posterior_names(raw_posterior)
 
   if (verbose) {
     message("  Loaded ", nrow(draws), " draws, ", ncol(draws), " parameters")
@@ -182,24 +185,59 @@ load_posteriors <- function(model_name, n_draws = NULL, verbose = TRUE) {
   # Spatial status is the exception because it is represented by the
   # shipped knot metadata and the `_sp` model id convention.
   param_names <- names(draws)
-  # Capability flags are derived from actual posterior columns. Earlier
-  # versions also matched the model NAME (e.g. "env", "elevation") but
-  # the v10 fits never produced beta_elev coefficients — the model
-  # names are historical and several "elevation_*" variants encode no
-  # elevation effect at all. Trust the columns, not the name.
+  is_gp <- grepl("(^|_)sp$", model_name)
+  # Resolve the fitted spatial metric. Prediction dispatches on this so a
+  # posterior is always predicted with the metric it was fitted under (see
+  # predict_spatial_dual_gp). Untagged spatial posteriors are legacy
+  # standardized-fit; warn so the assumption is not silent.
+  spatial_metric <- if (!is.null(spatial_metric_attr)) {
+    match.arg(spatial_metric_attr, c("chordal", "standardized"))
+  } else {
+    if (is_gp) {
+      warning("Posterior '", model_name, "' has no recorded spatial_metric; ",
+              "assuming 'standardized' (legacy frozen fit). Chordal-refit ",
+              "posteriors must be stamped attr(x, 'spatial_metric') = 'chordal'.",
+              call. = FALSE)
+    }
+    "standardized"
+  }
+  # Capability flags here are derived from the actual posterior COLUMNS — what
+  # THIS deposit carries. This is deliberately distinct from the config-derived
+  # manifest (MODEL_CAPABILITIES), which records what a model was fitted WITH:
+  # several variants fit an elevation spline, but legacy deposits do not carry
+  # beta_elev coefficients (they were dropped at the fit-save step; the chordal
+  # refit retains them). Use the columns for "what can I use from this
+  # posterior", the manifest for "what does this model include".
+  # Structural capability flags come from the config-derived manifest (what the
+  # model was fitted with), NOT from posterior column names. Column-name
+  # detection is unreliable: the fit-save step writes all-zero
+  # beta_oipc_x_{tree,shrub,grass} columns whenever include_pft is on, even for
+  # main-effects-only models (full/full_sp have include_veg_interactions = FALSE),
+  # so a name-based has_interaction falsely flags those degenerate zero columns.
+  # has_elevation is the exception: metadata$has_elevation is the DEPOSIT-level
+  # flag (does this posterior carry beta_elev columns) — column-based, because the
+  # elevation spline coefficients are the one term conditionally dropped at save
+  # (legacy deposits lack them; the chordal refit retains them). It is distinct
+  # from the manifest's fitted_has_elevation (did the model fit the spline) and
+  # from model_compatibility's capabilities$has_elevation (does inversion consume
+  # elevation). Models not in the manifest fall back to column-based for the rest.
+  cap <- tryCatch(model_capability(model_name), error = function(e) NULL)
   metadata <- list(
     model_name = model_name,
     n_draws = nrow(draws),
     n_parameters = ncol(draws),
     parameters = param_names,
     tier = loc$tier,
+    spatial_metric = spatial_metric,
     has_elevation = any(grepl("^beta_elev", param_names)),
-    has_precip    = any(grepl("^beta_precip", param_names)),
-    has_c4        = any(grepl("^beta_c4", param_names)) ||
-                    any(grepl("d2Hp.*c4|c4.*d2Hp", param_names, ignore.case = TRUE)),
-    has_pft       = any(grepl("^beta_(tree|shrub|grass)", param_names)),
-    has_gp        = grepl("(^|_)sp$", model_name),
-    has_interaction = any(grepl("d2Hp.*(tree|shrub|grass|c4)|(tree|shrub|grass|c4).*d2Hp",
+    has_precip    = if (!is.null(cap)) cap$has_precip else any(grepl("^beta_precip", param_names)),
+    has_c4        = if (!is.null(cap)) cap$has_c4 else
+                    (any(grepl("^beta_c4", param_names)) ||
+                     any(grepl("d2Hp.*c4|c4.*d2Hp", param_names, ignore.case = TRUE))),
+    has_pft       = if (!is.null(cap)) cap$has_pft else any(grepl("^beta_(tree|shrub|grass)", param_names)),
+    has_gp        = if (!is.null(cap)) cap$has_gp else grepl("(^|_)sp$", model_name),
+    has_interaction = if (!is.null(cap)) cap$has_interaction else
+                      any(grepl("d2Hp.*(tree|shrub|grass|c4)|(tree|shrub|grass|c4).*d2Hp",
                                 param_names, ignore.case = TRUE))
   )
 
@@ -220,19 +258,14 @@ load_posteriors <- function(model_name, n_draws = NULL, verbose = TRUE) {
       }
     }
 
-    if (file.exists(knot_file) && knot_file != "") {
-      spatial <- list(knot_locs = readRDS(knot_file))
-    } else {
-      # The knot locations used at prediction time MUST match those
-      # used at fit time. A freshly generated Fibonacci sphere has
-      # globally similar geometry but is not byte-identical to the
-      # v10 knot file, so silent substitution is methods drift.
-      warning("Knot file not found for model '", model_name,
-              "'; falling back to a fresh ", N_SPATIAL_KNOTS,
-              "-knot Fibonacci sphere. Spatial predictions will not ",
-              "exactly reproduce the v10 fit.", call. = FALSE)
-      spatial <- list(knot_locs = generate_fibonacci_sphere(N_SPATIAL_KNOTS))
+    if (!file.exists(knot_file) || knot_file == "") {
+      stop(
+        "Exact fitted knot metadata is missing for spatial model '",
+        model_name, "'. Refusing to substitute a newly generated lattice.",
+        call. = FALSE
+      )
     }
+    spatial <- list(knot_locs = readRDS(knot_file))
 
     if (verbose) {
       cat("  Loaded", nrow(spatial$knot_locs), "spatial knots\n")

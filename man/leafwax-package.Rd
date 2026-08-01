@@ -8,9 +8,8 @@
 \description{
 The leafwax package provides tools for probabilistic inversion of leaf wax
 hydrogen isotope measurements (delta-2-H) to reconstruct precipitation isotope values.
-It implements hierarchical Bayesian models that account for multiple sources of
-uncertainty including measurement error, biological fractionation, and spatial
-correlation in isotope patterns.
+It integrates an explicit proper reconstruction prior with the likelihood
+under paired draws from frozen hierarchical calibration posteriors.
 }
 \section{Main Functions}{
 
@@ -25,13 +24,15 @@ correlation in isotope patterns.
 
 \section{Available Models}{
 
-The package includes 14 calibration models with different capabilities. The
+The package can inspect 14 calibration models with different capabilities. The
 v10 fits include precipitation amount (\code{baseline_env*} and
 \code{full*} variants), C4 abundance, and PFT cover; none of the v10
 variants carry a fitted elevation coefficient despite the historical
 "elevation_*" naming. Runtime capability flags in
 \code{load_posteriors()} are derived from each model's posterior
-columns at load time.
+columns at load time. The validated inversion interface currently supports
+only \code{baseline}, \code{baseline_sp}, and \code{c4_only_sp}; other designs fail closed
+because their complete new-site predictor basis is unavailable.
 \itemize{
 \item \strong{Basic models}: baseline, baseline_sp
 \item \strong{Precipitation models}: baseline_env, baseline_env_sp
@@ -47,41 +48,28 @@ Fibonacci sphere lattice for improved uncertainty quantification.
 
 \section{Model Selection}{
 
-Pass \code{model = "auto"} to \code{predict_d2h_precip()} to let
-\code{select_best_model_from_flags()} choose a model based on which
-covariates the caller has supplied; otherwise pick a model name from
-\code{available_models()} explicitly.
+Pass \code{model = "auto"} to \code{predict_d2h_precip()} to choose between
+the supported spatial baseline and C4-only designs. Model ensembles have no
+scientific default and must be supplied explicitly.
 }
 
 \section{Key Features}{
 
 \itemize{
-\item Hierarchical Bayesian framework for uncertainty propagation
-\item Support for single and multi-location inversions
+\item Explicit proper reconstruction priors
+\item Joint multi-row calibration-draw reweighting
 \item Spatial correlation via Gaussian processes
-\item Automatic handling of missing covariates
+\item No slope division, clipping, or post-hoc draw removal
 }
 }
 
 \examples{
-local({
-  old <- options(leafwax.suppress_preview_warning = TRUE)
-  on.exit(options(old))
-
   # List available models
   models <- available_models()
   n_models <- length(models)
 
-  # Simple single-location inversion
-  result <- invert_d2H(
-    d2H_wax = -150,
-    d2H_wax_sd = 3,
-    longitude = -120,
-    latitude = 40,
-    model_name = "baseline",
-    verbose = FALSE
-  )
-})
+  # Priors are explicit; this constructor does not run an inversion.
+  prior <- d2h_prior_normal(mean = -70, sd = 30)
 
 }
 \references{
@@ -94,9 +82,6 @@ Sachse, D., Billault, I., Bowen, G. J., Chikaraishi, Y., Dawson, T. E., Feakins,
 Molecular paleohydrology: Interpreting the hydrogen-isotopic composition of lipid biomarkers from photosynthesizing organisms.
 Annual Review of Earth and Planetary Sciences, 40, 221-249.
 \doi{10.1146/annurev-earth-042711-105535}
-
-Bradley, A. (2026). leafwax v10 model posteriors.
-Zenodo DOI \doi{10.5281/zenodo.20085465}.
 }
 \seealso{
 Useful links:
@@ -108,7 +93,7 @@ Useful links:
 
 }
 \author{
-\strong{Maintainer}: Alex Bradley \email{abradley@wustl.edu} (\href{https://orcid.org/0000-0002-4044-2802}{ORCID})
+\strong{Maintainer}: Alexander S. Bradley \email{abradley@wustl.edu} (\href{https://orcid.org/0000-0002-4044-2802}{ORCID})
 
 }
 \keyword{internal}

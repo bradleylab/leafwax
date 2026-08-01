@@ -2,7 +2,7 @@
 % Please edit documentation in R/download_data.R
 \name{download_model_data}
 \alias{download_model_data}
-\title{Download model data from GitHub releases}
+\title{Download model data from the configured public release}
 \usage{
 download_model_data(
   model_name,
@@ -33,15 +33,17 @@ download_model_data(
 Logical indicating success
 }
 \description{
-Downloads model posterior draws and lookup tables from GitHub releases
-with progress tracking and integrity verification.
+Downloads model posterior draws from the release configured in
+\code{inst/extdata/data_urls.json}. Development builds fail closed while
+\code{release_ready} is false, preventing an older incompatible posterior deposit
+from being mixed with the current package.
 }
 \examples{
-\donttest{
+\dontrun{
 cache_dir <- file.path(tempdir(), "leafwax_download_example")
 ok <- download_model_data(
   "baseline",
-  version = "v1.0.1",
+  version = "latest",
   cache_dir = cache_dir,
   verify = FALSE,
   verbose = FALSE

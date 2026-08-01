@@ -4,23 +4,15 @@
 \alias{invert_d2H_ensemble}
 \title{Ensemble predictions across multiple models}
 \usage{
-invert_d2H_ensemble(
-  ...,
-  models = c("full_sp", "full_interact_sp", "elevation_c4_interact_sp"),
-  ensemble_method = c("equal", "all")
-)
+invert_d2H_ensemble(..., models = NULL, ensemble_method = c("equal", "all"))
 }
 \arguments{
 \item{...}{Arguments passed to \code{\link{invert_d2H}} (e.g.,
 \code{d2H_wax}, \code{d2H_wax_sd}, \code{longitude}, \code{latitude}, optional
 covariates).}
 
-\item{models}{Character vector of v10 model names to include in the
-ensemble. Defaults to three structurally distinct variants:
-\code{full_sp} (all covariates + spatial GP), \code{full_interact_sp}
-(full + elevation x C4 interaction + spatial GP), and
-\code{elevation_c4_interact_sp} (elevation x C4 interaction with
-spatial GP, no PFT).}
+\item{models}{Explicit character vector of compatible Bayesian-inversion
+model names. There is no scientific default ensemble.}
 
 \item{ensemble_method}{\code{"equal"} (default) pools per-draw
 reconstructions per site across models with equal weighting and

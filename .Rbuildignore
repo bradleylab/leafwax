@@ -13,3 +13,4 @@
 ^inst/extdata/posteriors$
 ^cran-comments\.md$
 ^CITATION\.cff$
+^vignettes/.*\.html$

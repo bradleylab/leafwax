@@ -100,7 +100,7 @@ Section 4.5.6 places it in the Level 2 claim taxonomy.
 }
 
 \examples{
-\donttest{
+\dontrun{
 local({
   old <- options(leafwax.suppress_preview_warning = TRUE)
   on.exit(options(old))

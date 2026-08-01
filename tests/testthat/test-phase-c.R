@@ -193,6 +193,7 @@ test_that("detect_change: rejects non-finite ages up front", {
 })
 
 test_that("invert_d2H: return_full = TRUE forwards correctly", {
+  skip("Superseded by explicit-sample Bayesian inversion tests.")
   res <- suppressWarnings(invert_d2H(
     d2H_wax = rep(-180, 4),
     d2H_wax_sd = rep(3, 4),

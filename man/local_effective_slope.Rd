@@ -54,8 +54,9 @@ evidence about source-water seasonality, leaf-water enrichment,
 or vegetation).
 }
 
-Pass the returned vector to \code{invert_d2H(..., slope = ...)} to
-propagate it through the inversion.
+The Bayesian inversion propagates its paired local-slope draws internally.
+Pass this vector as \code{slope = ...} only when deliberately overriding that
+internal calculation with a separately defended slope posterior.
 
 Mechanistic reference values (e.g. the simple two-pool stationarity
 bound \code{alpha = 1 + epsilon_app/1000} ~ 0.88 under
@@ -67,7 +68,7 @@ directly from the returned vector
 how often the calibration implicates non-stationarity at the site.
 }
 \examples{
-\donttest{
+\dontrun{
 local({
   old <- options(leafwax.suppress_preview_warning = TRUE)
   on.exit(options(old))
@@ -101,6 +102,7 @@ local({
                        model_name = "baseline_sp",
                        n_posterior_draws = 200,
                        slope = s,
+                       prior = d2h_prior_normal(-70, 30),
                        verbose = FALSE)
 })
 }

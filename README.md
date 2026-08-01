@@ -2,7 +2,6 @@
 
 <!-- badges: start -->
 [![R-CMD-check](https://github.com/bradleylab/leafwax/actions/workflows/R-CMD-check.yaml/badge.svg?branch=master)](https://github.com/bradleylab/leafwax/actions/workflows/R-CMD-check.yaml)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20172570.svg)](https://doi.org/10.5281/zenodo.20172570)
 <!-- badges: end -->
 
 Bayesian inversion of leaf-wax hydrogen isotope ratios
@@ -10,44 +9,28 @@ Bayesian inversion of leaf-wax hydrogen isotope ratios
 (δ²H<sub>precip</sub>) and a defensibility framework for
 paleoclimate claims based on those reconstructions.
 
-`leafwax` is the operational backend for the manuscript "Spatial
-modeling improves the calibration of leaf wax hydrogen isotopes to
-precipitation" (Bradley, *Geochimica et Cosmochimica Acta*, submitted). It
-exposes the 14 hierarchical Bayesian models reported there and the
-four-phase paleo workflow that the manuscript references in
-Sections 4.5.3, 4.5.5, and 4.5.6.
+`leafwax` is the development backend for the manuscript "Geography
+limits the transferability of global leaf-wax isotope calibrations"
+(Bradley, prepared for submission to *Communications
+Earth & Environment*). It can inspect the 14 frozen hierarchical fits.
+The validated Bayesian reconstruction interface currently supports the
+`baseline`, `baseline_sp`, and `c4_only_sp` designs; other designs fail
+closed because their complete new-site predictor basis is unavailable.
 
 ## Installation
 
-```r
-# install.packages("devtools")
-devtools::install_github("bradleylab/leafwax")
-```
+No public package release is claimed for this development version. Install
+from a validated working checkout only; release instructions and accession
+identifiers will be added after the manuscript and software artifacts pass
+their final reproducibility checks.
 
 The installed tarball ships a 100-draw "preview" fixture under
 `inst/extdata/posteriors_light/` so the package builds and tests
 without network access. The preview tier is for code-path
 verification only — tail probabilities and 95% intervals are noisy
-at 100 draws. **For inference, prefetch the full 1000-draw
-posteriors explicitly:**
-
-```r
-# Required before any inferential use. Downloads from
-# bradleylab/leafwax-data v1.0.1 and caches under
-# tools::R_user_dir("leafwax", "data").
-leafwax::download_model_data("baseline_sp")
-```
-
-Heavy posteriors come from
-[`bradleylab/leafwax-data`](https://github.com/bradleylab/leafwax-data)
-v2.0.0 (frozen run `c2_run_20260626`, n = 1128; version DOI
-[10.5281/zenodo.21286445](https://doi.org/10.5281/zenodo.21286445),
-concept DOI
-[10.5281/zenodo.20085465](https://doi.org/10.5281/zenodo.20085465)).
-Inversions done against the preview tier emit a loud warning
-naming the function context and the actual draw count; set
-`options(leafwax.suppress_preview_warning = TRUE)` to silence it
-in batch jobs that have already acknowledged the limitation.
+at 100 draws. Inferential inversion refuses this preview tier. Complete
+frozen posteriors are required and are distributed separately during
+development; public access instructions will accompany the validated release.
 
 ## Quick start: single-point inversion
 
@@ -59,15 +42,16 @@ result <- invert_d2H(
   d2H_wax_sd = 3,
   longitude  = -90,
   latitude   = 38,
-  model_name = "baseline_sp"
+  model_name = "baseline_sp",
+  prior      = d2h_prior_normal(mean = -70, sd = 30)
 )
 
-result[, c("d2h_precip_mean", "d2h_precip_sd",
-           "d2h_precip_lower", "d2h_precip_upper")]
+result$summary[, c("d2h_precip_median",
+                   "d2h_precip_lower", "d2h_precip_upper")]
 ```
 
-`available_models()` lists the 14 v10 model variants. Spatial models
-end in `_sp` and are recommended whenever site coordinates are known.
+`available_models()` lists the 14 frozen calibration variants; this does not
+mean that all 14 have a complete reconstruction design.
 
 ## Paleo-record workflow
 
@@ -80,6 +64,10 @@ derivation.
 ```r
 library(leafwax)
 
+# Example only: the prior must be justified for the record and sensitivity
+# to alternative proper priors should be reported.
+reconstruction_prior <- d2h_prior_normal(mean = -70, sd = 30)
+
 # 1. Raw per-draw local slope at the site
 slope <- local_effective_slope(
   longitude  = -90,
@@ -87,16 +75,19 @@ slope <- local_effective_slope(
   model_name = "baseline_sp"
 )
 
-# 2. Inversion with the defended slope
+# 2. Inversion. Paired local-slope draws are propagated internally; the
+# separate slope object is retained for diagnostics and the threshold below.
 recon <- invert_d2H(
   d2H_wax    = record$d2h_wax,
   d2H_wax_sd = record$d2h_wax_err,
   longitude  = rep(-90, nrow(record)),
   latitude   = rep( 38, nrow(record)),
   model_name = "baseline_sp",
-  slope      = slope,
   record_id  = "your_record_id",
-  return_full = TRUE
+  prior      = reconstruction_prior,
+  return_full = TRUE,
+  n_inverse_samples = 4000,
+  seed = 20260801
 )
 
 # 3. Detection threshold + posterior P(change > magnitude)
@@ -150,12 +141,12 @@ the routing layer correctly reflects what each fit actually contains.
 
 The "Precip" column flags models that include a fitted
 precipitation-amount coefficient (`beta_precip`). The `_env` and
-`_full*` variants carry it; the `elevation_*` variants do not. The
-v10 fits did not produce `beta_elev` coefficients, so no model in
-the table propagates supplied elevation through the predictor
-linear combination — the historical "elevation_*" naming reflects
-the regional context the variants were designed for, not a fitted
-elevation effect.
+`_full*` variants carry it; the `elevation_*` variants do not. Nine chordal
+fits include an elevation spline and the frozen deposits retain its
+coefficients. Elevation is nevertheless not consumed by the current Bayesian
+reconstruction designs because the complete new-site multiscale spline basis
+is unavailable. This is a reconstruction-interface boundary, not a claim that
+elevation was absent from the fitted calibration.
 
 Spatial models share a single 125-knot Fibonacci-sphere lattice.
 
@@ -173,30 +164,8 @@ The paleo workflow maps directly to the manuscript:
 
 ## Citation
 
-Cite both the software archive and the related manuscript:
-
-```bibtex
-@software{bradley_leafwax_pkg_2026,
-  author  = {Bradley, Alexander S.},
-  title   = {leafwax: spatially-aware paleo-precipitation reconstruction
-             from leaf-wax hydrogen isotopes},
-  year    = {2026},
-  doi     = {10.5281/zenodo.20172570},
-  url     = {https://doi.org/10.5281/zenodo.20172570}
-}
-
-@unpublished{bradley_leafwax_paper_2026,
-  author = {Bradley, Alexander S.},
-  title  = {Spatial modeling improves the calibration of leaf wax
-            hydrogen isotopes to precipitation},
-  year   = {2026},
-  note   = {Manuscript in preparation}
-}
-```
-
-The `@software` DOI is the concept DOI — it always resolves to the
-latest version. To cite a specific release, replace it with that
-release's version DOI from the Zenodo deposit page.
+Release-specific citation metadata and persistent identifiers are pending
+final validation. Do not cite this working tree as a released package.
 
 ## Help
 

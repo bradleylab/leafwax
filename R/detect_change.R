@@ -168,17 +168,15 @@ detect_change <- function(reconstruction,
          "invert_d2H(..., return_full = TRUE) and contain ",
          "$posterior_draws")
   }
-  # Re-raise the preview-tier warning at the change-detection layer.
-  # Posterior-probability statements (`p_exceed`) are exactly what the
-  # 100-draw fixture estimates poorly.
+  # Posterior probabilities from the 100-draw fixture are not inferential.
   rec_tier <- attr(reconstruction, "leafwax_tier") %||%
+              reconstruction$model_info$posterior_tier %||%
               reconstruction$model_info$tier %||% "unknown"
   rec_model <- reconstruction$model_info$model_name %||% "<unknown>"
-  if (identical(rec_tier, "light")) {
-    warn_preview_tier(rec_model,
-                      nrow(reconstruction$posterior_draws),
-                      "detect_change")
-  }
+  require_inference_tier(
+    rec_tier, rec_model, "detect_change()",
+    nrow(reconstruction$posterior_draws)
+  )
   draws <- reconstruction$posterior_draws
   if (!is.matrix(draws)) draws <- as.matrix(draws)
   n_iter <- nrow(draws)

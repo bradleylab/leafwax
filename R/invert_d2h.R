@@ -70,7 +70,7 @@ NULL
 #'   \item{posterior_draws}{Matrix of all posterior draws (n_draws x n_locations)}
 #'   \item{model_info}{Information about the model used.}
 #'   
-#' @export
+#' @noRd
 #' 
 #' @examples
 #' \donttest{
@@ -102,7 +102,7 @@ NULL
 #'   )
 #' })
 #' }
-invert_d2h <- function(d2h_wax, d2h_wax_err = NULL,
+.invert_d2h_ratio_legacy <- function(d2h_wax, d2h_wax_err = NULL,
                        longitude, latitude, elevation = NULL,
                        c4_percent = NULL,
                        pft_tree = NULL, pft_shrub = NULL, pft_grass = NULL,
@@ -172,9 +172,25 @@ invert_d2h <- function(d2h_wax, d2h_wax_err = NULL,
   
   # Check that requested predictors match the model
   model_meta <- model$metadata
-  
-  if (!is.null(elevation) && !model_meta$has_elevation) {
-    warning("Elevation provided but model ", model_name, " does not include elevation effects")
+
+  # has_elevation is two-tier by design (see load_posteriors / model_capabilities):
+  # model_meta$has_elevation is DEPOSIT-level (TRUE for chordal deposits that retain
+  # beta_elev columns), whereas this retired ratio helper never consumed
+  # elevation for any model -- elev_effect below is an explicit zero. Gate this
+  # warning on the consumer-facing capability flag, not the deposit flag, so it
+  # still fires (and elevation is still ignored) for an elevation-fitting model
+  # whose chordal deposit now carries the coefficients. Gating on model_meta would
+  # silently accept-and-drop the supplied elevation with no warning.
+  inversion_uses_elevation <- isTRUE(
+    get_model_parameters(model_name)$capabilities$has_elevation
+  )
+  # Record whether the caller actually supplied elevation before it is nulled
+  # below and then defaulted to zeros; components_used (return_full) needs the
+  # original supply, not the post-default value.
+  user_supplied_elevation <- !is.null(elevation)
+
+  if (!is.null(elevation) && !inversion_uses_elevation) {
+    warning("Elevation provided but model ", model_name, " does not use elevation effects in the slope-based inversion")
     elevation <- NULL
   }
   
@@ -251,19 +267,20 @@ invert_d2h <- function(d2h_wax, d2h_wax_err = NULL,
     if (!is.null(veg_params$beta_grass)) beta_grass <- veg_params$beta_grass
   }
   
-  # Elevation effect placeholder. v10 did not fit any beta_elev
-  # coefficients (load_posteriors() sets has_elevation only when those
-  # columns exist), so this stays at zero. Kept as an explicit term in
-  # the linear predictor below for clarity and to leave a hook for
-  # future model variants that do include elevation.
+  # Elevation effect is an explicit zero for EVERY model. This retired ratio
+  # helper does not consume elevation coefficients even when the
+  # deposit carries them (the chordal refit retains beta_elev; legacy deposits
+  # dropped them) — the narrowed-inversion decision. So elevation never enters
+  # the reconstruction regardless of the deposit's has_elevation flag.
   elev_effect <- matrix(0, nrow = n_iter, ncol = n_obs)
-  
+
   # Get dual-GP spatial effects (intercept and slope) at the prediction
-  # site(s). v10 uses a Matern 3/2 kernel in standardized 2D coordinate
-  # space, with two independent GPs sharing knot positions and length
-  # scale but having distinct sigma and z. predict_spatial_dual_gp
-  # returns matrices for both fields; intercept goes into mu, slope
-  # multiplies oipc in the inversion (below).
+  # site(s). The GP uses a Matern 3/2 kernel on the metric the posterior was
+  # fitted under (chordal km for the refit, or legacy standardized 2-D), with
+  # two independent GPs sharing knot positions and length scale but having
+  # distinct sigma and z. predict_spatial_dual_gp dispatches on
+  # model$metadata$spatial_metric and returns matrices for both fields;
+  # intercept goes into mu, slope multiplies oipc in the inversion (below).
   intercept_effect <- matrix(0, nrow = n_iter, ncol = n_obs)
   slope_effect     <- matrix(0, nrow = n_iter, ncol = n_obs)
   if (model_meta$has_gp) {
@@ -273,7 +290,8 @@ invert_d2h <- function(d2h_wax, d2h_wax_err = NULL,
     if (verbose) cat("  Computing dual-GP spatial effects (Matern 3/2)...\n")
     coords_new <- cbind(longitude, latitude)
     dual <- predict_spatial_dual_gp(coords_new, model$spatial$knot_locs,
-                                    draws, scaling)
+                                    draws, scaling,
+                                    metric = model_meta$spatial_metric)
     intercept_effect <- dual$intercept
     slope_effect     <- dual$slope
   }
@@ -427,7 +445,7 @@ invert_d2h <- function(d2h_wax, d2h_wax_err = NULL,
         tier = tier,
         components_used = c(
           base = TRUE,
-          elevation = model_meta$has_elevation && !is.null(elevation),
+          elevation = inversion_uses_elevation && user_supplied_elevation,
           c4 = model_meta$has_c4 && !is.null(c4_percent),
           pft = model_meta$has_pft && !is.null(pft_tree),
           spatial = model_meta$has_gp
@@ -470,7 +488,14 @@ invert_d2H <- function(d2H_wax,
                       credible_level = 0.9,
                       verbose = TRUE,
                       record_id = NULL,
-                      slope = NULL) {
+                      slope = NULL,
+                      prior = NULL,
+                      n_inverse_samples = 0L,
+                      seed = NULL,
+                      grid_size = 2001L,
+                      integration_tolerance = 1e-3,
+                      tail_mass_tolerance = 1e-8,
+                      draw_stability_tolerance = 2) {
 
   # The internal invert_d2h() core takes c4_percent (0-100), matching
   # the scale at which scaling_params$c4_mean / c4_sd were estimated.
@@ -510,7 +535,14 @@ invert_d2H <- function(d2H_wax,
     credible_level = credible_level,
     verbose = verbose,
     record_id = record_id,
-    slope = slope
+    slope = slope,
+    prior = prior,
+    n_inverse_samples = n_inverse_samples,
+    seed = seed,
+    grid_size = grid_size,
+    integration_tolerance = integration_tolerance,
+    tail_mass_tolerance = tail_mass_tolerance,
+    draw_stability_tolerance = draw_stability_tolerance
   )
 }
 

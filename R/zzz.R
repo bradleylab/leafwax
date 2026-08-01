@@ -5,20 +5,35 @@
 # behavior consistent across versions.
 `%||%` <- function(x, y) if (is.null(x)) y else x
 
-# Standardised wording for the preview-tier warning. Emitted from
-# load_posteriors() when it falls back to inst/extdata/posteriors_light/,
-# and again from invert_d2H() / assess_claim() / detect_change() so the
-# warning is visible at the inferential call rather than only at the
-# (often nested) data-loading call.
+# Standardised wording for the preview-tier warning. Loading the bundled
+# fixture is permitted for inspection and code-path tests, but inferential
+# functions call require_inference_tier() and stop.
 preview_tier_message <- function(model_name, n_draws, context = NULL) {
   ctx <- if (is.null(context)) "" else paste0(" (", context, ")")
   paste0(
     "leafwax preview posteriors in use", ctx, ": ",
     n_draws, " draws of '", model_name, "'. ",
-    "Tail probabilities and 95% credible intervals are unstable at ",
-    "this sample size; not suitable for inference. ",
-    "Run download_model_data(\"", model_name, "\") for the full ",
-    "posterior."
+    "Tail probabilities and credible intervals are unstable at this sample ",
+    "size; not suitable for inference. The complete posterior deposit is not ",
+    "yet wired into this development build."
+  )
+}
+
+# Fail closed whenever an inferential function receives the 100-draw fixture.
+# Keep this separate from warn_preview_tier(): loading a fixture for inspection
+# is valid, producing a scientific result from it is not.
+require_inference_tier <- function(tier, model_name, context,
+                                   n_draws = NULL) {
+  if (!identical(tier, "light")) {
+    return(invisible(TRUE))
+  }
+  draw_text <- if (is.null(n_draws)) "" else paste0(" (", n_draws, " draws)")
+  stop(
+    "The bundled preview posterior", draw_text, " for '", model_name,
+    "' is a code-path fixture and cannot be used by ", context,
+    ". Use a validated working checkout with the complete posterior deposit; ",
+    "public download wiring will be enabled after final validation.",
+    call. = FALSE
   )
 }
 
@@ -37,13 +52,9 @@ warn_preview_tier <- function(model_name, n_draws, context = NULL) {
 # .onLoad seeds defaults; leafwax_config() and leafwax_set_config()
 # enumerate the same names without duplication.
 LEAFWAX_DEFAULTS <- list(
-  # Default data URL for downloading model data. Points at the
-  # bradleylab/leafwax-data archive, pinned to release v2.0.0
-  # (frozen run c2_run_20260626, n = 1128).
-  # Zenodo concept DOI: 10.5281/zenodo.20085465 (always resolves to the
-  # latest version). The v2.0.0 version DOI is:
-  # 10.5281/zenodo.21286445 (Zenodo record 21286445).
-  data_url = "https://raw.githubusercontent.com/bradleylab/leafwax-data/v2.0.0",
+  # Public chordal-posterior download wiring is deliberately unset until the
+  # coordinated data/package release passes final validation.
+  data_url = NULL,
 
   # Default cache directory (NULL means use rappdirs default)
   cache_dir = NULL,
@@ -83,9 +94,8 @@ LEAFWAX_DEFAULTS <- list(
   if (!has_cache && interactive()) {
     packageStartupMessage(
       "Welcome to leafwax!\n",
-      "This appears to be your first time using the package.\n",
-      "Pre-fetch full posterior data with:\n",
-      "  download_model_data(\"<model_name>\")"
+      "The bundled 100-draw posteriors are preview fixtures only.\n",
+      "Public full-posterior download wiring is pending final validation."
     )
   } else if (has_cache && interactive()) {
     # Show cache status

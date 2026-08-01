@@ -16,7 +16,7 @@
 #'     \item \code{c4_only_sp}: C4 vegetation effects only (spatial)
 #'     \item \code{elevation_only_sp}: Historical elevation-context variant (spatial)
 #'     \item \code{elevation_c4_sp}: Historical elevation-context + C4 variant
-#'     \item \code{elevation_c4_interact_sp}: C4 effect + OIPC x C4 interaction (spatial; no fitted elevation coefficient)
+#'     \item \code{elevation_c4_interact_sp}: C4 effect + OIPC x C4 interaction (spatial; elevation spline fitted, not consumed by inversion)
 #'     \item \code{full}: Precipitation amount + vegetation interactions without spatial component
 #'     \item \code{full_sp}: Precipitation amount + vegetation interactions with spatial component
 #'     \item \code{full_interact}: Precipitation amount + vegetation interactions
@@ -45,152 +45,51 @@ available_models <- function() {
 #' @export
 get_all_model_metadata <- function() {
 
-  # Define all 14 models with their v10 fitted capabilities. The v10
-  # posteriors do not contain beta_elev columns, so has_elevation is
-  # FALSE for every shipped model even when the historical model id
-  # contains "elevation".
-  model_meta <- function(name, description,
-                         has_spatial = FALSE,
-                         has_precip = FALSE,
-                         has_c4 = FALSE,
-                         has_vegetation = FALSE,
-                         has_interaction = FALSE,
-                         size_mb = NA_real_) {
+  # Per-model human description + deposit size (MB). Capability flags are derived
+  # from the config-derived manifest (MODEL_CAPABILITIES, generated from
+  # config.yaml) so this catalog cannot drift from what each model was fitted
+  # with. `has_vegetation` maps to the manifest's PFT flag.
+  #
+  # has_elevation is the exception: it is reported FALSE (same as
+  # get_model_parameters). Several variants fit an elevation spline (see the
+  # descriptions and MODEL_CAPABILITIES), but the Bayesian reconstruction
+  # does not consume elevation, so the operative consumer flag is FALSE --
+  # independent of whether the deposit carries beta_elev columns (chordal
+  # deposits DO retain them). load_posteriors() reports the deposit-level value
+  # from actual columns, which is deliberately distinct from this consumer flag.
+  desc_size <- list(
+    baseline                 = list("Basic OIPC model (no spatial or environmental effects)", 581),
+    baseline_sp              = list("OIPC + spatial Gaussian process", 917),
+    baseline_env             = list("OIPC + elevation spline + precipitation-amount effects", 639),
+    baseline_env_sp          = list("OIPC + elevation spline + precipitation amount + spatial GP", 992),
+    baseline_veg             = list("OIPC + C4 + PFT with OIPC x vegetation interactions", 717),
+    baseline_veg_sp          = list("OIPC + C4 + PFT interactions + spatial GP", 1200),
+    c4_only_sp               = list("OIPC + C4 fraction + spatial GP", 986),
+    elevation_only_sp        = list("OIPC + elevation spline + spatial GP", 923),
+    elevation_c4_sp          = list("OIPC + elevation spline + C4 + spatial GP", 992),
+    elevation_c4_interact_sp = list("OIPC + elevation + C4 + OIPC x C4 interaction + spatial GP", 1300),
+    full                     = list("OIPC + elevation + precipitation + C4 + PFT (main effects; no interactions)", 811),
+    full_sp                  = list("OIPC + elevation + precipitation + C4 + PFT main effects + spatial GP", 1700),
+    full_interact            = list("OIPC + elevation + precipitation + C4 + PFT with OIPC x vegetation interactions", 812),
+    full_interact_sp         = list("OIPC + elevation + precipitation + C4 + PFT interactions + spatial GP", 1700)
+  )
+
+  models <- lapply(names(desc_size), function(name) {
+    cap <- model_capability(name)
+    ds  <- desc_size[[name]]
     list(
       name = name,
-      description = description,
-      has_spatial = has_spatial,
-      has_elevation = FALSE,
-      has_precip = has_precip,
-      has_c4 = has_c4,
-      has_vegetation = has_vegetation,
-      has_interaction = has_interaction,
-      size_mb = size_mb
+      description = ds[[1]],
+      has_spatial = cap$has_gp,
+      has_elevation = FALSE,   # consumer flag; see note above (fitted != consumed)
+      has_precip = cap$has_precip,
+      has_c4 = cap$has_c4,
+      has_vegetation = cap$has_pft,
+      has_interaction = cap$has_interaction,
+      size_mb = ds[[2]]
     )
-  }
-
-  models <- list(
-    baseline = model_meta(
-      "baseline",
-      "Basic OIPC model without spatial or environmental effects",
-      size_mb = 581
-    ),
-
-    baseline_sp = model_meta(
-      "baseline_sp",
-      "Basic OIPC model with spatial Gaussian process",
-      has_spatial = TRUE,
-      size_mb = 917
-    ),
-
-    baseline_env = model_meta(
-      "baseline_env",
-      "OIPC + precipitation-amount effect",
-      has_precip = TRUE,
-      size_mb = 639
-    ),
-
-    baseline_env_sp = model_meta(
-      "baseline_env_sp",
-      "OIPC + precipitation-amount + spatial effects",
-      has_spatial = TRUE,
-      has_precip = TRUE,
-      size_mb = 992
-    ),
-
-    baseline_veg = model_meta(
-      "baseline_veg",
-      "OIPC + vegetation interaction effects (C4/PFT)",
-      has_c4 = TRUE,
-      has_vegetation = TRUE,
-      has_interaction = TRUE,
-      size_mb = 717
-    ),
-
-    baseline_veg_sp = model_meta(
-      "baseline_veg_sp",
-      "OIPC + vegetation interactions + spatial effects",
-      has_spatial = TRUE,
-      has_c4 = TRUE,
-      has_vegetation = TRUE,
-      has_interaction = TRUE,
-      size_mb = 1200
-    ),
-
-    c4_only_sp = model_meta(
-      "c4_only_sp",
-      "OIPC + C4 fraction + spatial effects",
-      has_spatial = TRUE,
-      has_c4 = TRUE,
-      size_mb = 986
-    ),
-
-    elevation_only_sp = model_meta(
-      "elevation_only_sp",
-      "OIPC + spatial effects (historical elevation-context variant; no fitted elevation coefficient)",
-      has_spatial = TRUE,
-      size_mb = 923
-    ),
-
-    elevation_c4_sp = model_meta(
-      "elevation_c4_sp",
-      "OIPC + C4 + spatial effects (historical elevation-context variant)",
-      has_spatial = TRUE,
-      has_c4 = TRUE,
-      size_mb = 992
-    ),
-
-    elevation_c4_interact_sp = model_meta(
-      "elevation_c4_interact_sp",
-      "OIPC + C4 + OIPC x C4 interaction + spatial effects (no fitted elevation coefficient)",
-      has_spatial = TRUE,
-      has_c4 = TRUE,
-      has_interaction = TRUE,
-      size_mb = 1300
-    ),
-
-    full = model_meta(
-      "full",
-      "Precipitation amount + vegetation interactions",
-      has_precip = TRUE,
-      has_c4 = TRUE,
-      has_vegetation = TRUE,
-      has_interaction = TRUE,
-      size_mb = 811
-    ),
-
-    full_sp = model_meta(
-      "full_sp",
-      "Precipitation amount + vegetation interactions + spatial GP",
-      has_spatial = TRUE,
-      has_precip = TRUE,
-      has_c4 = TRUE,
-      has_vegetation = TRUE,
-      has_interaction = TRUE,
-      size_mb = 1700
-    ),
-
-    full_interact = model_meta(
-      "full_interact",
-      "Precipitation amount + vegetation interactions (no spatial GP)",
-      has_precip = TRUE,
-      has_c4 = TRUE,
-      has_vegetation = TRUE,
-      has_interaction = TRUE,
-      size_mb = 812
-    ),
-
-    full_interact_sp = model_meta(
-      "full_interact_sp",
-      "Precipitation amount + vegetation interactions + spatial GP",
-      has_spatial = TRUE,
-      has_precip = TRUE,
-      has_c4 = TRUE,
-      has_vegetation = TRUE,
-      has_interaction = TRUE,
-      size_mb = 1700
-    )
-  )
+  })
+  names(models) <- names(desc_size)
 
   return(models)
 }

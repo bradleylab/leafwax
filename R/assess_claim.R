@@ -77,8 +77,9 @@
 #'   `reconstruction` is NULL.
 #' @param model_name Model to use when running the inversion (default
 #'   "baseline_sp").
-#' @param ... Additional args forwarded to `invert_d2H()` (e.g.,
-#'   elevation, c4_fraction, pft_*, n_posterior_draws).
+#' @param ... Additional args forwarded to `invert_d2H()`. For an internally
+#'   constructed Level 3+ reconstruction these must include an explicit `prior`,
+#'   positive `n_inverse_samples`, and `seed`.
 #'
 #' @return A list with elements:
 #'   \itemize{
@@ -414,19 +415,15 @@ assess_claim <- function(record,
       stop("reconstruction must be invert_d2H(..., return_full = TRUE) ",
            "and contain $posterior_draws")
     }
-    # Re-emit the preview-tier warning at the inferential layer using
-    # the *reconstruction's* own model name — the user-supplied
-    # reconstruction may have been built from a different model than
-    # `model_name`, and pointing them at the wrong download URL is a
-    # silent footgun.
+    # Refuse preview-tier inference using the reconstruction's own model name.
     rec_tier <- attr(reconstruction, "leafwax_tier") %||%
+                reconstruction$model_info$posterior_tier %||%
                 reconstruction$model_info$tier %||% "unknown"
     rec_model <- reconstruction$model_info$model_name %||% model_name
-    if (identical(rec_tier, "light")) {
-      warn_preview_tier(rec_model,
-                        nrow(reconstruction$posterior_draws),
-                        "assess_claim L3+")
-    }
+    require_inference_tier(
+      rec_tier, rec_model, "assess_claim() Level 3+",
+      nrow(reconstruction$posterior_draws)
+    )
     draws <- as.matrix(reconstruction$posterior_draws)
     if (ncol(draws) != length(d2h_wax)) {
       stop(sprintf(

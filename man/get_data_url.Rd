@@ -17,12 +17,10 @@ get_data_url(model_name, version = "latest", data_type = c("posteriors"))
 List of download URLs and filenames
 }
 \description{
-Constructs download URLs for model data from GitHub releases.
+Constructs download URLs for the configured model-data release.
 }
 \examples{
-# Get URLs for latest version
+\dontrun{
 urls <- get_data_url("baseline_sp", "latest")
-
-# Get URLs for specific version
-urls <- get_data_url("baseline_sp", "v1.0.1")
+}
 }

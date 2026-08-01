@@ -109,7 +109,7 @@
     },
     "elevation_only_sp": {
       "name": "elevation_only_sp",
-      "description": "OIPC + spatial effects (historical elevation-context variant; no fitted elevation coefficient)",
+      "description": "OIPC + spatial effects (elevation spline fitted; not consumed by the slope-based inversion)",
       "is_spatial": true,
       "required_predictors": ["longitude", "latitude"],
       "optional_predictors": [],
@@ -124,7 +124,7 @@
     },
     "elevation_c4_sp": {
       "name": "elevation_c4_sp",
-      "description": "OIPC + C4 + spatial effects (historical elevation-context variant)",
+      "description": "OIPC + C4 + spatial effects (elevation spline fitted; not consumed by the slope-based inversion)",
       "is_spatial": true,
       "required_predictors": ["longitude", "latitude", "c4_fraction"],
       "optional_predictors": [],
@@ -139,7 +139,7 @@
     },
     "elevation_c4_interact_sp": {
       "name": "elevation_c4_interact_sp",
-      "description": "OIPC + C4 + OIPC x C4 interaction + spatial effects (no fitted elevation coefficient)",
+      "description": "OIPC + C4 + OIPC x C4 interaction + spatial effects (elevation spline fitted; not consumed by the slope-based inversion)",
       "is_spatial": true,
       "required_predictors": ["longitude", "latitude", "c4_fraction"],
       "optional_predictors": [],
@@ -226,7 +226,7 @@
   ],
   "notes": {
     "coordinates": "Longitude and latitude are required for spatial GP prediction.",
-    "elevation": "Elevation coefficients were not fitted in the v10 posteriors; supplied elevation is not used by shipped models.",
+    "elevation": "Several spatial models fit an elevation spline and the chordal deposits retain those coefficients, but the released slope-based inversion does not consume elevation; supplied elevation is not used by shipped models.",
     "precipitation_amount": "Models with beta_precip contain a fitted precipitation-amount coefficient, but the public inversion API does not currently accept a precipitation-amount covariate.",
     "c4_fraction": "C4 vegetation cover as a fraction in [0, 1] on the public API; converted to percent (0-100) internally before standardisation.",
     "pft": "Plant functional type fractions should sum to 1.0.",

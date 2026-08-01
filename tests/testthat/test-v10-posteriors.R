@@ -30,37 +30,46 @@ test_that("each v10 model loads via load_posteriors()", {
   }
 })
 
-test_that("invert_d2H runs against every v10 model and returns finite predictions", {
-  for (m in available_models()) {
-    # Suppress capability-mismatch warnings: passing the full predictor
-    # set to every model is intentional in this smoke test, and the
-    # function's expected behavior is to warn and ignore unused inputs.
-    res <- suppressWarnings(invert_d2H(
+test_that("Bayesian inversion runs supported designs and refuses incomplete ones", {
+  prior <- d2h_prior_normal(-70, 30)
+  skip_if_preview_posteriors("baseline")
+  supported <- c("baseline", "baseline_sp", "c4_only_sp")
+  for (m in supported) {
+    res <- invert_d2H(
       d2H_wax = -180, d2H_wax_sd = 3,
       longitude = -90, latitude = 38,
-      elevation = 200, c4_fraction = 0.05,
-      pft_tree = 0.4, pft_shrub = 0.1, pft_grass = 0.3,
-      model_name = m
-    ))
-    expect_s3_class(res, "data.frame")
-    expect_equal(nrow(res), 1L)
-    expect_true(is.finite(res$d2h_precip_mean),
-                info = sprintf("mean is non-finite for model %s", m))
-    expect_true(is.finite(res$d2h_precip_sd),
-                info = sprintf("sd is non-finite for model %s", m))
-    expect_true(res$d2h_precip_sd > 0,
-                info = sprintf("sd is non-positive for model %s", m))
-    expect_true(res$d2h_precip_lower < res$d2h_precip_upper,
-                info = sprintf("CI bounds inverted for model %s", m))
+      c4_fraction = if (m == "c4_only_sp") 0.05 else NULL,
+      model_name = m, prior = prior, n_posterior_draws = 80,
+      verbose = FALSE
+    )
+    expect_s3_class(res, "leafwax_inverse")
+    expect_true(is.finite(res$summary$d2h_precip_mean))
+    expect_true(res$summary$d2h_precip_sd > 0)
+    expect_lt(res$summary$d2h_precip_lower,
+              res$summary$d2h_precip_upper)
+  }
+  for (m in setdiff(available_models(), supported)) {
+    expect_error(
+      invert_d2H(
+        d2H_wax = -180, d2H_wax_sd = 3,
+        longitude = -90, latitude = 38,
+        model_name = m, prior = prior, verbose = FALSE
+      ),
+      "currently supports only"
+    )
   }
 })
 
 test_that("spatial models give different predictions from non-spatial counterparts", {
+  skip_if_preview_posteriors("baseline")
   args <- list(d2H_wax = -180, d2H_wax_sd = 3,
-               longitude = -90, latitude = 38)
+               longitude = -90, latitude = 38,
+               prior = d2h_prior_normal(-70, 30),
+               n_posterior_draws = 80, verbose = FALSE)
   ns <- do.call(invert_d2H, c(args, list(model_name = "baseline")))
   sp <- do.call(invert_d2H, c(args, list(model_name = "baseline_sp")))
-  expect_false(isTRUE(all.equal(ns$d2h_precip_mean, sp$d2h_precip_mean,
+  expect_false(isTRUE(all.equal(ns$summary$d2h_precip_mean,
+                                sp$summary$d2h_precip_mean,
                                 tolerance = 1e-3)),
                info = "baseline and baseline_sp returned identical predictions")
 })

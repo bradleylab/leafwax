@@ -13,20 +13,28 @@ get_model_parameters <- function(model_name) {
   # Base parameters that all models have
   base_params <- c("beta_0", "beta_d2Hp", "sigma")
 
-  # Initialize capabilities. The v10 fits did not produce beta_elev
-  # coefficients despite the historical "elevation_*" / "env" naming;
-  # has_elevation is therefore FALSE for every v10 model. The "env"
-  # variants instead carry a beta_precip term (precipitation amount),
-  # exposed here as has_precip. Capability flags stay name-based so this
-  # function is callable without loading the posterior; load_posteriors()
-  # cross-checks the actual columns at load time.
+  # Capabilities come from the config-derived manifest (R/model_capabilities.R,
+  # generated from config.yaml model_configs), NOT from name regexes. The former
+  # name-based rules mislabeled `full`/`full_sp` as interaction models (their
+  # config has include_veg_interactions = FALSE); the manifest fixes that.
+  #
+  # has_elevation is the one flag NOT taken from the manifest here. Several models
+  # DO fit an elevation spline (recorded in MODEL_CAPABILITIES for documentation),
+  # but this capability object is consumed by the inversion / input validation,
+  # and the current Bayesian reconstruction does not consume the elevation
+  # spline because its complete new-site basis is unavailable. So the operative,
+  # consumer-facing flag is FALSE. The
+  # deposit-authoritative value is load_posteriors()'s column-derived
+  # metadata$has_elevation, which flips to TRUE for a deposit that carries the
+  # coefficients (i.e. the chordal refit).
+  cap <- model_capability(model_name)
   capabilities <- list(
-    has_spatial = grepl("_sp$", model_name),
+    has_spatial = cap$has_gp,
     has_elevation = FALSE,
-    has_precip = grepl("env", model_name) || grepl("^full", model_name),
-    has_c4 = grepl("(c4|veg|^full)", model_name),
-    has_pft = grepl("(veg|^full)", model_name),
-    has_interaction = grepl("(veg|^full|interact)", model_name)
+    has_precip = cap$has_precip,
+    has_c4 = cap$has_c4,
+    has_pft = cap$has_pft,
+    has_interaction = cap$has_interaction
   )
 
   # Expected parameters based on model type
@@ -171,7 +179,7 @@ validate_model_inputs <- function(model_name, d2h_wax, longitude, latitude,
 
   # Check for unnecessary predictors
   if (!caps$has_elevation && !is.null(elevation)) {
-    warnings <- c(warnings, paste("Elevation provided but model", model_name, "does not include elevation effects"))
+    warnings <- c(warnings, paste("Elevation provided but model", model_name, "does not use elevation effects in the slope-based inversion"))
   }
 
   if (!caps$has_c4 && !is.null(c4_percent)) {

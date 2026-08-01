@@ -1,11 +1,21 @@
 # R/spatial_interpolation.R
 #
 # Modified Predictive Process (mPP) kriging from knot-level Gaussian-process
-# draws to a new prediction site. The v10 leafwax-spatial model uses a
-# Matern 3/2 covariance kernel, two independent GP fields (intercept and
-# slope, sharing knot coordinates and length scale, but with separate
-# sigma values), and standardized 2D coordinates (lon, lat divided by the
-# calibration-set lon/lat means and SDs).
+# draws to a new prediction site. The leafwax-spatial model uses a Matern 3/2
+# covariance kernel and two independent GP fields (intercept and slope, sharing
+# knot coordinates and length scale, but with separate sigma values).
+#
+# Prediction dispatches on the metric the posterior was FITTED under
+# (spatial_metric):
+#   - "chordal"      : lon/lat mapped to 3-D coordinates on a sphere of radius
+#                      6371 km; Euclidean distances are chordal km and the GP
+#                      length scale (ls_*_km) is used directly.
+#   - "standardized" : the former per-axis-standardized 2-D coords (each axis
+#                      divided by its calibration SD); length scale converted
+#                      via the former coord_scale_km rule.
+# A posterior MUST be predicted with the metric it was fitted under; mixing them
+# is a silent error. New (chordal-refit) posteriors are "chordal"; legacy frozen
+# posteriors are "standardized".
 
 #' @importFrom stats dist
 NULL
@@ -13,9 +23,9 @@ NULL
 # --- Internal helpers -------------------------------------------------------
 
 #' Matern 3/2 covariance: k(d) = sigma^2 * (1 + sqrt(3)*d/rho) * exp(-sqrt(3)*d/rho)
-#' @param d numeric matrix or vector of Euclidean distances (in standardized units)
+#' @param d numeric matrix or vector of chordal distances (in km)
 #' @param sigma marginal SD
-#' @param rho length scale (in standardized units; SAME units as d)
+#' @param rho length scale (in km; SAME units as d)
 #' @return covariance values matching shape of d
 #' @noRd
 matern32 <- function(d, sigma, rho) {
@@ -23,18 +33,51 @@ matern32 <- function(d, sigma, rho) {
   sigma^2 * (1 + scaled) * exp(-scaled)
 }
 
-#' Pairwise Euclidean distances between two coordinate matrices.
-#' @param a matrix(n_a, 2)
-#' @param b matrix(n_b, 2)
+#' Pairwise Euclidean distances between two coordinate matrices (any dimension).
+#' On 3-D chordal coordinates this returns chordal distances in km.
+#'
+#' Uses direct per-dimension differences (summed squared differences), not the
+#' \eqn{\|a\|^2 + \|b\|^2 - 2 a b'} dot-product identity: this avoids catastrophic
+#' cancellation when subtracting large 3-D chordal coordinates for nearby points,
+#' mirrors Stan's `distance()`, and reproduces the former 2-D standardized
+#' distances to machine precision. Cost is O(d) small outer products (d = 2 or 3).
+#' @param a matrix(n_a, d)
+#' @param b matrix(n_b, d)
 #' @return matrix(n_a, n_b)
 #' @noRd
 pair_distances <- function(a, b) {
-  outer(seq_len(nrow(a)), seq_len(nrow(b)),
-        FUN = function(i, j) sqrt((a[i, 1] - b[j, 1])^2 + (a[i, 2] - b[j, 2])^2))
+  d2 <- matrix(0, nrow(a), nrow(b))
+  for (k in seq_len(ncol(a))) {
+    d2 <- d2 + outer(a[, k], b[, k], "-")^2
+  }
+  sqrt(d2)
 }
 
-#' Convert ls in km to standardized-coordinate units, matching the v10
-#' Stan model's `coord_scale_km = mean(coord_scaling) * 111.0` formula.
+#' Convert lon/lat (degrees) to 3-D chordal coordinates on a sphere of radius R
+#' km, matching the fitted model's metric (4a_spatial_functions.R::lonlat_to_chordal).
+#' The Euclidean distance between two such rows is the chordal distance in km.
+#' @param coords matrix(n, 2) of (lon, lat) in degrees
+#' @param R sphere radius in km (6371)
+#' @return matrix(n, 3)
+#' @noRd
+lonlat_to_chordal <- function(coords, R = 6371) {
+  if (is.null(dim(coords))) coords <- matrix(coords, ncol = 2, byrow = TRUE)
+  lon_r <- coords[, 1] * pi / 180
+  lat_r <- coords[, 2] * pi / 180
+  cbind(
+    R * cos(lat_r) * cos(lon_r),
+    R * cos(lat_r) * sin(lon_r),
+    R * sin(lat_r)
+  )
+}
+
+# --- Legacy (standardized-metric) helpers -----------------------------------
+# Retained for posteriors fitted under the former per-axis-standardized metric
+# (spatial_metric == "standardized"). A posterior must be predicted with the
+# SAME metric it was fitted under; see predict_one_gp_mpp() dispatch.
+
+#' Convert ls in km to standardized-coordinate units, matching the former Stan
+#' model's `coord_scale_km = mean(coord_scaling) * 111.0` formula.
 #' @param ls_km numeric in km
 #' @param scaling list with $lon_sd and $lat_sd (degrees)
 #' @noRd
@@ -43,7 +86,7 @@ ls_km_to_std <- function(ls_km, scaling) {
   ls_km / coord_scale_km
 }
 
-#' Standardize a coord matrix using the scaling parameters.
+#' Standardize a coord matrix using the scaling parameters (legacy metric).
 #' @param coords matrix(n, 2) of (lon, lat) in degrees
 #' @param scaling list with $lon_mean, $lon_sd, $lat_mean, $lat_sd
 #' @noRd
@@ -61,7 +104,7 @@ standardize_coords <- function(coords, scaling) {
 #'
 #' Single-GP version. Used internally by `predict_spatial_dual_gp()` for
 #' each of the two (intercept, slope) fields. Matches the Matern 3/2 kernel
-#' and standardized-coordinate convention from the v10 Stan model.
+#' and the chordal (3-D Euclidean on the sphere, km) metric of the Stan model.
 #'
 #' @param coords_new matrix(n_obs, 2) of (lon, lat) in DEGREES.
 #' @param knot_coords matrix(n_knots, 2) of (lon, lat) in DEGREES.
@@ -70,43 +113,67 @@ standardize_coords <- function(coords, scaling) {
 #' @param sigma_draws numeric(n_draws), the GP marginal SD.
 #' @param ls_km_draws numeric(n_draws), the GP length scale in km
 #'   (e.g. `ls_intercept_km`).
-#' @param scaling list with `lon_mean`, `lon_sd`, `lat_mean`, `lat_sd`.
+#' @param metric character; the metric the posterior was FITTED under, one of
+#'   "chordal" (3-D km; length scale used directly) or "standardized" (former
+#'   per-axis standardized coords; requires `scaling`). A posterior must be
+#'   predicted with the same metric it was fitted under, or the interpolation
+#'   is silently wrong.
+#' @param scaling list with `lon_mean`, `lon_sd`, `lat_mean`, `lat_sd`; required
+#'   only when metric == "standardized".
 #' @param jitter ridge added to K_knots for numerical stability.
 #' @return matrix(n_draws, n_obs) of predicted GP values at the new sites.
 #' @keywords internal
 predict_one_gp_mpp <- function(coords_new, knot_coords, z_knots,
-                               sigma_draws, ls_km_draws, scaling,
-                               jitter = 1e-4) {
+                               sigma_draws, ls_km_draws,
+                               metric, scaling = NULL, jitter = 1e-4) {
 
+  # metric is required (no default): a posterior must be predicted with the
+  # metric it was fitted under, at every layer of the call stack.
+  if (missing(metric)) {
+    stop("predict_one_gp_mpp(): 'metric' is required ('chordal' or 'standardized').")
+  }
+  metric <- match.arg(metric, c("chordal", "standardized"))
   if (is.null(dim(coords_new)))   coords_new   <- matrix(coords_new,   ncol = 2, byrow = TRUE)
   if (is.null(dim(knot_coords)))  knot_coords  <- matrix(knot_coords,  ncol = 2, byrow = TRUE)
 
-  coords_std <- standardize_coords(coords_new,  scaling)
-  knot_std   <- standardize_coords(knot_coords, scaling)
+  # Represent coordinates in the fitted metric. Both feed the same Matern 3/2
+  # kernel; only the distance geometry and the length-scale units differ.
+  if (metric == "chordal") {
+    coords_a <- lonlat_to_chordal(coords_new)
+    knot_a   <- lonlat_to_chordal(knot_coords)
+  } else {
+    if (is.null(scaling)) {
+      stop("metric == 'standardized' requires 'scaling' (lon/lat mean & sd).")
+    }
+    coords_a <- standardize_coords(coords_new,  scaling)
+    knot_a   <- standardize_coords(knot_coords, scaling)
+  }
 
   n_draws  <- nrow(z_knots)
-  n_obs    <- nrow(coords_std)
-  n_knots  <- nrow(knot_std)
+  n_obs    <- nrow(coords_a)
+  n_knots  <- nrow(knot_a)
 
   if (ncol(z_knots) != n_knots) {
     stop(sprintf("z_knots has %d columns but knot_coords has %d rows; mismatch.",
                  ncol(z_knots), n_knots))
   }
 
-  knot_dists  <- pair_distances(knot_std, knot_std)
-  cross_dists <- pair_distances(coords_std, knot_std)
+  knot_dists  <- pair_distances(knot_a, knot_a)
+  cross_dists <- pair_distances(coords_a, knot_a)
 
-  # The v10 Stan model computes K_knots = matern32(coords, alpha=1, rho=ls)
-  # and applies sigma to knot effects post-kriging:
+  # The Stan model computes K_knots = matern32(coords, alpha=1, rho=ls) and
+  # applies sigma to knot effects post-kriging:
   #   knot_eff = sigma * z
   #   alpha_spatial += K_cross * solve(K_knots, knot_eff)
   # Mirror that exactly: kernel uses alpha = 1; sigma scales the prediction.
+  # For chordal, rho is the length scale in km directly; for the standardized
+  # metric it is converted to standardized units (former coord_scale_km rule).
   pred <- matrix(0, n_draws, n_obs)
   for (i in seq_len(n_draws)) {
-    ls_std  <- ls_km_to_std(ls_km_draws[i], scaling)
+    rho     <- if (metric == "chordal") ls_km_draws[i] else ls_km_to_std(ls_km_draws[i], scaling)
     sigma_i <- sigma_draws[i]
-    K_knots <- matern32(knot_dists,  1.0, ls_std)
-    K_cross <- matern32(cross_dists, 1.0, ls_std)
+    K_knots <- matern32(knot_dists,  1.0, rho)
+    K_cross <- matern32(cross_dists, 1.0, rho)
     diag(K_knots) <- diag(K_knots) + jitter
     knot_eff <- sigma_i * z_knots[i, ]
     pred[i, ] <- as.vector(K_cross %*% solve(K_knots, knot_eff))
@@ -129,14 +196,28 @@ predict_one_gp_mpp <- function(coords_new, knot_coords, z_knots,
 #'   `z_intercept_spatial[1..n_knots]`, `z_slope_spatial[1..n_knots]`,
 #'   `sigma_intercept_spatial`, `sigma_slope_spatial`,
 #'   and one of `ls_intercept_km` / `ls_slope_km`.
-#' @param scaling list with `lon_mean`, `lon_sd`, `lat_mean`, `lat_sd`.
+#' @param scaling list with `lon_mean`, `lon_sd`, `lat_mean`, `lat_sd`, `d2H_sd`.
+#' @param metric character; the metric the posterior was FITTED under, one of
+#'   "chordal" or "standardized" (typically `model$metadata$spatial_metric`).
+#'   Required — a posterior must be predicted with the metric it was fitted
+#'   under. `"standardized"` additionally needs `scaling`'s lon/lat mean & sd.
 #' @return list with two matrices, each n_draws x n_obs:
 #'   `intercept` (additive contribution to beta_0 in standardized
 #'   d2H_wax space) and `slope` (additive contribution to the local
 #'   \eqn{\beta_{\delta^2 H_p}}{beta_d2Hp} slope).
 #' @keywords internal
 #' @export
-predict_spatial_dual_gp <- function(coords_new, knot_coords, draws, scaling) {
+predict_spatial_dual_gp <- function(coords_new, knot_coords, draws, scaling,
+                                    metric) {
+
+  # metric is required (no default): a posterior must be predicted with the
+  # metric it was fitted under. A silent default would risk the very
+  # metric-mismatch this argument exists to prevent.
+  if (missing(metric)) {
+    stop("predict_spatial_dual_gp(): 'metric' is required ",
+         "(the posterior's spatial_metric, e.g. model$metadata$spatial_metric).")
+  }
+  metric <- match.arg(metric, c("chordal", "standardized"))
 
   z_int_cols   <- grep("^z_intercept_spatial\\[", colnames(draws), value = TRUE)
   z_slope_cols <- grep("^z_slope_spatial\\[",     colnames(draws), value = TRUE)
@@ -176,9 +257,11 @@ predict_spatial_dual_gp <- function(coords_new, knot_coords, draws, scaling) {
   list(
     intercept = predict_one_gp_mpp(coords_new, knot_coords, z_int,
                                    sigma_int_raw,
-                                   draws[[ls_col]], scaling),
+                                   draws[[ls_col]],
+                                   metric = metric, scaling = scaling),
     slope     = predict_one_gp_mpp(coords_new, knot_coords, z_slope,
                                    sigma_slope_raw,
-                                   draws[[ls_col]], scaling)
+                                   draws[[ls_col]],
+                                   metric = metric, scaling = scaling)
   )
 }

@@ -16,24 +16,27 @@
 #' @param pft_tree Numeric vector of tree PFT fraction (optional)
 #' @param pft_shrub Numeric vector of shrub PFT fraction (optional)
 #' @param pft_grass Numeric vector of grass PFT fraction (optional)
+#' @param record_id Optional identifier for one same-site record; required for
+#'   multi-row input.
 #' @param model Character string specifying model, or "auto" for automatic selection
 #' @param n_draws Integer number of posterior draws (NULL for all)
 #' @param credible_level Numeric credible interval level (default 0.9)
 #' @param return_draws Logical whether to return full posterior draws
 #' @param progress Logical whether to show progress bar for batch processing
 #' @param verbose Logical whether to print status messages
+#' @param prior Required proper precipitation-isotope prior.
+#' @param n_inverse_samples Number of joint posterior samples when
+#'   `return_draws = TRUE`.
+#' @param seed Explicit seed required when posterior samples are requested.
+#' @param grid_size,integration_tolerance,tail_mass_tolerance Numerical
+#'   integration controls passed to [invert_d2H()].
+#' @param draw_stability_tolerance Saved-draw stability tolerance in per mil.
 #'
-#' @return A data frame with predictions (or list if return_draws = TRUE):
-#' \describe{
-#'   \item{d2h_precip_mean}{Mean predicted precipitation d2H}
-#'   \item{d2h_precip_median}{Median predicted precipitation d2H}
-#'   \item{d2h_precip_sd}{Standard deviation of the posterior
-#'     predictive interval}
-#'   \item{d2h_precip_lower}{Lower bound of the credible interval}
-#'   \item{d2h_precip_upper}{Upper bound of the credible interval}
-#'   \item{prediction_interval_width}{Width of the credible interval}
-#'   \item{model_used}{Name of model used for prediction}
-#' }
+#' @return A `leafwax_inverse` object. Its `summary` data frame contains the
+#'   posterior median, central interval, and supporting moments for each row;
+#'   diagnostics and method metadata are always returned. Joint
+#'   `posterior_draws` are included only when `return_draws = TRUE` with an
+#'   explicit sample count and seed.
 #'
 #' The interval is the posterior predictive specified in manuscript
 #' supplement Section S4.1, Eq. 7 (analytical uncertainty plus the
@@ -41,35 +44,40 @@
 #'
 #' @export
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' local({
 #'   old <- options(leafwax.suppress_preview_warning = TRUE)
 #'   on.exit(options(old))
 #'
 #'   # Using data frame input
 #'   data(example_data)
-#'   results <- predict_d2h_precip(example_data, verbose = FALSE)
+#'   prior <- d2h_prior_normal(mean = -70, sd = 30)
+#'   results <- predict_d2h_precip(
+#'     example_data, prior = prior, verbose = FALSE
+#'   )
 #'
 #'   # Using individual vectors
 #'   results <- predict_d2h_precip(
 #'     d2h_wax = c(-150, -140, -130),
-#'     longitude = c(-120, -110, -100),
-#'     latitude = c(40, 35, 30),
-#'     elevation = c(1000, 1500, 500),
+#'     longitude = rep(-90, 3),
+#'     latitude = rep(38, 3),
+#'     record_id = "example_record",
+#'     elevation = c(1000, 1500, 500), prior = prior,
 #'     verbose = FALSE
 #'   )
 #'
 #'   # Specify model explicitly
 #'   results <- predict_d2h_precip(
 #'     example_data,
-#'     model = "baseline_env_sp",
+#'     model = "baseline_sp", prior = prior,
 #'     verbose = FALSE
 #'   )
 #'
 #'   # Get full posterior draws
 #'   results <- predict_d2h_precip(
 #'     example_data,
-#'     return_draws = TRUE,
+#'     prior = prior, return_draws = TRUE,
+#'     n_inverse_samples = 1000, seed = 20260801,
 #'     verbose = FALSE
 #'   )
 #' })
@@ -84,12 +92,20 @@ predict_d2h_precip <- function(data = NULL,
                               pft_tree = NULL,
                               pft_shrub = NULL,
                               pft_grass = NULL,
+                              record_id = NULL,
                               model = "auto",
                               n_draws = NULL,
                               credible_level = 0.9,
                               return_draws = FALSE,
                               progress = TRUE,
-                              verbose = TRUE) {
+                              verbose = TRUE,
+                              prior = NULL,
+                              n_inverse_samples = 0L,
+                              seed = NULL,
+                              grid_size = 2001L,
+                              integration_tolerance = 1e-3,
+                              tail_mass_tolerance = 1e-8,
+                              draw_stability_tolerance = 2) {
 
   # Extract variables from data frame if provided
   if (!is.null(data)) {
@@ -124,6 +140,9 @@ predict_d2h_precip <- function(data = NULL,
     if (is.null(pft_grass) && "pft_grass" %in% names(data)) {
       pft_grass <- data$pft_grass
     }
+    if (is.null(record_id) && "record_id" %in% names(data)) {
+      record_id <- data$record_id
+    }
   }
 
   # Validate required inputs
@@ -141,13 +160,15 @@ predict_d2h_precip <- function(data = NULL,
 
   # Auto-select model if requested
   if (model == "auto") {
-    model <- select_best_model_from_flags(
-      has_elevation = !is.null(elevation),
-      has_c4 = !is.null(c4_fraction),
-      has_pft = !is.null(pft_tree) && !is.null(pft_shrub) && !is.null(pft_grass),
-      prefer_spatial = TRUE,
-      verbose = verbose
-    )
+    if (!is.null(pft_tree) || !is.null(pft_shrub) || !is.null(pft_grass)) {
+      stop("Automatic Bayesian inversion cannot consume PFT covariates; choose a supported model explicitly.",
+           call. = FALSE)
+    }
+    model <- if (is.null(c4_fraction)) "baseline_sp" else "c4_only_sp"
+    if (!is.null(elevation)) {
+      warning("Elevation is retained in output metadata but is not a predictor in the selected Bayesian inversion.",
+              call. = FALSE)
+    }
   }
 
   if (verbose) {
@@ -189,19 +210,22 @@ predict_d2h_precip <- function(data = NULL,
       pft_tree = pft_tree,
       pft_shrub = pft_shrub,
       pft_grass = pft_grass,
+      record_id = record_id,
       model_name = model,
       n_draws = n_draws,
       return_full = return_draws,
       credible_level = credible_level,
-      verbose = FALSE  # We handle verbosity here
+      verbose = FALSE,
+      prior = prior,
+      n_inverse_samples = n_inverse_samples,
+      seed = seed,
+      grid_size = grid_size,
+      integration_tolerance = integration_tolerance,
+      tail_mass_tolerance = tail_mass_tolerance,
+      draw_stability_tolerance = draw_stability_tolerance
     )
 
-    # Add model information to results
-    if (!return_draws) {
-      results$model_used <- model
-    } else {
-      results$model_info$model_used <- model
-    }
+    results$model_info$model_used <- model
 
     if (verbose) {
       cat("Predictions complete\n")
@@ -212,8 +236,10 @@ predict_d2h_precip <- function(data = NULL,
   }, error = function(e) {
     # Provide helpful error message
     if (grepl("not found|not available", e$message)) {
-      message("\nModel data not available. To download:")
-      message("  download_model_data('", model, "')")
+      message(
+        "\nComplete model data are unavailable. Use a validated working ",
+        "checkout; public download wiring is pending final validation."
+      )
     }
 
     stop(e)
@@ -245,8 +271,11 @@ select_best_model_from_flags <- function(has_elevation = FALSE,
   pref <- function(name) name %in% available
 
   # Pick the richest model that uses every fitted covariate the user has.
-  # v10 posteriors do not contain beta_elev columns, so elevation is
-  # deliberately ignored for routing even when the caller supplies it.
+  # Elevation is not used for routing because the Bayesian reconstruction
+  # does not CONSUME elevation (narrowed-inversion decision), independent of
+  # whether the deposit carries beta_elev columns. Chordal deposits DO retain
+  # those columns, but routing still ignores elevation by design -- do not
+  # "fix" this to route on elevation unless the inversion is changed to consume it.
   # If prefer_spatial is FALSE, drop "_sp" suffix candidates first.
   candidates <- if (prefer_spatial) {
     if (has_pft && has_c4) {
@@ -401,8 +430,7 @@ list_models <- function(check_data = TRUE, verbose = TRUE) {
       cat("Models with data:", n_available, "of", nrow(model_df), "\n")
 
       if (n_available < nrow(model_df)) {
-        cat("\nTo download model data:\n")
-        cat("  download_model_data(model_name, 'standard')\n")
+        cat("\nPublic full-posterior download wiring is pending final validation.\n")
       }
     }
   }

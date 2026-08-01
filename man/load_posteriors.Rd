@@ -27,24 +27,23 @@ function searches three tiers in order:
 }
 \details{
 \enumerate{
-\item \strong{Heavy} posteriors at \verb{inst/extdata/posteriors/} (1000 draws,
-development install only; excluded from the CRAN tarball).
-\item \strong{Cache} populated by \code{\link[=download_model_data]{download_model_data()}} under
+\item \strong{Heavy} posteriors at \verb{inst/extdata/posteriors/} (complete retained
+draws in a validated development checkout; excluded from the tarball).
+\item \strong{Cache} populated by a validated public data release under
 \code{\link[=get_cache_dir]{get_cache_dir()}}.
 \item \strong{Preview} posteriors at \verb{inst/extdata/posteriors_light/}. These
 are a 100-draw stratified subsample shipped with every install
 so examples and tests run offline. They are intended as a
 fixture for code-path verification, \strong{not} for inference: tail
 probabilities and 95\% credible intervals are noisy at this
-sample size. The package issues a warning whenever the preview
-tier is in use; downstream functions (\code{\link[=invert_d2H]{invert_d2H()}},
-\code{\link[=assess_claim]{assess_claim()}}, \code{\link[=detect_change]{detect_change()}}) repeat the warning so it is
-visible at the call that actually matters.
+sample size. The package warns when this tier is loaded, and inferential
+functions fail closed.
 }
 
-For inference, run \code{\link[=download_model_data]{download_model_data()}} once to populate the
-cache and then call \code{load_posteriors()} again -- the cache tier wins
-over the preview tier and no further downloads are needed.
+Public download wiring is disabled in the current development build until
+the coordinated chordal data release passes final validation. For current
+inference, use a validated working checkout containing the complete
+posterior deposit.
 }
 \examples{
 local({

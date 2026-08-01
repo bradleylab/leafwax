@@ -24,8 +24,9 @@
 #'     or vegetation).
 #' }
 #'
-#' Pass the returned vector to `invert_d2H(..., slope = ...)` to
-#' propagate it through the inversion.
+#' The Bayesian inversion propagates its paired local-slope draws internally.
+#' Pass this vector as `slope = ...` only when deliberately overriding that
+#' internal calculation with a separately defended slope posterior.
 #'
 #' Mechanistic reference values (e.g. the simple two-pool stationarity
 #' bound `alpha = 1 + epsilon_app/1000` ~ 0.88 under
@@ -52,7 +53,7 @@
 #'   slope at the site (after override, if any).
 #' @export
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' local({
 #'   old <- options(leafwax.suppress_preview_warning = TRUE)
 #'   on.exit(options(old))
@@ -86,6 +87,7 @@
 #'                        model_name = "baseline_sp",
 #'                        n_posterior_draws = 200,
 #'                        slope = s,
+#'                        prior = d2h_prior_normal(-70, 30),
 #'                        verbose = FALSE)
 #' })
 #' }
@@ -104,6 +106,10 @@ local_effective_slope <- function(longitude,
   }
 
   model <- load_posteriors(model_name, n_draws = n_draws, verbose = verbose)
+  require_inference_tier(
+    model$metadata$tier, model_name, "local_effective_slope()",
+    nrow(model$draws)
+  )
   draws <- model$draws
 
   if (!"beta_d2Hp" %in% colnames(draws)) {
@@ -129,7 +135,8 @@ local_effective_slope <- function(longitude,
     dual <- predict_spatial_dual_gp(coords_new,
                                     model$spatial$knot_locs,
                                     draws,
-                                    model$scaling)
+                                    model$scaling,
+                                    metric = model$metadata$spatial_metric)
     # dual$slope is n_draws x n_obs; take the only column.
     slope_pert <- as.numeric(dual$slope[, 1])
     if (length(slope_pert) != n_iter) {

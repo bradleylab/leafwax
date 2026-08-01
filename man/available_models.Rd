@@ -18,7 +18,7 @@ Character vector of available model names. Models include:
 \item \code{c4_only_sp}: C4 vegetation effects only (spatial)
 \item \code{elevation_only_sp}: Historical elevation-context variant (spatial)
 \item \code{elevation_c4_sp}: Historical elevation-context + C4 variant
-\item \code{elevation_c4_interact_sp}: Historical elevation/C4-interaction name; C4 effect only
+\item \code{elevation_c4_interact_sp}: C4 effect + OIPC x C4 interaction (spatial; elevation spline fitted, not consumed by inversion)
 \item \code{full}: Precipitation amount + vegetation interactions without spatial component
 \item \code{full_sp}: Precipitation amount + vegetation interactions with spatial component
 \item \code{full_interact}: Precipitation amount + vegetation interactions

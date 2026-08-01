@@ -2,7 +2,7 @@
 % Please edit documentation in R/batch_processing.R
 \name{batch_predict}
 \alias{batch_predict}
-\title{Batch predict precipitation d2H for multiple sites}
+\title{Jointly invert multiple observations from one record}
 \usage{
 batch_predict(
   data,
@@ -16,15 +16,17 @@ batch_predict(
 )
 }
 \arguments{
-\item{data}{Data frame containing all measurements}
+\item{data}{Data frame containing observations from one same-site record. A
+\code{record_id} column is required when there is more than one row.}
 
 \item{model}{Model name or "auto" for automatic selection}
 
-\item{chunk_size}{Number of sites to process at once (default 100)}
+\item{chunk_size}{Retained for compatibility and recorded in diagnostics;
+it does not split the joint inversion.}
 
-\item{parallel}{Logical whether to use parallel processing}
+\item{parallel}{Must be \code{FALSE}; parallel chunks would change the target.}
 
-\item{n_cores}{Number of cores for parallel processing (NULL for auto)}
+\item{n_cores}{Retained for compatibility and diagnostics.}
 
 \item{progress}{Logical whether to show progress bar}
 
@@ -33,27 +35,33 @@ batch_predict(
 \item{...}{Additional arguments passed to predict_d2h_precip}
 }
 \value{
-Data frame with predictions for all sites
+A \code{leafwax_inverse} object for the jointly inverted rows.
 }
 \description{
-Processes multiple sites with progress indicators and optional parallelization.
-Handles large datasets efficiently by processing in chunks.
+Sends all rows through one joint Bayesian inversion so they coherently
+reweight the shared calibration draws. Chunked and parallel processing are
+deliberately disabled because splitting a record changes that joint target.
 }
 \examples{
-\donttest{
+\dontrun{
 local({
   old <- options(leafwax.suppress_preview_warning = TRUE)
   on.exit(options(old))
 
   data(example_data)
+  prior <- d2h_prior_normal(mean = -70, sd = 30)
   large_data <- example_data[rep(seq_len(nrow(example_data)), length.out = 12), ]
   row.names(large_data) <- NULL
+  large_data$longitude <- large_data$longitude[[1]]
+  large_data$latitude <- large_data$latitude[[1]]
+  large_data$record_id <- "example_record"
 
   # Process in chunks
   results <- batch_predict(
     large_data,
     chunk_size = 6,
     progress = FALSE,
+    prior = prior,
     verbose = FALSE
   )
 
@@ -63,6 +71,7 @@ local({
     model = "baseline_sp",
     chunk_size = 6,
     progress = FALSE,
+    prior = prior,
     verbose = FALSE
   )
 })

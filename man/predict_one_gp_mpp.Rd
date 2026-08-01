@@ -10,7 +10,8 @@ predict_one_gp_mpp(
   z_knots,
   sigma_draws,
   ls_km_draws,
-  scaling,
+  metric,
+  scaling = NULL,
   jitter = 1e-04
 )
 }
@@ -27,7 +28,14 @@ predict_one_gp_mpp(
 \item{ls_km_draws}{numeric(n_draws), the GP length scale in km
 (e.g. \code{ls_intercept_km}).}
 
-\item{scaling}{list with \code{lon_mean}, \code{lon_sd}, \code{lat_mean}, \code{lat_sd}.}
+\item{metric}{character; the metric the posterior was FITTED under, one of
+"chordal" (3-D km; length scale used directly) or "standardized" (former
+per-axis standardized coords; requires \code{scaling}). A posterior must be
+predicted with the same metric it was fitted under, or the interpolation
+is silently wrong.}
+
+\item{scaling}{list with \code{lon_mean}, \code{lon_sd}, \code{lat_mean}, \code{lat_sd}; required
+only when metric == "standardized".}
 
 \item{jitter}{ridge added to K_knots for numerical stability.}
 }
@@ -37,6 +45,6 @@ matrix(n_draws, n_obs) of predicted GP values at the new sites.
 \description{
 Single-GP version. Used internally by \code{predict_spatial_dual_gp()} for
 each of the two (intercept, slope) fields. Matches the Matern 3/2 kernel
-and standardized-coordinate convention from the v10 Stan model.
+and the chordal (3-D Euclidean on the sphere, km) metric of the Stan model.
 }
 \keyword{internal}

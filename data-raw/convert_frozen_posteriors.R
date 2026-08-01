@@ -23,7 +23,7 @@
 #   Rscript data-raw/convert_frozen_posteriors.R
 #
 # Provenance:
-#   Frozen fits at <leafwax_working>/results/c2_run_20260626/model_output/<model>/posterior_draws.rds
+#   Chordal fits at <leafwax_working>/results/c2_run_20260728_chordal/model_output/<model>/posterior_draws.rds
 #   Manuscript: bradleylab/leafwax-spatial; Bradley (2026), Communications
 #   Earth and Environment. n=1128 calibration observations (Africa 142).
 #   125 knots; spherical Fibonacci lattice.
@@ -34,8 +34,12 @@ suppressPackageStartupMessages({
 
 # --- Configuration ----------------------------------------------------------
 
-# Frozen analysis run (Communications Earth and Environment manuscript).
-V10_RESULTS_DIR <- "/Users/abradley/Documents/Manuscripts/ in review/bradley_proxy_uncertainty/leafwax_working/results/c2_run_20260626/model_output"
+# Analysis run (Communications Earth and Environment manuscript). Defaults to the
+# chordal-metric run; override with LEAFWAX_RUN_DIR to rebuild from another run.
+V10_RESULTS_DIR <- Sys.getenv(
+  "LEAFWAX_RUN_DIR",
+  unset = "/Users/abradley/Documents/Manuscripts/ in review/bradley_proxy_uncertainty/leafwax_working/results/c2_run_20260728_chordal/model_output"
+)
 # Package root: project moved from ~/Desktop to ~/Documents since the
 # v10 conversion; path corrected so the script runs in place.
 PKG_ROOT        <- "/Users/abradley/Documents/Manuscripts/ in review/bradley_proxy_uncertainty/leafwax-pkg"
@@ -124,11 +128,24 @@ convert_one <- function(model, results_dir, out_post_dir, out_knot_dir,
     ddf$.draw <- seq_len(nrow(ddf))
   }
 
+  # Stamp the fitted spatial metric — subset + as_draws_df drop attributes, and
+  # load_posteriors() assumes legacy "standardized" on any spatial posterior that
+  # lacks the stamp. Spatial (_sp) models MUST carry it; propagate the source
+  # attribute and require it to be "chordal". Non-spatial models have no GP.
+  is_spatial <- any(grepl("^z_intercept_spatial", vars_keep))
+  src_metric <- attr(d, "spatial_metric")
+  if (is_spatial) {
+    if (!is.null(src_metric) && !identical(src_metric, "chordal")) {
+      stop(sprintf("%s: source spatial_metric '%s', expected 'chordal'", model, src_metric))
+    }
+    attr(ddf, "spatial_metric") <- "chordal"
+  } else if (!is.null(src_metric)) {
+    attr(ddf, "spatial_metric") <- src_metric
+  }
+
   # Save posterior file
   out_post <- file.path(out_post_dir, paste0(model, "_posterior.rds"))
   saveRDS(ddf, out_post, compress = "xz")
-
-  is_spatial <- any(grepl("^z_intercept_spatial", vars_keep))
 
   if (is_spatial) {
     # Verify the knot count matches expectation
@@ -179,8 +196,8 @@ for (m in MODELS) {
 
 # Update lineage marker
 data_info <- list(
-  posterior_lineage = "frozen c2_run_20260626 (bradleylab/leafwax-spatial; Communications Earth and Environment manuscript)",
-  fit_date          = "2026-06-26",
+  posterior_lineage = "chordal c2_run_20260728_chordal (bradleylab/leafwax-spatial; Communications Earth and Environment manuscript)",
+  fit_date          = "2026-07-28",
   n_obs_calibration = 1128L,
   n_knots_spatial   = N_KNOTS,
   conversion_date   = format(Sys.time(), "%Y-%m-%d %H:%M:%S %Z"),

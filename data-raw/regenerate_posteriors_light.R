@@ -39,6 +39,11 @@ for (f in heavy_files) {
   # the full posterior so two runs give identical light tiers.
   idx <- round(seq.int(1, nrow(draws), length.out = n_keep))
   light <- draws[idx, , drop = FALSE]
+  # Row-subsetting drops custom attributes; carry the spatial_metric stamp from
+  # the heavy tier so the CRAN-shipped light tier is not read as legacy
+  # "standardized" by load_posteriors().
+  metric <- attr(draws, "spatial_metric")
+  if (!is.null(metric)) attr(light, "spatial_metric") <- metric
 
   out <- file.path(light_dir, basename(f))
   saveRDS(light, out, compress = "xz")

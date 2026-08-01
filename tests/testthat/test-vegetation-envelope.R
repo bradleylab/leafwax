@@ -7,6 +7,7 @@
 .good_oipc <- -60
 
 test_that("compute_vegetation_envelope returns expected list shape", {
+  skip_if_preview_posteriors("full_interact_sp")
   env <- compute_vegetation_envelope(
     oipc_ref = .good_oipc, from = .good_from, to = .good_to,
     n_draws = 50, verbose = FALSE
@@ -31,6 +32,7 @@ test_that("compute_vegetation_envelope returns expected list shape", {
 })
 
 test_that("from == to gives envelope identically zero", {
+  skip_if_preview_posteriors("full_interact_sp")
   env <- compute_vegetation_envelope(
     oipc_ref = .good_oipc, from = .good_from, to = .good_from,
     n_draws = 50, verbose = FALSE
@@ -41,6 +43,7 @@ test_that("from == to gives envelope identically zero", {
 })
 
 test_that("envelope scales linearly with ΔPFT magnitude", {
+  skip_if_preview_posteriors("full_interact_sp")
   # Doubling delta_pft (by doubling each component of `to - from`)
   # should double every per-draw envelope. Constructing two paired
   # scenarios on the same draws and comparing element-wise is the
@@ -119,6 +122,7 @@ test_that("values outside [0, 1] are rejected", {
 })
 
 test_that("model without all 8 PFT coefficients errors with the missing column names", {
+  skip_if_preview_posteriors("baseline_sp")
   expect_error(
     compute_vegetation_envelope(oipc_ref = .good_oipc,
                                 from = .good_from, to = .good_to,
@@ -139,6 +143,7 @@ test_that("model without all 8 PFT coefficients errors with the missing column n
 })
 
 test_that("n_draws subsampling is deterministic", {
+  skip_if_preview_posteriors("full_interact_sp")
   # load_posteriors() uses a stratified deterministic thinning. Two
   # independent envelope calls with the same n_draws must produce
   # bit-identical draws.
@@ -150,6 +155,7 @@ test_that("n_draws subsampling is deterministic", {
 })
 
 test_that("envelope_p975_abs uses |envelope|, not signed envelope", {
+  skip_if_preview_posteriors("full_interact_sp")
   # A predominantly negative envelope must still produce a positive
   # envelope_p975_abs by construction. Pick a scenario where all PFT
   # coefficients drive the per-draw envelope negative on most draws.

@@ -14,12 +14,8 @@ NULL
 #' @param ... Arguments passed to \code{\link{invert_d2H}} (e.g.,
 #'   `d2H_wax`, `d2H_wax_sd`, `longitude`, `latitude`, optional
 #'   covariates).
-#' @param models Character vector of v10 model names to include in the
-#'   ensemble. Defaults to three structurally distinct variants:
-#'   \code{full_sp} (all covariates + spatial GP), \code{full_interact_sp}
-#'   (full + elevation x C4 interaction + spatial GP), and
-#'   \code{elevation_c4_interact_sp} (elevation x C4 interaction with
-#'   spatial GP, no PFT).
+#' @param models Explicit character vector of compatible Bayesian-inversion
+#'   model names. There is no scientific default ensemble.
 #' @param ensemble_method `"equal"` (default) pools per-draw
 #'   reconstructions per site across models with equal weighting and
 #'   returns a per-site posterior. `"all"` returns the per-model
@@ -36,37 +32,44 @@ NULL
 #'   `ensemble_method` are returned.
 #' @export
 invert_d2H_ensemble <- function(...,
-                                models = c("full_sp",
-                                           "full_interact_sp",
-                                           "elevation_c4_interact_sp"),
+                                models = NULL,
                                 ensemble_method = c("equal", "all")) {
 
   ensemble_method <- match.arg(ensemble_method)
-
-  # available_models() returns a character vector of model names, not
-  # a data frame; the previous $model accessor was always NULL.
-  all_models <- available_models()
-
-  invalid_models <- models[!models %in% all_models]
-  if (length(invalid_models) > 0) {
-    stop("Invalid models: ", paste(invalid_models, collapse = ", "),
-         ". Use available_models() to see options.")
+  if (is.null(models) || !length(models)) {
+    stop("models must be supplied explicitly; no default scientific ensemble is defined.",
+         call. = FALSE)
   }
-
-  # invert_d2H() defaults to return_full = FALSE (a summary data frame
-  # with no $posterior_draws slot). The ensemble pool requires per-draw
-  # reconstructions, so force return_full = TRUE here. Strip any
-  # caller-supplied return_full / model_name from `...` first — both
-  # are controlled by this function and a duplicate via `...` would
-  # error with "matched by multiple actual arguments".
+  invalid_models <- setdiff(models, .supported_bayesian_inverse_models)
+  if (length(invalid_models)) {
+    stop(
+      "Unsupported Bayesian-inversion ensemble model(s): ",
+      paste(invalid_models, collapse = ", "),
+      ". Compatible models are: ",
+      paste(.supported_bayesian_inverse_models, collapse = ", "), ".",
+      call. = FALSE
+    )
+  }
   extra_args <- list(...)
   extra_args[c("return_full", "model_name")] <- NULL
+  if (is.null(extra_args$prior)) {
+    stop("A proper prior must be supplied explicitly to the ensemble.",
+         call. = FALSE)
+  }
+  if (is.null(extra_args$n_inverse_samples) ||
+      extra_args$n_inverse_samples <= 0L || is.null(extra_args$seed)) {
+    stop("The ensemble requires positive n_inverse_samples and an explicit seed.",
+         call. = FALSE)
+  }
+  base_seed <- as.integer(extra_args$seed)
 
   results <- list()
-  for (model in models) {
-    message("Running model: ", model)
+  for (model_index in seq_along(models)) {
+    model <- models[[model_index]]
+    model_args <- extra_args
+    model_args$seed <- base_seed + model_index - 1L
     results[[model]] <- do.call(invert_d2H, c(
-      extra_args,
+      model_args,
       list(model_name = model, return_full = TRUE)
     ))
   }
@@ -78,11 +81,6 @@ invert_d2H_ensemble <- function(...,
     ))
   }
 
-  # Coerce each model's `posterior_draws` to an n_draws x n_sites
-  # matrix and verify shapes are consistent across models. invert_d2H()
-  # may return either a vector (single-site) or a matrix (multi-site)
-  # depending on the inversion path; standardise here so the per-site
-  # pool below has a stable shape.
   draws_list <- lapply(results, function(x) {
     pd <- x$posterior_draws
     if (is.null(dim(pd))) pd <- matrix(pd, ncol = 1L)
@@ -98,43 +96,11 @@ invert_d2H_ensemble <- function(...,
   }
   n_sites <- n_sites_per_model[[1]]
 
-  # Pool per-site, per-draw across models with equal weighting.
-  # Naively concatenating each model's per-site draws and then
-  # resampling biases the pool toward the model with the most draws
-  # (e.g., a 1000-draw heavy posterior contributes 10x more samples
-  # than a 100-draw preview-tier model). Instead, resample each model
-  # to a uniform `per_model` count first, then concatenate. The total
-  # pool size matches the median draw count across models, so a single
-  # outlier (one preview-tier model in a heavy ensemble) does not
-  # silently shrink the pool to its fixture size.
-  k <- length(draws_list)
   if (length(unique(n_draws_per_model)) != 1L) {
-    warning(sprintf(
-      "Ensemble models have unequal draw counts (%s); pooling each to the median (%d) before equal-weight combination. Mixed-tier ensembles can lose draws relative to a uniform-tier run.",
-      paste(n_draws_per_model, collapse = ", "),
-      stats::median(n_draws_per_model)
-    ), call. = FALSE)
+    stop("Compatible ensemble inversions returned unequal sample counts.",
+         call. = FALSE)
   }
-  n_target <- as.integer(stats::median(n_draws_per_model))
-  per_model <- floor(n_target / k)
-  remainder <- n_target - per_model * k
-  pooled <- matrix(NA_real_, nrow = n_target, ncol = n_sites)
-  for (site_idx in seq_len(n_sites)) {
-    chunks <- lapply(draws_list, function(m) {
-      sample(m[, site_idx], size = per_model, replace = TRUE)
-    })
-    bag <- unlist(chunks, use.names = FALSE)
-    if (remainder > 0L) {
-      # Distribute the remainder across models so the pool is exactly
-      # n_target and weighting stays as close to equal as possible.
-      extras <- sample(seq_len(k), size = remainder, replace = FALSE)
-      for (j in extras) {
-        bag <- c(bag, sample(draws_list[[j]][, site_idx], size = 1L,
-                             replace = TRUE))
-      }
-    }
-    pooled[, site_idx] <- bag
-  }
+  pooled <- do.call(rbind, draws_list)
 
   # Per-site point-estimate summary. Each column of `pooled` is the
   # posterior at one site after model pooling.
@@ -150,11 +116,17 @@ invert_d2H_ensemble <- function(...,
     stringsAsFactors = FALSE
   )
 
-  return(list(
-    posterior_draws  = pooled,
+  structure(list(
+    status = if (all(vapply(results, function(x) x$status == "ok", logical(1))))
+      "ok" else "inconclusive",
+    posterior_draws = pooled,
     ensemble_summary = summary_per_site,
-    model_results    = results,
-    models_used      = models,
-    ensemble_method  = ensemble_method
-  ))
+    model_results = results,
+    models_used = models,
+    ensemble_method = ensemble_method,
+    metadata = list(
+      weighting = "equal model weights by equal sample counts",
+      model_seeds = stats::setNames(base_seed + seq_along(models) - 1L, models)
+    )
+  ), class = "leafwax_inverse_ensemble")
 }

@@ -143,7 +143,7 @@ REQUIRED_PFT_LABELS <- c("tree", "shrub", "grass", "C4")
 #'
 #' @export
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' local({
 #'   old <- options(leafwax.suppress_preview_warning = TRUE)
 #'   on.exit(options(old))
@@ -180,6 +180,10 @@ compute_vegetation_envelope <- function(oipc_ref,
 
   model <- load_posteriors(model_name, n_draws = n_draws,
                            verbose = verbose)
+  require_inference_tier(
+    model$metadata$tier, model_name, "compute_vegetation_envelope()",
+    nrow(model$draws)
+  )
   draws <- model$draws
   param_names <- colnames(draws)
 

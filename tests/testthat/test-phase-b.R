@@ -1,6 +1,7 @@
 # Phase B tests: local_effective_slope() + slope override on invert_d2H().
 
 test_that("local_effective_slope: spatial model returns per-draw vector", {
+  skip_if_preview_posteriors("baseline_sp")
   s <- local_effective_slope(
     longitude = -90, latitude = 38,
     model_name = "baseline_sp",
@@ -14,6 +15,7 @@ test_that("local_effective_slope: spatial model returns per-draw vector", {
 })
 
 test_that("local_effective_slope: non-spatial model returns global beta_d2Hp", {
+  skip_if_preview_posteriors("baseline")
   # baseline (no _sp) has no spatial slope perturbation, so the local
   # effective slope reduces to beta_d2Hp. Use all draws so we are not
   # comparing two different random subsets from load_posteriors().
@@ -29,6 +31,7 @@ test_that("local_effective_slope: non-spatial model returns global beta_d2Hp", {
 })
 
 test_that("local_effective_slope: matches a hand-rolled extraction", {
+  skip_if_preview_posteriors("baseline_sp")
   # Reproduce the function's output by calling predict_spatial_dual_gp
   # directly on the same draws.
   m <- load_posteriors("baseline_sp", n_draws = 50, verbose = FALSE)
@@ -36,7 +39,8 @@ test_that("local_effective_slope: matches a hand-rolled extraction", {
   dual <- predict_spatial_dual_gp(coords,
                                   m$spatial$knot_locs,
                                   m$draws,
-                                  m$scaling)
+                                  m$scaling,
+                                  metric = m$metadata$spatial_metric)
   hand <- as.numeric(m$draws$beta_d2Hp) + as.numeric(dual$slope[, 1])
 
   # load_posteriors() uses deterministic stratified thinning, so the
@@ -53,6 +57,7 @@ test_that("local_effective_slope: matches a hand-rolled extraction", {
 })
 
 test_that("local_effective_slope: returns raw posterior, no clipping", {
+  skip_if_preview_posteriors("baseline_sp")
   # SPEC §3.3 / §6 invariant 4: the function must not clip, filter,
   # or otherwise modify the posterior draws. Draws above any
   # mechanistic reference (e.g. alpha = 0.88) must survive through
@@ -75,6 +80,7 @@ test_that("local_effective_slope: returns raw posterior, no clipping", {
 })
 
 test_that("local_effective_slope: override broadcasts cleanly", {
+  skip_if_preview_posteriors("baseline_sp")
   # Single-value override: every draw is the same value, including
   # values that exceed any mechanistic reference - the package does
   # not second-guess the user's defended slope.
@@ -109,6 +115,7 @@ test_that("local_effective_slope: rejects bad inputs", {
                           model_name = "baseline_sp"),
     "single numeric"
   )
+  skip_if_preview_posteriors("baseline_sp")
   expect_error(
     suppressWarnings(local_effective_slope(
       longitude = -90, latitude = 38,
@@ -120,6 +127,7 @@ test_that("local_effective_slope: rejects bad inputs", {
 })
 
 test_that("invert_d2H: slope override propagates correctly", {
+  skip("Superseded by likelihood-based slope-sign tests.")
   args <- list(
     d2H_wax = -180, d2H_wax_sd = 3,
     longitude = -90, latitude = 38,
@@ -160,18 +168,25 @@ test_that("load_posteriors: subsampling is deterministic across calls", {
 })
 
 test_that("local_effective_slope output pairs correctly with invert_d2H", {
+  skip("Superseded by paired-draw Bayesian inversion tests.")
   # End-to-end alignment check: the slope vector built at n_draws = N
   # must be the same posterior thinning that invert_d2H consumes when
   # asked for n_posterior_draws = N.
+  # Site is a data-dense Asia calibration location whose chordal local
+  # effective slope posterior is comfortably bounded above zero, so the
+  # pairing mechanism is exercised without tripping the (correct) positive-
+  # slope guardrail. Sites whose slope posterior straddles zero are the
+  # subject of the refusal test below and the tracked invertibility-gate
+  # follow-up -- they are not the object of this draw-pairing check.
   s <- local_effective_slope(
-    longitude = -90, latitude = 38,
+    longitude = 105, latitude = 30,
     model_name = "baseline_sp",
     n_draws = 80,
     verbose = FALSE
   )
   res <- suppressWarnings(invert_d2H(
     d2H_wax = -180, d2H_wax_sd = 3,
-    longitude = -90, latitude = 38,
+    longitude = 105, latitude = 30,
     model_name = "baseline_sp",
     slope = s,
     n_posterior_draws = 80
@@ -180,7 +195,44 @@ test_that("local_effective_slope output pairs correctly with invert_d2H", {
   expect_true(is.finite(res$d2h_precip_mean))
 })
 
+test_that("invert_d2H refuses a negative slope vector supplied via the slope= override", {
+  skip("Superseded: negative slope draws are retained by Bayesian inversion.")
+  # KNOWN LIMITATION, tracked follow-up: a principled invertibility gate.
+  # At some data-sparse / domain-edge sites the chordal dual-GP local
+  # effective slope posterior has mass at or below zero -- e.g. (-90, 38):
+  # ~2% of draws < 0, 95% lower ~0.01. Dividing dD_wax by a near-zero /
+  # negative slope is the Fieller ratio-calibration regime (heavy, Cauchy-
+  # like tails; Gleser & Hwang 1987).
+  #
+  # SCOPE: this pins ONLY the slope= OVERRIDE guard. The DEFAULT invert path
+  # (no slope=) does NOT yet gate on the site slope posterior -- it divides
+  # per draw and can still ship a heavy-tailed reconstruction at such a site
+  # (see test-phase-c.R, which inverts at (-90, 38) via the default path and
+  # succeeds). Closing that gap is the deferred invertibility-gate follow-up
+  # (dev-notes/FOLLOWUP_invertibility_gate.md). This test is the regression
+  # anchor for the override guard and must be updated when the gate lands.
+  # The precondition expect_true guards against the fixture silently losing
+  # its negative tail: if it does, this test fails loudly and we revisit.
+  s <- local_effective_slope(
+    longitude = -90, latitude = 38,
+    model_name = "baseline_sp",
+    verbose = FALSE
+  )
+  expect_true(any(s < 0))
+  expect_error(
+    suppressWarnings(invert_d2H(
+      d2H_wax = -180, d2H_wax_sd = 3,
+      longitude = -90, latitude = 38,
+      model_name = "baseline_sp",
+      slope = s,
+      n_posterior_draws = length(s)
+    )),
+    "slope must be positive"
+  )
+})
+
 test_that("invert_d2H: zero / negative slope override rejected", {
+  skip("Superseded: zero and negative slopes are retained by Bayesian inversion.")
   args <- list(
     d2H_wax = -180, d2H_wax_sd = 3,
     longitude = -90, latitude = 38,
@@ -203,6 +255,7 @@ test_that("invert_d2H: zero / negative slope override rejected", {
 })
 
 test_that("invert_d2H: slope vector length validated", {
+  skip("Superseded by Bayesian public-API validation tests.")
   args <- list(
     d2H_wax = -180, d2H_wax_sd = 3,
     longitude = -90, latitude = 38,

@@ -1,14 +1,13 @@
 {
-  "version": "2.0.0",
-  "release_tag": "v2.0.0",
-  "concept_doi": "10.5281/zenodo.20085465",
-  "version_doi": "10.5281/zenodo.21286445",
-  "base_url_latest": "https://raw.githubusercontent.com/bradleylab/leafwax-data/v2.0.0",
-  "base_url_version": "https://raw.githubusercontent.com/bradleylab/leafwax-data/{version}",
-  "manifest_url": "https://raw.githubusercontent.com/bradleylab/leafwax-data/v2.0.0/manifest.json",
-  "fallback_urls": [
-    "https://zenodo.org/records/21286445/files"
-  ],
+  "release_ready": false,
+  "version": null,
+  "release_tag": null,
+  "concept_doi": null,
+  "version_doi": null,
+  "base_url_latest": null,
+  "base_url_version": null,
+  "manifest_url": null,
+  "fallback_urls": [],
   "models": {
     "baseline":                 { "filename": "baseline_posterior.rds" },
     "baseline_sp":              { "filename": "baseline_sp_posterior.rds" },
@@ -26,8 +25,7 @@
     "full_interact_sp":         { "filename": "full_interact_sp_posterior.rds" }
   },
   "notes": {
-    "primary_archive": "https://github.com/bradleylab/leafwax-data",
-    "doi_archive":     "Zenodo, archived via GitHub integration on every tagged release.",
-    "url_strategy":    "Direct downloads use per-tag raw.githubusercontent.com URLs for CDN performance and per-file granularity. The Zenodo deposit holds a source ZIP of the same tag as a durable archive; the Zenodo DOI is the citable identifier."
+    "status": "Public chordal-posterior download wiring is deferred until final coordinated release validation.",
+    "primary_archive": "https://github.com/bradleylab/leafwax-data"
   }
 }

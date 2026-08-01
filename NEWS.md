@@ -1,10 +1,24 @@
-# leafwax 0.3.0
+# leafwax 0.3.0.9000
+
+Development version; no public release is claimed.
+
+* Replaced ratio inversion with a likelihood-based Bayesian inversion over
+  paired calibration draws and a caller-specified proper prior.
+* Multi-row records jointly reweight shared calibration draws and return
+  explicit diagnostics for prior influence, slope sign, numerical integration,
+  mixture effective sample size, and saved-draw stability.
+* Zero and negative slope draws are retained. Posterior samples require an
+  explicit seed; the 100-draw preview tier cannot return inferential results.
+* Reconstruction fails closed for calibration variants whose complete new-site
+  predictor design is unavailable. Model ensembles require an explicit list of
+  compatible models and have no default scientific composition.
 
 Posterior data update.
 
-* Posteriors re-fit on the frozen analysis run `c2_run_20260626`
-  (n = 1128 calibration observations; Africa 142). This supersedes the
-  earlier v10 / n = 1129 lineage. All 14 model posteriors, the shipped
+* Posteriors re-fit on the authoritative chordal analysis run
+  `c2_run_20260728_chordal` (n = 1128 calibration observations; Africa 142).
+  This supersedes the earlier v10 / n = 1129 lineage and the frozen
+  great-circle comparison run. All 14 model posteriors, the shipped
   100-draw preview tier, and the spatial-model knot metadata were
   regenerated from the frozen run.
 * Three interaction models changed their coefficient set to match the
@@ -12,12 +26,11 @@ Posterior data update.
   `beta_oipc_x_c4` interaction term (previously absent), while `full` and
   `full_sp` no longer carry `beta_oipc_x_c4` (retaining the plant-functional-type
   interactions `beta_oipc_x_grass`, `beta_oipc_x_shrub`, `beta_oipc_x_tree`).
-* The full posteriors are downloaded from the `bradleylab/leafwax-data`
-  v2.0.0 deposit.
+* Public posterior and package releases are deferred until final validation.
 
-# leafwax 0.2.7
+# leafwax 0.2.7 (pre-release milestone)
 
-CRAN resubmission polish.
+Package-check and distribution-metadata polish; no CRAN release is claimed.
 
 * Updated `DESCRIPTION` formatting for CRAN: software/service names are quoted
   as `'Stan'` and `'Zenodo'`, and the data-deposit reference now uses
@@ -31,9 +44,9 @@ CRAN resubmission polish.
 * Updated package documentation for the precipitation-isotope calibration
   slope.
 
-# leafwax 0.2.6
+# leafwax 0.2.6 (pre-release milestone)
 
-Initial CRAN release.
+Initial package-completeness milestone; no CRAN release is claimed.
 
 ## Features
 
@@ -53,6 +66,5 @@ Initial CRAN release.
   as `2 * sigma_residual^2 * (1 - rho_t) + 2 * sigma_analytical^2`,
   applying the lag-1 autocorrelation factor only to the residual term
   (analytical measurement error is independent between samples).
-* 100-draw preview posteriors ship with the package; full 1000-draw
-  posteriors are downloaded from a versioned Zenodo deposit on first
-  use (DOI: 10.5281/zenodo.20085465).
+* A 100-draw preview posterior tier was prepared for package checks. The
+  planned public full-posterior deposit was not released in this milestone.

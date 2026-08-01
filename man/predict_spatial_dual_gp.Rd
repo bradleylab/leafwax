@@ -4,7 +4,7 @@
 \alias{predict_spatial_dual_gp}
 \title{Predict both spatial intercept and spatial slope at new locations}
 \usage{
-predict_spatial_dual_gp(coords_new, knot_coords, draws, scaling)
+predict_spatial_dual_gp(coords_new, knot_coords, draws, scaling, metric)
 }
 \arguments{
 \item{coords_new}{matrix(n_obs, 2) of (lon, lat) in DEGREES.}
@@ -17,7 +17,12 @@ leafwax_posterior$draws). Must contain columns
 \code{sigma_intercept_spatial}, \code{sigma_slope_spatial},
 and one of \code{ls_intercept_km} / \code{ls_slope_km}.}
 
-\item{scaling}{list with \code{lon_mean}, \code{lon_sd}, \code{lat_mean}, \code{lat_sd}.}
+\item{scaling}{list with \code{lon_mean}, \code{lon_sd}, \code{lat_mean}, \code{lat_sd}, \code{d2H_sd}.}
+
+\item{metric}{character; the metric the posterior was FITTED under, one of
+"chordal" or "standardized" (typically \code{model$metadata$spatial_metric}).
+Required — a posterior must be predicted with the metric it was fitted
+under. \code{"standardized"} additionally needs \code{scaling}'s lon/lat mean & sd.}
 }
 \value{
 list with two matrices, each n_draws x n_obs:

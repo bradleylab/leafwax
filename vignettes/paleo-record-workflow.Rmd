@@ -164,15 +164,16 @@ record-specific evidence and citations.
 draw at the site. Each value combines the global `beta_d2Hp`
 precipitation-isotope calibration slope with the spatial slope GP. The
 function returns the model draws directly; it does not cap or filter them.
-Passing the full vector to `invert_d2H()` carries slope uncertainty into
-the reconstruction. Passing one number, such as the posterior median, gives
-a point-slope sensitivity run.
+Passing the full vector to `invert_d2H()` preserves paired slope uncertainty
+in the likelihood mixture. Passing one number, such as the posterior median,
+gives a point-slope sensitivity run. Zero or negative values are retained;
+the Bayesian inverse does not divide by or clip individual slope draws.
 
 The examples below use `baseline_sp` (spatial intercepts + slope GP,
-no environmental predictors) for simplicity. `baseline_env_sp` is the
-companion variant whose detection thresholds appear in Figure 5 of the
-accompanying manuscript (Bradley 2026); switching `model_name` is the
-only change needed to use it.
+no environmental predictors) because its new-site reconstruction design is
+complete. Calibration variants requiring precipitation amount, the elevation
+basis, PFT terms, or isotope interactions are currently refused by the
+inversion API rather than evaluated with missing or defaulted covariates.
 
 ```{r slope}
 sugan_lon <- 93.95;   sugan_lat <- 38.8667
@@ -198,16 +199,28 @@ rbind(
 
 ## 5. Invert wax values to precipitation values
 
-`invert_d2H()` uses the slope vector from the previous section. The
-`record_id` argument tells the function that all rows belong to one
-downcore record. `return_full = TRUE` keeps the posterior draws needed
-by `detect_change()`.
+`invert_d2H()` combines the wax-isotope likelihood under every paired
+calibration draw with an explicit proper prior on `d2H_precip`. The prior must
+be defended for the record; the normal prior below is an executable example,
+not a package default. The `record_id` argument tells the function that all
+rows belong to one downcore record. All rows jointly update the shared
+calibration-draw weights. `return_full = TRUE`, a requested sample count, and
+an explicit seed produce the joint posterior draws needed by
+`detect_change()`.
 
-The inversion samples analytical uncertainty and the model residual SD.
-For contrasts within one record, the spatial GP intercept cancels
-because each sample uses the same site-level intercept draw.
+The likelihood contains analytical uncertainty and the fitted residual SD.
+For contrasts within one record, posterior samples use the same selected
+calibration draw across rows, so the shared spatial GP intercept cancels in a
+within-draw contrast.
 
-```{r invert}
+The remaining record-level chunks are displayed but not evaluated in the
+source-package vignette because the distributed 100-draw fixture is explicitly
+blocked from inference. They run only after a complete frozen posterior deposit
+has been installed.
+
+```{r invert, eval = FALSE}
+record_prior <- d2h_prior_normal(mean = -70, sd = 30)
+
 recon_sugan <- suppressWarnings(invert_d2H(
   d2H_wax    = sugan$d2h_wax,
   d2H_wax_sd = rep(3, nrow(sugan)),
@@ -217,7 +230,10 @@ recon_sugan <- suppressWarnings(invert_d2H(
   n_posterior_draws = 100,
   slope        = slope_sugan,
   record_id    = "LS13WASU",
+  prior        = record_prior,
   return_full  = TRUE,
+  n_inverse_samples = 1000,
+  seed         = 20260801,
   verbose      = FALSE
 ))
 
@@ -230,7 +246,10 @@ recon_sonk <- suppressWarnings(invert_d2H(
   n_posterior_draws = 100,
   slope        = slope_sonk,
   record_id    = "LS14LASO",
+  prior        = record_prior,
   return_full  = TRUE,
+  n_inverse_samples = 1000,
+  seed         = 20260802,
   verbose      = FALSE
 ))
 ```
@@ -260,7 +279,7 @@ of the record; its wax contrast is small. The Sonk11D example compares
 4-5 ka with 5-6 ka, where the extracted C29 n-alkane series has a much
 larger contrast.
 
-```{r detect}
+```{r detect, eval = FALSE}
 rho_sugan <- estimate_temporal_autocorrelation(
   sugan$d2h_wax, sugan$age, method = "ar1"
 )
@@ -305,19 +324,11 @@ list(
 )
 ```
 
-The two records differ. Sugan has lag-1 autocorrelation
-`r round(rho_sugan, 2)`, a 95 percent detection threshold of about
-`r round(dc_sugan$threshold, 0)` per mil, and posterior probability
-`r sprintf("%.2f", dc_sugan$intervals$p_abs_delta_gt_30)` for a 30 per
-mil shift. Sonk11D has lag-1 autocorrelation `r round(rho_sonk, 2)`, a
-threshold of about `r round(dc_sonk$threshold, 0)` per mil, and
-posterior probability
-`r sprintf("%.2f", dc_sonk$intervals$p_abs_delta_gt_30)` for a 30 per
-mil shift.
-
-In this example, the Sugan contrast is too small relative to calibration
-noise. The Sonk11D contrast is large enough for the 30 per mil
-quantitative claim to pass the posterior-probability test.
+The returned objects report the estimated lag-1 autocorrelation, the
+site-specific detection threshold, and the posterior probability that each
+interval contrast exceeds 30 per mil. These values are intentionally not
+embedded in the source-package vignette: they must be regenerated from the
+complete frozen posterior deposit and the declared prior.
 
 ## 7. Assess a claim
 
@@ -326,7 +337,7 @@ The next chunk asks whether each record supports a Level 4 claim of a
 that show the required API structure. They do not replace a
 record-specific literature review.
 
-```{r assess}
+```{r assess, eval = FALSE}
 build_claim <- function(beta_eff, rho_t, baseline, test, magnitude_precip) {
   list(
     level             = 4,
@@ -402,12 +413,11 @@ c(sugan_highest_level  = verdict_sugan$highest_level,
   sonk_supported_at_4  = verdict_sonk$asserted_supported)
 ```
 
-Read `verdict$levels` from top to bottom. Each row reports whether a
-level passed and, if it failed, why. In this run, Sugan fails at the
-wax-change step. Sonk11D clears Level 4 because the interval contrast is
-large and the example supplies stationarity evidence. The stationarity
-strings are placeholders; a real Level 4 claim needs record-specific
-evidence and citations.
+Read `verdict$levels` from top to bottom. Each row reports whether a level
+passed and, if it failed, why. The verdict is conditional on the complete
+posterior deposit, the declared inversion prior, and the supplied evidence.
+The stationarity strings are placeholders; a real Level 4 claim needs
+record-specific evidence and citations.
 
 ## 7b. Magnitude path: rejecting vegetation as the sole explanation
 
@@ -444,7 +454,7 @@ is used. A typical workflow extracts a single value from the OIPC raster
 before passing it in. The example below uses a hypothetical value so
 the vignette compiles offline.
 
-```{r envelope}
+```{r envelope, eval = FALSE}
 # Hypothetical OIPC value at Sonk11D. In a real analysis, extract from
 # the OIPC raster at (sonk_lon, sonk_lat) using terra::extract().
 sonk_oipc_ref <- -75   # per mil, illustrative only
@@ -472,7 +482,7 @@ the corroborating-evidence path; in either case, the user remains
 responsible for defending the supplied evidence or vegetation
 scenario.
 
-```{r magnitude-path-claim}
+```{r magnitude-path-claim, eval = FALSE}
 sonk_claim_magnitude <- list(
   level             = 2,
   interval_baseline = c(4000, 5000),
@@ -515,7 +525,7 @@ value extracted from the user's chosen OIPC product.
 
 ## 8. Plot the reconstructions
 
-```{r plot, fig.height = 6, echo = TRUE}
+```{r plot, fig.height = 6, echo = TRUE, eval = FALSE}
 op <- par(mfrow = c(2, 1), mar = c(4.5, 5.4, 2.2, 1), mgp = c(3.4, 0.8, 0))
 
 precip_ylim <- extendrange(

@@ -1,7 +1,6 @@
 # Helper for tests.
 #
-# The package ships preview-tier posteriors (100-draw fixture) and
-# warns whenever they are loaded for inference. Tests run on the
-# preview tier by design; suppressing the warning here keeps the
-# testthat output focused on actual failures.
+# The package ships preview-tier posteriors (100-draw fixtures). Loading them
+# warns; inferential functions stop. Tests that require the complete posterior
+# call skip_if_preview_posteriors(), while fixture-contract tests may load them.
 options(leafwax.suppress_preview_warning = TRUE)
