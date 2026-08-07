@@ -175,7 +175,12 @@ complete. Calibration variants requiring precipitation amount, the elevation
 basis, PFT terms, or isotope interactions are currently refused by the
 inversion API rather than evaluated with missing or defaulted covariates.
 
-```{r slope}
+The full-posterior slope calculation is displayed but not evaluated when the
+source-package vignette is built because the bundled 100-draw fixture is
+deliberately blocked from inference. It runs after a complete frozen posterior
+deposit has been installed.
+
+```{r slope, eval = FALSE}
 sugan_lon <- 93.95;   sugan_lat <- 38.8667
 sonk_lon  <- 75.1961; sonk_lat  <- 41.7939
 
