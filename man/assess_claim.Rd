@@ -74,7 +74,7 @@ did not clear.
 }
 }
 \description{
-Walks the four-level taxonomy from manuscript Section 4.5.6 and
+Walks the package's four-level taxonomy and
 reports the highest level a claim survives at. The taxonomy is:
 \itemize{
 \item Level 1: a leaf-wax delta-2-H change occurred between two
@@ -90,7 +90,7 @@ corroborating evidence against vegetation reorganization via
 that the observed wax shift exceeds the vegetation-only
 envelope computed from a user-supplied PFT-change scenario
 (\code{level2_vegetation_path}; see \code{\link[=compute_vegetation_envelope]{compute_vegetation_envelope()}}
-and manuscript Section 4.5.3).
+and manuscript Supplementary Section S8.2).
 \item Level 3: the wax change implies a quantitative
 delta-2-H_precip magnitude. Requires a defended local effective
 slope and explicit uncertainty propagation through the

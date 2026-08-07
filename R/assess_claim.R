@@ -1,12 +1,12 @@
-# R/assess_claim.R - Level 1-4 claim taxonomy from manuscript Section 4.5.6.
+# R/assess_claim.R - Package-level Level 1-4 claim taxonomy.
 #
 # Phase D of the v0.2.0 paleo-record workflow. Walks the four-level
-# claim taxonomy defined in the manuscript and reports the highest
+# package claim taxonomy and reports the highest
 # level the claim survives at, with itemized pass/fail reasons.
 
 #' Assess a paleoclimate claim against the leaf-wax taxonomy
 #'
-#' Walks the four-level taxonomy from manuscript Section 4.5.6 and
+#' Walks the package's four-level taxonomy and
 #' reports the highest level a claim survives at. The taxonomy is:
 #' \itemize{
 #'   \item Level 1: a leaf-wax delta-2-H change occurred between two
@@ -22,7 +22,7 @@
 #'     that the observed wax shift exceeds the vegetation-only
 #'     envelope computed from a user-supplied PFT-change scenario
 #'     (`level2_vegetation_path`; see [compute_vegetation_envelope()]
-#'     and manuscript Section 4.5.3).
+#'     and manuscript Supplementary Section S8.2).
 #'   \item Level 3: the wax change implies a quantitative
 #'     delta-2-H_precip magnitude. Requires a defended local effective
 #'     slope and explicit uncertainty propagation through the
@@ -179,7 +179,7 @@ assess_claim <- function(record,
   delta_wax <- mean(d2h_wax[test_idx]) - mean(d2h_wax[base_idx])
 
   # --- Level 1: wax change exceeds analytical noise ------------------
-  # Manuscript Section 4.5.3: L1 is defensible whenever the change
+  # Package taxonomy: L1 is defensible whenever the change
   # exceeds analytical uncertainty. For two single measurements with
   # independent analytical error, Var(X1 - X2) = 2 * sigma_a^2; the
   # lag-1 residual autocorrelation rho_t does not apply because
@@ -207,11 +207,11 @@ assess_claim <- function(record,
   )
 
   # --- Level 2: integrity gates + (corroborating OR envelope) --------
-  # Manuscript §4.5.6 requires sediment-source change AND depositional
+  # Package taxonomy requires sediment-source change AND depositional
   # artifact to be ruled out by independent record-specific evidence,
   # AND EITHER (a) corroborating_proxies (path a) OR (b) the observed
   # |delta_wax| to exceed the vegetation-only envelope computed from a
-  # user-supplied PFT scenario (path b; see manuscript §4.5.3 and
+  # user-supplied PFT scenario (path b; see Supplementary Section S8.2 and
   # compute_vegetation_envelope()).
 
   # Helper: check a list(value = TRUE, evidence = <non-empty character>)

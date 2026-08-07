@@ -25,8 +25,9 @@ are constant (e.g., n < 3 finite samples).
 \description{
 Estimate the lag-1 autocorrelation \code{rho_t} of a leaf-wax record's
 residuals after a flat-mean detrend, ordering by age. This is the
-quantity that enters the within-record detection threshold from
-manuscript Section 4.5.3 (\verb{Var(X1 - X2) = 2 sigma^2 (1 - rho_t)}).
+quantity that enters the within-record detection threshold described in
+manuscript Supplementary Section S8.1.1
+(\verb{Var(X1 - X2) = 2 sigma^2 (1 - rho_t)}).
 }
 \details{
 Two methods are supported:

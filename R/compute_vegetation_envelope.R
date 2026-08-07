@@ -1,5 +1,5 @@
 # R/compute_vegetation_envelope.R - Vegetation-only envelope for the
-# magnitude path of the Level 2 claim taxonomy (manuscript §4.5.3).
+# magnitude path of the package's Level 2 claim taxonomy.
 #
 # Holds d2H_precip constant by construction and predicts the wax shift
 # expected under a user-supplied PFT-change scenario, propagating the
@@ -67,8 +67,9 @@ REQUIRED_PFT_LABELS <- c("tree", "shrub", "grass", "C4")
 #'
 #' Computes the posterior-propagated wax-shift envelope expected under
 #' a user-supplied PFT-change scenario, holding `d2H_precip` constant.
-#' This is the magnitude path of the Level 2 claim taxonomy described
-#' in the accompanying manuscript Section 4.5.3: the calibration's PFT
+#' This is the magnitude path of the package's Level 2 claim taxonomy.
+#' The vegetation-only envelope is described in the accompanying manuscript's
+#' Supplementary Note 8 (Section S8.2): the calibration's PFT
 #' main-effect and PFT-by-\eqn{\delta^2 H_p}{d2Hp} interaction coefficients
 #' are combined across all posterior draws to bound how much wax change
 #' vegetation reorganization alone can produce at the site, with no
@@ -137,9 +138,9 @@ REQUIRED_PFT_LABELS <- c("tree", "shrub", "grass", "C4")
 #'   }
 #'
 #' @section Manuscript reference:
-#' Section 4.5.3 of the accompanying manuscript defines the
-#' vegetation-only envelope and the constant-precipitation framing.
-#' Section 4.5.6 places it in the Level 2 claim taxonomy.
+#' Supplementary Note 8 (Section S8.2) of the accompanying manuscript defines
+#' the vegetation-only envelope and the constant-precipitation framing. The
+#' four-level claim taxonomy is an additional package workflow.
 #'
 #' @export
 #' @examples
@@ -211,7 +212,7 @@ compute_vegetation_envelope <- function(oipc_ref,
   # Per-draw envelope contributions (n_draws x 4), summed across PFT
   # classes. Vectorized: each row is one posterior draw, each column
   # one PFT class. `delta_pft` is recycled along rows by `*`. Manuscript
-  # §4.5.3 formula:
+  # Supplementary Section S8.2 formula:
   #   envelope = Σ_k β_k·ΔPFT_k + Σ_k β_d2Hp_x_k·oipc_ref·ΔPFT_k
   dv <- as.numeric(delta_pft[REQUIRED_PFT_LABELS])
   main_contrib <- sweep(beta_main, 2, dv, `*`)

@@ -2,7 +2,8 @@
 # d2H_precip reconstructions.
 #
 # Phase C of the v0.2.0 paleo-record workflow. Implements the within-
-# record change-detection threshold from manuscript Section 4.5.3 and
+# record change-detection threshold from the manuscript Methods subsection
+# "Inversion and detection thresholds" and Supplementary Section S8.1.1, and
 # computes the posterior probability that delta-d2H_precip between two
 # stratigraphic intervals exceeds a user-supplied magnitude.
 
@@ -10,8 +11,9 @@
 #'
 #' Estimate the lag-1 autocorrelation `rho_t` of a leaf-wax record's
 #' residuals after a flat-mean detrend, ordering by age. This is the
-#' quantity that enters the within-record detection threshold from
-#' manuscript Section 4.5.3 (`Var(X1 - X2) = 2 sigma^2 (1 - rho_t)`).
+#' quantity that enters the within-record detection threshold described in
+#' manuscript Supplementary Section S8.1.1
+#' (`Var(X1 - X2) = 2 sigma^2 (1 - rho_t)`).
 #'
 #' Two methods are supported:
 #' \itemize{
@@ -95,8 +97,8 @@ estimate_temporal_autocorrelation <- function(d2h_wax, age,
 #' draws (`return_full = TRUE`), report (a) the posterior probability
 #' that the difference in mean `d2H_precip` between two stratigraphic
 #' intervals exceeds user-supplied magnitudes, and (b) the within-
-#' record 95\% (or other) detection threshold from manuscript Section
-#' 4.5.3:
+#' record 95\% (or other) detection threshold from manuscript Supplementary
+#' Section S8.1.1:
 #'
 #' \deqn{\mathrm{threshold}_{precip} =
 #'       \frac{z_{\alpha/2}\,
@@ -111,7 +113,7 @@ estimate_temporal_autocorrelation <- function(d2h_wax, age,
 #' measurement error is independent between samples by construction.
 #' The spatial GP intercept contributes a constant to every sample in
 #' the record and cancels in the contrast; the same `sigma_residual`
-#' from the spatial calibration applies (manuscript Section 4.5.3).
+#' from the spatial calibration applies (manuscript Supplementary Section S8.1.1).
 #'
 #' @param reconstruction Output of `invert_d2H(..., return_full = TRUE)`
 #'   on a downcore series. Must contain a `posterior_draws` matrix of
@@ -126,7 +128,7 @@ estimate_temporal_autocorrelation <- function(d2h_wax, age,
 #'   only the threshold.
 #' @param sigma_residual Numeric, required, the model's posterior
 #'   residual SD on the leaf-wax per-mil scale (`sigma`, approximately
-#'   16 per mil for the spatial models; see Section 4.5.3).
+#'   16 per mil for the spatial models; see Supplementary Section S8.1.1).
 #' @param sigma_analytical Numeric, the analytical uncertainty on
 #'   `d2H_wax` measurements in per mil (default 3).
 #' @param rho_t Numeric, lag-1 temporal autocorrelation. Use
@@ -233,7 +235,7 @@ detect_change <- function(reconstruction,
     stop("rho_t must be a single finite value in (-1, 1)")
   }
 
-  # --- detection threshold (manuscript Section 4.5.3) -----------------
+  # --- detection threshold (manuscript Supplementary Section S8.1.1) --
   # The variance of the difference between two single samples
   # decomposes into an autocorrelated residual term and an independent
   # analytical term: Var(X1 - X2) = 2 sigma_residual^2 (1 - rho_t)

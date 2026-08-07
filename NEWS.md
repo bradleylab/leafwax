@@ -20,13 +20,14 @@ Posterior data update.
   This supersedes the earlier v10 / n = 1129 lineage and the frozen
   great-circle comparison run. All 14 model posteriors, the shipped
   100-draw preview tier, and the spatial-model knot metadata were
-  regenerated from the frozen run.
+  regenerated from the authoritative chordal run.
 * Three interaction models changed their coefficient set to match the
   frozen Stan specifications: `elevation_c4_interact_sp` now carries the
   `beta_oipc_x_c4` interaction term (previously absent), while `full` and
   `full_sp` no longer carry `beta_oipc_x_c4` (retaining the plant-functional-type
   interactions `beta_oipc_x_grass`, `beta_oipc_x_shrub`, `beta_oipc_x_tree`).
-* Public posterior and package releases are deferred until final validation.
+* The chordal posterior files are public in the companion data repository;
+  package-registry and archived releases remain deferred until final review.
 
 # leafwax 0.2.7 (pre-release milestone)
 

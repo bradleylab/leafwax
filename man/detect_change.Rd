@@ -35,7 +35,7 @@ only the threshold.}
 
 \item{sigma_residual}{Numeric, required, the model's posterior
 residual SD on the leaf-wax per-mil scale (\code{sigma}, approximately
-16 per mil for the spatial models; see Section 4.5.3).}
+16 per mil for the spatial models; see Supplementary Section S8.1.1).}
 
 \item{sigma_analytical}{Numeric, the analytical uncertainty on
 \code{d2H_wax} measurements in per mil (default 3).}
@@ -71,8 +71,8 @@ Given a downcore \code{invert_d2H()} reconstruction posterior with full
 draws (\code{return_full = TRUE}), report (a) the posterior probability
 that the difference in mean \code{d2H_precip} between two stratigraphic
 intervals exceeds user-supplied magnitudes, and (b) the within-
-record 95\\% (or other) detection threshold from manuscript Section
-4.5.3:
+record 95\\% (or other) detection threshold from manuscript Supplementary
+Section S8.1.1:
 }
 \details{
 \deqn{\mathrm{threshold}_{precip} =
@@ -88,5 +88,5 @@ noise at the chosen confidence level. The lag-1 autocorrelation
 measurement error is independent between samples by construction.
 The spatial GP intercept contributes a constant to every sample in
 the record and cancels in the contrast; the same \code{sigma_residual}
-from the spatial calibration applies (manuscript Section 4.5.3).
+from the spatial calibration applies (manuscript Supplementary Section S8.1.1).
 }

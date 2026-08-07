@@ -19,18 +19,18 @@ closed because their complete new-site predictor basis is unavailable.
 
 ## Installation
 
-No public package release is claimed for this development version. Install
-from a validated working checkout only; release instructions and accession
-identifiers will be added after the manuscript and software artifacts pass
-their final reproducibility checks.
+No package-registry or archived release is claimed for this development
+version. Install from the public source repository; release instructions and
+accession identifiers will be added after final manuscript review.
 
 The installed tarball ships a 100-draw "preview" fixture under
 `inst/extdata/posteriors_light/` so the package builds and tests
 without network access. The preview tier is for code-path
 verification only — tail probabilities and 95% intervals are noisy
 at 100 draws. Inferential inversion refuses this preview tier. Complete
-frozen posteriors are required and are distributed separately during
-development; public access instructions will accompany the validated release.
+frozen posteriors are required. The chordal-run files are publicly available in
+[`bradleylab/leafwax-data`](https://github.com/bradleylab/leafwax-data), while
+automatic download wiring remains disabled until the validated release.
 
 ## Quick start: single-point inversion
 
@@ -58,7 +58,8 @@ mean that all 14 have a complete reconstruction design.
 For a downcore series, the workflow combines four functions. The
 calibration's posterior residual SD (σ<sub>residual</sub>, ≈16 per
 mil for the spatial models) applies uniformly to absolute and
-within-record use; see the manuscript Section 4.5.3 for the
+within-record use; see the manuscript Methods subsection "Inversion and
+detection thresholds" for the
 derivation.
 
 ```r
@@ -156,11 +157,12 @@ The paleo workflow maps directly to the manuscript:
 
 | Manuscript section | Function |
 |--------------------|----------|
-| 4.5.3 detection threshold formula           | `detect_change()` |
-| 4.5.3 vegetation-only envelope (Level 2 magnitude path) | `compute_vegetation_envelope()` |
-| 4.5.5 local slope posterior                 | `local_effective_slope()` |
-| 4.5.6 four-level claim taxonomy             | `assess_claim()` |
-| Section S4 inversion machinery              | `invert_d2H()` |
+| Methods: Inversion and detection thresholds; Supplement S8.1.1 | `detect_change()` |
+| Supplement S8.2 vegetation-only envelope | `compute_vegetation_envelope()` |
+| Supplement S8.1 local slope and Bayesian inversion | `local_effective_slope()`, `invert_d2H()` |
+
+`assess_claim()` provides an additional package-level claim-screening workflow;
+the submitted manuscript does not present that four-level taxonomy.
 
 ## Citation
 

@@ -430,8 +430,8 @@ contrast vegetation reorganization alone can produce at the site, with
 `d2H_precip` held constant by construction. If the observed
 `|delta_wax|` exceeds the absolute 97.5% upper bound of that envelope,
 vegetation-only causation is rejected for the supplied scenario.
-Manuscript Section 4.5.3 motivates the framing; Section 4.5.6 places it
-in the claim taxonomy.
+Manuscript Supplementary Section S8.2 motivates the vegetation-only framing;
+the four-level claim taxonomy is an additional package workflow.
 
 What passing the magnitude path rejects: a vegetation-only explanation
 of the contrast under the supplied scenario. What it does **not** do:
@@ -518,7 +518,7 @@ c(highest_level = verdict_sonk_magnitude$highest_level,
 ```
 
 When `verdict_sonk_magnitude$levels$summary[2]` reports a pass, the
-text spells out the comparison and reiterates the §4.5.3 caveats. A
+text spells out the comparison and reiterates the Supplementary Section S8.2 caveats. A
 real analysis would replace the hypothetical PFT scenario with one
 derived from local or regional pollen data, and `oipc_ref` with the
 value extracted from the user's chosen OIPC product.

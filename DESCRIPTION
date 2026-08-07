@@ -12,8 +12,8 @@ Description: Full Bayesian inversion of leaf wax hydrogen isotopes to
     an explicit proper reconstruction prior, without dividing by sampled
     slopes. Multi-sample records jointly reweight shared calibration draws.
     A 100-draw fixture is included only for code-path verification; complete
-    posterior deposits are required for inference and are distributed
-    separately during development.
+    posterior deposits are required for inference and are distributed in the
+    companion public data repository.
 License: MIT + file LICENSE
 URL: https://github.com/bradleylab/leafwax,
     https://bradleylab.github.io/leafwax/

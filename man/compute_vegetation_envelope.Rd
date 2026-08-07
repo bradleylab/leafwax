@@ -62,8 +62,9 @@ of each of the eight coefficients).
 \description{
 Computes the posterior-propagated wax-shift envelope expected under
 a user-supplied PFT-change scenario, holding \code{d2H_precip} constant.
-This is the magnitude path of the Level 2 claim taxonomy described
-in the accompanying manuscript Section 4.5.3: the calibration's PFT
+This is the magnitude path of the package's Level 2 claim taxonomy.
+The vegetation-only envelope is described in the accompanying manuscript's
+Supplementary Note 8 (Section S8.2): the calibration's PFT
 main-effect and PFT-by-\eqn{\delta^2 H_p}{d2Hp} interaction coefficients
 are combined across all posterior draws to bound how much wax change
 vegetation reorganization alone can produce at the site, with no
@@ -94,9 +95,9 @@ one location.
 }
 \section{Manuscript reference}{
 
-Section 4.5.3 of the accompanying manuscript defines the
-vegetation-only envelope and the constant-precipitation framing.
-Section 4.5.6 places it in the Level 2 claim taxonomy.
+Supplementary Note 8 (Section S8.2) of the accompanying manuscript defines
+the vegetation-only envelope and the constant-precipitation framing. The
+four-level claim taxonomy is an additional package workflow.
 }
 
 \examples{

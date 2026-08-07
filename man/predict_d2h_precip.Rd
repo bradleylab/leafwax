@@ -87,7 +87,7 @@ diagnostics and method metadata are always returned. Joint
 explicit sample count and seed.
 
 The interval is the posterior predictive specified in manuscript
-supplement Section S4.1, Eq. 7 (analytical uncertainty plus the
+Supplementary Note 8 (Section S8.1; analytical uncertainty plus the
 model's posterior residual SD).
 }
 \description{

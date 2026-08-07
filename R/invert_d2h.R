@@ -58,11 +58,11 @@ NULL
 #'     (upper - lower).}
 #'
 #'   The interval is the posterior predictive specified in manuscript
-#'   supplement Section S4.1, Eq. 7: the wax-error draw combines
+#'   Supplementary Note 8 (Section S8.1): the wax-error draw combines
 #'   analytical uncertainty with the model's posterior residual SD
 #'   `sigma`. For within-record change detection, the spatial GP
 #'   intercept's contribution cancels in any contrast computed from
-#'   the returned `posterior_draws` (manuscript Section 4.5.3); the
+#'   the returned `posterior_draws` (Supplementary Section S8.1.1); the
 #'   same `sigma` applies in both regimes.
 #'
 #'   If return_full is TRUE, a list with:
@@ -378,7 +378,7 @@ NULL
     # beta_d2Hp, GP fields, etc. For within-record contrasts the
     # spatial GP intercept's contribution cancels in any difference
     # between time intervals computed downstream from `posterior_draws`
-    # (manuscript Section 4.5.3); the same sigma applies in both
+    # (manuscript Supplementary Section S8.1.1); the same sigma applies in both
     # regimes.
     for (i in 1:n_obs) {
       var_std <- d2h_wax_err_std[i]^2 + sigma[iter]^2
