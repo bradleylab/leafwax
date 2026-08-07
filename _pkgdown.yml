@@ -34,6 +34,11 @@ reference:
     contents:
       - invert_d2H
       - invert_d2H_ensemble
+      - bayesian_linear_inverse
+      - bayesian_record_inverse
+      - d2h_prior_normal
+      - d2h_prior_truncated_normal
+      - d2h_prior_uniform
 
   - title: "Paleo-record workflow"
     desc: "Local slope, change detection, claim taxonomy."
@@ -41,6 +46,7 @@ reference:
       - local_effective_slope
       - estimate_temporal_autocorrelation
       - detect_change
+      - compute_vegetation_envelope
       - assess_claim
 
   - title: "Models"
