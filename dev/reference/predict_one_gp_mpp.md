@@ -1,0 +1,66 @@
+# Predict an mPP Gaussian-process random effect at a new location
+
+Single-GP version. Used internally by
+[`predict_spatial_dual_gp()`](https://bradleylab.github.io/leafwax/dev/reference/predict_spatial_dual_gp.md)
+for each of the two (intercept, slope) fields. Matches the Matern 3/2
+kernel and the chordal (3-D Euclidean on the sphere, km) metric of the
+Stan model.
+
+## Usage
+
+``` r
+predict_one_gp_mpp(
+  coords_new,
+  knot_coords,
+  z_knots,
+  sigma_draws,
+  ls_km_draws,
+  metric,
+  scaling = NULL,
+  jitter = 1e-04
+)
+```
+
+## Arguments
+
+- coords_new:
+
+  matrix(n_obs, 2) of (lon, lat) in DEGREES.
+
+- knot_coords:
+
+  matrix(n_knots, 2) of (lon, lat) in DEGREES.
+
+- z_knots:
+
+  matrix(n_draws, n_knots) of standardized knot effects (e.g.
+  `z_intercept_spatial[1..125]` from the posterior).
+
+- sigma_draws:
+
+  numeric(n_draws), the GP marginal SD.
+
+- ls_km_draws:
+
+  numeric(n_draws), the GP length scale in km (e.g. `ls_intercept_km`).
+
+- metric:
+
+  character; the metric the posterior was FITTED under, one of "chordal"
+  (3-D km; length scale used directly) or "standardized" (former
+  per-axis standardized coords; requires `scaling`). A posterior must be
+  predicted with the same metric it was fitted under, or the
+  interpolation is silently wrong.
+
+- scaling:
+
+  list with `lon_mean`, `lon_sd`, `lat_mean`, `lat_sd`; required only
+  when metric == "standardized".
+
+- jitter:
+
+  ridge added to K_knots for numerical stability.
+
+## Value
+
+matrix(n_draws, n_obs) of predicted GP values at the new sites.
