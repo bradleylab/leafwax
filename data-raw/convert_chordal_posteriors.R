@@ -1,15 +1,8 @@
-# data-raw/convert_frozen_posteriors.R
+# data-raw/convert_chordal_posteriors.R
 #
-# Converts the FROZEN analysis-run model fits (CmdStan output stored as
+# Converts the reported chordal analysis-run model fits (CmdStan output stored as
 # posterior::draws_array) into leafwax-package-compatible posterior
 # files (posterior::draws_df).
-#
-# This supersedes data-raw/convert_v10_posteriors.R, which converted the
-# older v10 / n=1129 fit. convert_v10_posteriors.R is retained for
-# provenance. This script is byte-for-byte identical to it except for
-# (a) the source results directory, (b) the package root path (the
-# project moved from ~/Desktop to ~/Documents), and (c) the data_info
-# lineage block.
 #
 # Produces:
 #   inst/extdata/posteriors/<model>_posterior.rds       (draws_df)
@@ -20,7 +13,8 @@
 # package data small.
 #
 # Run from package root:
-#   Rscript data-raw/convert_frozen_posteriors.R
+#   LEAFWAX_RUN_DIR=<analysis-run>/model_output \
+#     Rscript data-raw/convert_chordal_posteriors.R
 #
 # Provenance:
 #   Chordal fits at <leafwax_working>/results/c2_run_20260728_chordal/model_output/<model>/posterior_draws.rds
@@ -34,18 +28,11 @@ suppressPackageStartupMessages({
 
 # --- Configuration ----------------------------------------------------------
 
-# Analysis run (Communications Earth and Environment manuscript). Defaults to the
-# chordal-metric run; override with LEAFWAX_RUN_DIR to rebuild from another run.
-V10_RESULTS_DIR <- Sys.getenv(
-  "LEAFWAX_RUN_DIR",
-  unset = "/Users/abradley/Documents/Manuscripts/ in review/bradley_proxy_uncertainty/leafwax_working/results/c2_run_20260728_chordal/model_output"
-)
-# Package root: project moved from ~/Desktop to ~/Documents since the
-# v10 conversion; path corrected so the script runs in place.
-PKG_ROOT        <- "/Users/abradley/Documents/Manuscripts/ in review/bradley_proxy_uncertainty/leafwax-pkg"
+MODEL_RUN_DIR   <- Sys.getenv("LEAFWAX_RUN_DIR", unset = "")
+PKG_ROOT        <- normalizePath(".", mustWork = TRUE)
 OUT_POST_DIR    <- file.path(PKG_ROOT, "inst", "extdata", "posteriors")
 OUT_KNOT_DIR    <- file.path(PKG_ROOT, "inst", "extdata", "spatial_metadata")
-N_KNOTS         <- 125  # confirmed canonical for v10
+N_KNOTS         <- 125  # fitted knot count
 N_DRAWS_KEEP    <- 1000 # subsample draws for distribution; full ~12000 is overkill
 
 MODELS <- c(
@@ -87,7 +74,7 @@ fibonacci_knots <- function(n_points = 125L) {
   out
 }
 
-#' Convert one v10 model's posterior to package format.
+#' Convert one fitted model's posterior to package format.
 convert_one <- function(model, results_dir, out_post_dir, out_knot_dir,
                         n_knots = 125L, verbose = TRUE) {
 
@@ -173,25 +160,32 @@ convert_one <- function(model, results_dir, out_post_dir, out_knot_dir,
 
 # --- Main -------------------------------------------------------------------
 
-if (!dir.exists(V10_RESULTS_DIR)) {
-  stop("v10 results directory not found: ", V10_RESULTS_DIR)
+if (!file.exists(file.path(PKG_ROOT, "DESCRIPTION"))) {
+  stop("Run this script from the leafwax package root.")
+}
+if (!nzchar(MODEL_RUN_DIR)) {
+  stop("Set LEAFWAX_RUN_DIR to the chordal analysis run's model_output directory.")
+}
+MODEL_RUN_DIR <- normalizePath(MODEL_RUN_DIR, mustWork = FALSE)
+if (!dir.exists(MODEL_RUN_DIR)) {
+  stop("Model-run directory not found: ", MODEL_RUN_DIR)
 }
 dir.create(OUT_POST_DIR, recursive = TRUE, showWarnings = FALSE)
 dir.create(OUT_KNOT_DIR, recursive = TRUE, showWarnings = FALSE)
 
-cat("Converting v10 posteriors -> leafwax format\n")
-cat("Source: ", V10_RESULTS_DIR, "\n", sep = "")
+cat("Converting chordal posteriors to leafwax format\n")
+cat("Source: ", MODEL_RUN_DIR, "\n", sep = "")
 cat("Source mtime: ",
-    format(file.info(V10_RESULTS_DIR)$mtime, "%Y-%m-%d %H:%M:%S %Z"),
+    format(file.info(MODEL_RUN_DIR)$mtime, "%Y-%m-%d %H:%M:%S %Z"),
     "\n", sep = "")
 cat("posterior_draws.rds files found: ",
-    length(Sys.glob(file.path(V10_RESULTS_DIR, "*", "posterior_draws.rds"))),
+    length(Sys.glob(file.path(MODEL_RUN_DIR, "*", "posterior_draws.rds"))),
     "\n", sep = "")
 cat("Target: ", OUT_POST_DIR, "\n", sep = "")
 cat(strrep("-", 70), "\n", sep = "")
 
 for (m in MODELS) {
-  convert_one(m, V10_RESULTS_DIR, OUT_POST_DIR, OUT_KNOT_DIR, N_KNOTS, TRUE)
+  convert_one(m, MODEL_RUN_DIR, OUT_POST_DIR, OUT_KNOT_DIR, N_KNOTS, TRUE)
 }
 
 # Update lineage marker
@@ -207,8 +201,6 @@ data_info <- list(
 saveRDS(data_info, file.path(PKG_ROOT, "inst", "extdata", "data_info.rds"))
 
 # Build spatial_models_metadata.{json,rds} consumed by package internals.
-# Replaces the legacy 120-knot extract_spatial_metadata.R that used to live
-# in R/ and auto-ran on devtools::load_all().
 spatial_models <- c(
   "baseline_sp", "baseline_env_sp", "baseline_veg_sp",
   "c4_only_sp", "elevation_only_sp", "elevation_c4_sp",
@@ -256,4 +248,4 @@ cat("Wrote spatial_models_metadata.{json,rds} with ", length(all_metadata),
 
 cat(strrep("-", 70), "\n", sep = "")
 cat("Done. Lineage tag written to inst/extdata/data_info.rds\n")
-cat("Run smoke test: tests/testthat/test-v10-posteriors.R\n")
+cat("Run smoke test: tests/testthat/test-posterior-data.R\n")

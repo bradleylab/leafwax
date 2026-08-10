@@ -50,7 +50,7 @@ reference:
       - assess_claim
 
   - title: "Models"
-    desc: "Routing and metadata for the 14 v10 model variants."
+    desc: "Routing and metadata for the 14 calibration-model variants."
     contents:
       - available_models
       - get_all_model_metadata

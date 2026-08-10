@@ -90,7 +90,7 @@ normalise_posterior_names <- function(draws) {
 
 #' Load posterior draws for a model
 #'
-#' Loads posterior draws for one of the 14 leafwax v10 models. The
+#' Loads posterior draws for one of the 14 leafwax calibration models. The
 #' function searches three tiers in order:
 #'
 #' 1. **Heavy** posteriors at `inst/extdata/posteriors/` (complete retained
@@ -105,8 +105,7 @@ normalise_posterior_names <- function(draws) {
 #'    sample size. The package warns when this tier is loaded, and inferential
 #'    functions fail closed.
 #'
-#' Public download wiring is disabled in the current development build until
-#' the coordinated chordal data release passes final validation. For current
+#' Automatic download is disabled in the current development build. For
 #' inference, use a validated working checkout containing the complete
 #' posterior deposit.
 #'
@@ -148,7 +147,7 @@ load_posteriors <- function(model_name, n_draws = NULL, verbose = TRUE) {
 
   # Load posterior draws. The spatial metric the posterior was FITTED under is
   # read from a "spatial_metric" attribute stamped at deposit-build time. Legacy
-  # (frozen, standardized-fit) posteriors carry no attribute and resolve to
+  # standardized-fit posteriors carry no attribute and resolve to
   # "standardized" below, with a warning so the assumption stays visible.
   raw_posterior <- readRDS(posterior_file)
   spatial_metric_attr <- attr(raw_posterior, "spatial_metric")
@@ -181,7 +180,7 @@ load_posteriors <- function(model_name, n_draws = NULL, verbose = TRUE) {
 
   # Create metadata. Capability flags are derived from the actual draws
   # column names rather than the model name, because several historical
-  # v10 names contain substrings that no longer imply fitted coefficients.
+  # model names contain substrings that do not necessarily imply fitted coefficients.
   # Spatial status is the exception because it is represented by the
   # shipped knot metadata and the `_sp` model id convention.
   param_names <- names(draws)
@@ -195,7 +194,7 @@ load_posteriors <- function(model_name, n_draws = NULL, verbose = TRUE) {
   } else {
     if (is_gp) {
       warning("Posterior '", model_name, "' has no recorded spatial_metric; ",
-              "assuming 'standardized' (legacy frozen fit). Chordal-refit ",
+              "assuming 'standardized' (legacy unstamped fit). Chordal ",
               "posteriors must be stamped attr(x, 'spatial_metric') = 'chordal'.",
               call. = FALSE)
     }
@@ -272,7 +271,7 @@ load_posteriors <- function(model_name, n_draws = NULL, verbose = TRUE) {
     }
   }
 
-  # Load standardization parameters used during v10 model fitting.
+  # Load standardization parameters used during model fitting.
   # All 14 model variants share an identical scaling_params list, so a
   # single shipped file covers every model.
   scaling <- NULL

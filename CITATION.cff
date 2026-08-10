@@ -1,5 +1,5 @@
 cff-version: 1.2.0
-message: "Development metadata only; release-specific citation metadata is pending final validation."
+message: "If you use this software, cite the archived release and the associated manuscript."
 type: software
 title: "leafwax: spatially-aware paleo-precipitation reconstruction from leaf-wax hydrogen isotopes"
 authors:
@@ -12,7 +12,7 @@ abstract: >-
   R package for reconstructing precipitation hydrogen isotope ratios
   from sedimentary leaf-wax n-C29 alkane measurements using the
   spatially-aware hierarchical Bayesian calibration of Bradley (2026).
-  Performs likelihood-based Bayesian inversion over paired frozen
+  Performs likelihood-based Bayesian inversion over paired
   calibration draws and an explicit proper reconstruction prior,
   retaining zero and negative slope draws. Supports per-record change
   detection with autocorrelation-adjusted thresholds and a four-level
@@ -32,8 +32,8 @@ repository-code: "https://github.com/bradleylab/leafwax"
 references:
   - type: unpublished
     title: >-
-      Geography limits the transferability of global leaf-wax isotope
-      calibrations
+      Geographic structure limits the generality of leaf-wax
+      isotope–precipitation relationships
     authors:
       - family-names: Bradley
         given-names: Alexander S.

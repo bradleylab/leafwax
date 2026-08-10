@@ -14,7 +14,7 @@ select_best_model_from_flags(
 }
 \arguments{
 \item{has_elevation}{Logical, whether elevation data is available.
-Accepted for compatibility; shipped v10 posteriors do not contain
+Accepted for compatibility; the reconstruction interface does not consume
 fitted elevation coefficients, so elevation alone does not change
 the selected model.}
 
@@ -27,10 +27,10 @@ the selected model.}
 \item{verbose}{Logical, whether to print selection reasoning}
 }
 \value{
-Character string with selected v10 model name
+Character string with the selected model name
 }
 \description{
-Automatically selects the most appropriate v10 model name from the 14
+Automatically selects the most appropriate model name from the 14
 shipped variants given which covariates the user has available.
 Spatial-aware models are preferred when \code{prefer_spatial = TRUE}.
 }

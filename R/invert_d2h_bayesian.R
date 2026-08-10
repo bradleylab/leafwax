@@ -1,4 +1,4 @@
-# Public Bayesian inversion built on the frozen calibration posterior.
+# Public Bayesian inversion built on saved calibration posterior draws.
 
 .supported_bayesian_inverse_models <- c(
   "baseline",
@@ -99,9 +99,10 @@
 
   if (!is.null(slope_override)) {
     if (!is.numeric(slope_override) || any(!is.finite(slope_override))) {
-      stop("slope must contain finite numeric calibration-scale values.",
+      stop("slope must contain finite numeric physical-scale values.",
            call. = FALSE)
     }
+    slope_override <- .physical_slope_to_model(slope_override, model$scaling)
     if (length(slope_override) == 1L) {
       slope <- matrix(slope_override, nrow = n_iter, ncol = n_obs)
     } else if (length(slope_override) == n_iter) {
@@ -205,8 +206,9 @@
 #' @param verbose Whether to report loading and diagnostic status.
 #' @param record_id Identifier for a single shared-site record. Optional for a
 #'   one-row inversion and required when `length(d2h_wax) > 1`.
-#' @param slope Optional scalar or paired-draw override on the standardized
-#'   calibration slope. Zero and negative values are retained.
+#' @param slope Optional scalar or paired-draw override in per mil wax per
+#'   per mil precipitation. It is converted to the fitted model's standardized
+#'   coefficient internally. Zero and negative values are retained.
 #' @param prior Required proper precipitation-isotope prior from a
 #'   `d2h_prior_*()` constructor, or one prior per row.
 #' @param n_inverse_samples Number of joint inverse-posterior samples. Required
@@ -304,7 +306,7 @@ invert_d2h <- function(
   }
 
   if (verbose) {
-    message("Loading frozen calibration posterior: ", model_name)
+    message("Loading calibration posterior: ", model_name)
   }
   model <- suppressWarnings(load_posteriors(
     model_name, n_draws = n_draws, verbose = FALSE

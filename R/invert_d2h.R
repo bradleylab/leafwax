@@ -37,7 +37,8 @@ NULL
 #'   `record_id` argument adds explicit validation that the caller
 #'   intends within-record inference.
 #' @param slope Optional numeric override for the d2H_wax-d2H_precip
-#'   slope. NULL (default) uses the model's site-specific slope, i.e.,
+#'   slope in per mil wax per per mil precipitation. NULL (default) uses
+#'   the model's site-specific slope, i.e.,
 #'   the local \eqn{\beta_{\delta^2 H_p}}{beta_d2Hp} calibration slope
 #'   including the spatial slope GP perturbation at the site.
 #'   A single numeric replaces the slope with a fixed point estimate
@@ -231,12 +232,12 @@ NULL
   # Initialize scaling early so the elevation and spatial blocks below
   # can reference it. PLACEHOLDER_SCALING (constants.R) is used when
   # model$scaling is NULL — these are conservative round numbers, not
-  # the v10 fitted scales, intended only to keep the inversion
+  # the fitted calibration scales, intended only to keep the inversion
   # numerically stable while we warn the user.
   if (is.null(model$scaling)) {
     scaling <- PLACEHOLDER_SCALING
     warning("Model lacks scaling_params.rds; using PLACEHOLDER_SCALING. ",
-            "Reconstructions will not match the v10 fit. Run ",
+            "Reconstructions will not match the fitted calibration. Run ",
             "download_model_data(\"", model_name,
             "\") to fetch the calibrated scales.", call. = FALSE)
   } else {
@@ -361,7 +362,7 @@ NULL
       intercept_effect[iter, ]
 
     # Site-specific effective slope: global mean plus the spatially-varying
-    # perturbation at this location for this draw. v10 fitted a slope GP
+    # perturbation at this location for this draw. The spatial models fit a slope GP
     # (z_slope_spatial[*]) on top of the global beta_d2Hp. When a slope
     # override is supplied, replace the per-row vector with the
     # caller's per-draw scalar (broadcast to every row).
@@ -546,7 +547,7 @@ invert_d2H <- function(d2H_wax,
   )
 }
 
-#' Detect model capabilities from static v10 metadata
+#' Detect model capabilities from static metadata
 #' 
 #' @param model_name Name of the model
 #' @return List of capability flags

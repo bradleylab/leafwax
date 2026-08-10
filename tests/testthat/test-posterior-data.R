@@ -1,8 +1,8 @@
-# Smoke tests: every v10 model name in the manuscript loads and runs an
+# Smoke tests: every calibration-model name loads and runs an
 # inversion. Catches the routing layer drifting away from the shipped
 # data files.
 
-test_that("available_models() returns the 14 v10 names", {
+test_that("available_models() returns the 14 calibration-model names", {
   models <- available_models()
   expected <- c(
     "baseline", "baseline_sp",
@@ -17,7 +17,7 @@ test_that("available_models() returns the 14 v10 names", {
   expect_length(models, 14L)
 })
 
-test_that("each v10 model loads via load_posteriors()", {
+test_that("each calibration model loads via load_posteriors()", {
   for (m in available_models()) {
     p <- load_posteriors(m, n_draws = 100, verbose = FALSE)
     expect_s3_class(p, "leafwax_posterior")

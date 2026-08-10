@@ -25,7 +25,7 @@
     "full_interact_sp":         { "filename": "full_interact_sp_posterior.rds" }
   },
   "notes": {
-    "status": "Public chordal-posterior download wiring is deferred until final coordinated release validation.",
-    "primary_archive": "https://github.com/bradleylab/leafwax-data"
+    "status": "Automatic download is disabled in this build; complete chordal posteriors are available from the companion data repository.",
+    "data_repository": "https://github.com/bradleylab/leafwax-data"
   }
 }

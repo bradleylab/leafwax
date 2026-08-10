@@ -9,28 +9,26 @@ Bayesian inversion of leaf-wax hydrogen isotope ratios
 (δ²H<sub>precip</sub>) and a defensibility framework for
 paleoclimate claims based on those reconstructions.
 
-`leafwax` is the development backend for the manuscript "Geography
-limits the transferability of global leaf-wax isotope calibrations"
-(Bradley, prepared for submission to *Communications
-Earth & Environment*). It can inspect the 14 frozen hierarchical fits.
+`leafwax` implements the Bayesian inversion described in Bradley (2026),
+"Geographic structure limits the generality of leaf-wax isotope–precipitation
+relationships." It uses posterior draws from 14 hierarchical calibration fits.
 The validated Bayesian reconstruction interface currently supports the
 `baseline`, `baseline_sp`, and `c4_only_sp` designs; other designs fail
 closed because their complete new-site predictor basis is unavailable.
 
 ## Installation
 
-No package-registry or archived release is claimed for this development
-version. Install from the public source repository; release instructions and
-accession identifiers will be added after final manuscript review.
+Install the development version from the public source repository.
 
 The installed tarball ships a 100-draw "preview" fixture under
 `inst/extdata/posteriors_light/` so the package builds and tests
 without network access. The preview tier is for code-path
 verification only — tail probabilities and 95% intervals are noisy
 at 100 draws. Inferential inversion refuses this preview tier. Complete
-frozen posteriors are required. The chordal-run files are publicly available in
-[`bradleylab/leafwax-data`](https://github.com/bradleylab/leafwax-data), while
-automatic download wiring remains disabled until the validated release.
+posteriors are required. The fitted-model files are publicly available in
+[`bradleylab/leafwax-data`](https://github.com/bradleylab/leafwax-data).
+Automatic download is disabled in development builds, so place the complete
+posterior files in the package cache or a validated development checkout.
 
 ## Quick start: single-point inversion
 
@@ -50,7 +48,7 @@ result$summary[, c("d2h_precip_median",
                    "d2h_precip_lower", "d2h_precip_upper")]
 ```
 
-`available_models()` lists the 14 frozen calibration variants; this does not
+`available_models()` lists the 14 calibration variants; this does not
 mean that all 14 have a complete reconstruction design.
 
 ## Paleo-record workflow
@@ -69,7 +67,7 @@ library(leafwax)
 # to alternative proper priors should be reported.
 reconstruction_prior <- d2h_prior_normal(mean = -70, sd = 30)
 
-# 1. Raw per-draw local slope at the site
+# 1. Per-draw local slope at the site (per mil wax per per mil precipitation)
 slope <- local_effective_slope(
   longitude  = -90,
   latitude   = 38,
@@ -119,7 +117,7 @@ The full sequence on a real Iso2k record is in
 
 ## Available models
 
-`available_models()` returns the 14 v10 variants. Capability flags
+`available_models()` returns the 14 calibration variants. Capability flags
 are derived from the posterior parameter names, not the model id, so
 the routing layer correctly reflects what each fit actually contains.
 
@@ -135,15 +133,15 @@ the routing layer correctly reflects what each fit actually contains.
 | `elevation_only_sp`         | x |   |   |   |   |
 | `elevation_c4_sp`           | x |   | x |   |   |
 | `elevation_c4_interact_sp`  | x |   | x |   | x |
-| `full`                      |   | x | x | x | x |
-| `full_sp`                   | x | x | x | x | x |
+| `full`                      |   | x | x | x |   |
+| `full_sp`                   | x | x | x | x |   |
 | `full_interact`             |   | x | x | x | x |
 | `full_interact_sp`          | x | x | x | x | x |
 
 The "Precip" column flags models that include a fitted
 precipitation-amount coefficient (`beta_precip`). The `_env` and
-`_full*` variants carry it; the `elevation_*` variants do not. Nine chordal
-fits include an elevation spline and the frozen deposits retain its
+`_full*` variants carry it; the `elevation_*` variants do not. Nine fitted
+models include an elevation spline and the saved posterior files retain its
 coefficients. Elevation is nevertheless not consumed by the current Bayesian
 reconstruction designs because the complete new-site multiscale spline basis
 is unavailable. This is a reconstruction-interface boundary, not a claim that
@@ -162,12 +160,12 @@ The paleo workflow maps directly to the manuscript:
 | Supplement S8.1 local slope and Bayesian inversion | `local_effective_slope()`, `invert_d2H()` |
 
 `assess_claim()` provides an additional package-level claim-screening workflow;
-the submitted manuscript does not present that four-level taxonomy.
+the associated manuscript does not present that four-level taxonomy.
 
 ## Citation
 
-Release-specific citation metadata and persistent identifiers are pending
-final validation. Do not cite this working tree as a released package.
+Citation metadata are provided in [`CITATION.cff`](CITATION.cff). For exact
+reproducibility, cite the archived release corresponding to the version used.
 
 ## Help
 

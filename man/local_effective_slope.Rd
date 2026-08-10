@@ -18,12 +18,13 @@ local_effective_slope(
 
 \item{latitude}{Numeric, single latitude in decimal degrees.}
 
-\item{model_name}{Character, v10 model name (see
+\item{model_name}{Character, calibration model name (see
 \code{available_models()}). Must be a spatial model (\verb{*_sp}) for the
 site-specific slope to differ from the global mean; non-spatial
 models return the global posterior unchanged.}
 
-\item{override}{Optional numeric. NULL (default) uses the model
+\item{override}{Optional numeric in per mil wax per per mil precipitation.
+NULL (default) uses the model
 slope. A single value broadcasts across all draws. A vector of
 length \code{n_draws} is used per draw.}
 
@@ -34,15 +35,17 @@ length \code{n_draws} is used per draw.}
 }
 \value{
 Numeric vector of length \code{n_draws}, the per-draw effective
-slope at the site (after override, if any).
+slope at the site in per mil wax per per mil precipitation (after
+override, if any).
 }
 \description{
 Returns a per-draw vector of the local
 \eqn{\beta_{\delta^2 H_p}}{beta_d2Hp} calibration slope at a single
 site, combining the global precipitation-isotope slope with the spatial
-slope GP prediction at that site. The returned vector is the raw posterior
-at the site; every draw the calibration produced is preserved without
-modification.
+slope GP prediction at that site. The fitted coefficient is converted from
+standard deviations of wax per standard deviation of precipitation to
+per mil wax per per mil precipitation. Every posterior draw is preserved;
+only its units change.
 }
 \details{
 Two modes:

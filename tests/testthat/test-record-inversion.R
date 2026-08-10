@@ -1,9 +1,6 @@
-# Phase A tests: invert_d2H argument-flow tests that don't depend on
-# the retired sigma_within / estimate_sigma_within machinery. The
-# manuscript and code now apply the calibration's posterior residual
-# SD directly for both absolute and within-record use (manuscript
-# Section 4.5.3); detection thresholds use that same sigma in
-# detect_change(), so no separate within-record SD is needed.
+# Joint-record inversion argument-flow tests. The calibration's posterior
+# residual SD is used for both absolute and within-record inference, and
+# detect_change() uses that same quantity in its threshold.
 
 test_that("invert_d2H: record_id validates one shared-site joint record", {
   skip_if_preview_posteriors("baseline_sp")

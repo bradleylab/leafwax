@@ -31,9 +31,9 @@ d2H_wax space) and \code{slope} (additive contribution to the local
 \eqn{\beta_{\delta^2 H_p}}{beta_d2Hp} slope).
 }
 \description{
-v10 carries two independent GPs. Both share knot coordinates and a
+The spatial calibration carries two independent GPs. Both share knot coordinates and a
 single length scale parameter (\code{ls_intercept_km == ls_slope_km} in
-v10's posterior, two names for the same draw), but have distinct
+posterior (two names for the same draw), but have distinct
 \code{sigma_intercept_spatial} and \code{sigma_slope_spatial}, and distinct
 \verb{z_intercept_spatial[*]} and \verb{z_slope_spatial[*]} knot effects.
 }

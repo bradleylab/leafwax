@@ -95,7 +95,7 @@ LEAFWAX_DEFAULTS <- list(
     packageStartupMessage(
       "Welcome to leafwax!\n",
       "The bundled 100-draw posteriors are preview fixtures only.\n",
-      "Public full-posterior download wiring is pending final validation."
+      "Install complete posteriors in the package cache for inference."
     )
   } else if (has_cache && interactive()) {
     # Show cache status

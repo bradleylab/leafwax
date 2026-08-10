@@ -93,8 +93,9 @@ currently fails closed.}
 \item{record_id}{Identifier for a single shared-site record. Optional for a
 one-row inversion and required when \code{length(d2h_wax) > 1}.}
 
-\item{slope}{Optional scalar or paired-draw override on the standardized
-calibration slope. Zero and negative values are retained.}
+\item{slope}{Optional scalar or paired-draw override in per mil wax per
+per mil precipitation. It is converted to the fitted model's standardized
+coefficient internally. Zero and negative values are retained.}
 
 \item{prior}{Required proper precipitation-isotope prior from a
 \verb{d2h_prior_*()} constructor, or one prior per row.}
