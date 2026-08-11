@@ -5,7 +5,7 @@ Given a downcore
 reconstruction posterior with full draws (`return_full = TRUE`), report
 (a) the posterior probability that the difference in mean `d2H_precip`
 between two stratigraphic intervals exceeds user-supplied magnitudes,
-and (b) the within- record 95\\ 4.5.3:
+and (b) the within- record 95\\ Section S8.1.1:
 
 ## Usage
 
@@ -51,7 +51,7 @@ detect_change(
 
   Numeric, required, the model's posterior residual SD on the leaf-wax
   per-mil scale (`sigma`, approximately 16 per mil for the spatial
-  models; see Section 4.5.3).
+  models; see Supplementary Section S8.1.1).
 
 - sigma_analytical:
 
@@ -66,7 +66,8 @@ detect_change(
 
 - beta_eff:
 
-  Numeric, the local effective slope. Use
+  Numeric, the local effective slope in per mil wax per per mil
+  precipitation. Use
   [`local_effective_slope()`](https://bradleylab.github.io/leafwax/reference/local_effective_slope.md)
   for a point estimate (e.g., its median).
 
@@ -96,13 +97,15 @@ A list with elements:
 
 ## Details
 
-\$\$\mathrm{threshold}\_{precip} = \frac{z\_{\alpha/2}\\ \sqrt{2(1 -
-\rho_t)}\\ \sqrt{\sigma\_{residual}^2 + \sigma\_{analytical}^2}}
+\$\$\mathrm{threshold}\_{precip} = \frac{z\_{\alpha/2}\\ \sqrt{2
+\sigma\_{residual}^2 (1 - \rho_t) + 2 \sigma\_{analytical}^2}}
 {\beta\_{\mathrm{eff}}}\$\$
 
 The threshold is the smallest difference in `d2H_precip` between two
 independent samples that can be distinguished from within-record noise
-at the chosen confidence level. The spatial GP intercept contributes a
-constant to every sample in the record and cancels in the contrast; the
-same `sigma_residual` from the spatial calibration applies (manuscript
-Section 4.5.3).
+at the chosen confidence level. The lag-1 autocorrelation `rho_t` enters
+only the residual term, because analytical measurement error is
+independent between samples by construction. The spatial GP intercept
+contributes a constant to every sample in the record and cancels in the
+contrast; the same `sigma_residual` from the spatial calibration applies
+(manuscript Supplementary Section S8.1.1).

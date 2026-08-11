@@ -7,12 +7,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <title>Bayesian Inversion of Leaf Wax Hydrogen Isotopes to Precipitation • leafwax</title>
 <script src="deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<link href="deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
-<script src="deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
+<link href="deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
+<script src="deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><meta property="og:title" content="Bayesian Inversion of Leaf Wax Hydrogen Isotopes to Precipitation">
-<meta name="description" content="Bayesian inversion of leaf wax hydrogen isotopes to reconstruct precipitation isotopes using hierarchical spatial models. Provides fourteen Bayesian models that vary in their use of spatial Gaussian processes and ancillary covariates (precipitation amount, plant functional type, C4 fraction). Models are pre-computed using Stan and stored as posterior distributions, so prediction does not require Stan to be installed. A 100-draw fixture ships with the package; full 1000-draw posteriors are downloaded from a versioned Zenodo deposit on first use &lt;doi:10.5281/zenodo.20085465&gt;.">
-<meta property="og:description" content="Bayesian inversion of leaf wax hydrogen isotopes to reconstruct precipitation isotopes using hierarchical spatial models. Provides fourteen Bayesian models that vary in their use of spatial Gaussian processes and ancillary covariates (precipitation amount, plant functional type, C4 fraction). Models are pre-computed using Stan and stored as posterior distributions, so prediction does not require Stan to be installed. A 100-draw fixture ships with the package; full 1000-draw posteriors are downloaded from a versioned Zenodo deposit on first use &lt;doi:10.5281/zenodo.20085465&gt;.">
+<meta name="description" content="Full Bayesian inversion of leaf wax hydrogen isotopes to reconstruct precipitation isotopes from hierarchical calibration posteriors. The likelihood is integrated over paired calibration draws and an explicit proper reconstruction prior, without dividing by sampled slopes. Multi-sample records jointly reweight shared calibration draws. A 100-draw fixture is included only for code-path verification; complete posterior deposits are required for inference and are distributed in the companion public data repository.">
+<meta property="og:description" content="Full Bayesian inversion of leaf wax hydrogen isotopes to reconstruct precipitation isotopes from hierarchical calibration posteriors. The likelihood is integrated over paired calibration draws and an explicit proper reconstruction prior, without dividing by sampled slopes. Multi-sample records jointly reweight shared calibration draws. A 100-draw fixture is included only for code-path verification; complete posterior deposits are required for inference and are distributed in the companion public data repository.">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -22,7 +22,7 @@
 
     <a class="navbar-brand me-2" href="index.html">leafwax</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.2.4</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.4.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -51,25 +51,20 @@
 <!-- badges: start -->
 
 <p>Bayesian inversion of leaf-wax hydrogen isotope ratios (δ²H<sub>wax</sub>) to precipitation isotope values (δ²H<sub>precip</sub>) and a defensibility framework for paleoclimate claims based on those reconstructions.</p>
-<p><code>leafwax</code> is the operational backend for the manuscript “Spatial modeling improves the calibration of leaf wax hydrogen isotopes to precipitation” (Bradley, <em>Geochimica et Cosmochimica Acta</em>, submitted). It exposes the 14 hierarchical Bayesian models reported there and the four-phase paleo workflow that the manuscript references in Sections 4.5.3, 4.5.5, and 4.5.6.</p>
+<p><code>leafwax</code> implements the Bayesian inversion described in Bradley (2026), “Geographic structure limits the generality of leaf-wax isotope–precipitation relationships.” It uses posterior draws from 14 hierarchical calibration fits. The validated Bayesian reconstruction interface currently supports the <code>baseline</code>, <code>baseline_sp</code>, and <code>c4_only_sp</code> designs; other designs fail closed because their complete new-site predictor basis is unavailable.</p>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
+<p>Version 0.4.0 is prepared as a source release. The CRAN update is managed separately from the manuscript release.</p>
+<p>The installed tarball ships a 100-draw “preview” fixture under <code>inst/extdata/posteriors_light/</code> so the package builds and tests without network access. The preview tier is for code-path verification only — tail probabilities and 95% intervals are noisy at 100 draws. Inferential inversion refuses this preview tier. Complete posteriors are required. After installing the release, download and verify the needed model once:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># install.packages("devtools")</span></span>
-<span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">"bradleylab/leafwax"</span><span class="op">)</span></span></code></pre></div>
-<p>The installed tarball ships a 100-draw “preview” fixture under <code>inst/extdata/posteriors_light/</code> so the package builds and tests without network access. The preview tier is for code-path verification only — tail probabilities and 95% intervals are noisy at 100 draws. <strong>For inference, prefetch the full 1000-draw posteriors explicitly:</strong></p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Required before any inferential use. Downloads from</span></span>
-<span><span class="co"># bradleylab/leafwax-data v1.0.1 and caches under</span></span>
-<span><span class="co"># tools::R_user_dir("leafwax", "data").</span></span>
-<span><span class="fu">leafwax</span><span class="fu">::</span><span class="fu"><a href="reference/download_model_data.html">download_model_data</a></span><span class="op">(</span><span class="st">"baseline_sp"</span><span class="op">)</span></span></code></pre></div>
-<p>Heavy posteriors come from <a href="https://github.com/bradleylab/leafwax-data" class="external-link"><code>bradleylab/leafwax-data</code></a> v1.0.1 (Zenodo DOI <a href="https://doi.org/10.5281/zenodo.20085465" class="external-link">10.5281/zenodo.20085465</a>). Inversions done against the preview tier emit a loud warning naming the function context and the actual draw count; set <code>options(leafwax.suppress_preview_warning = TRUE)</code> to silence it in batch jobs that have already acknowledged the limitation.</p>
+<code class="sourceCode R"><span><span class="fu"><a href="reference/download_model_data.html">download_model_data</a></span><span class="op">(</span><span class="st">"baseline_sp"</span><span class="op">)</span></span></code></pre></div>
+<p>The files come from the immutable <a href="https://doi.org/10.5281/zenodo.21880665" class="external-link">v3.0.0 companion data release</a>. Both byte size and SHA-256 are checked against its manifest before a file enters the cache.</p>
 </div>
 <div class="section level2">
 <h2 id="quick-start-single-point-inversion">Quick start: single-point inversion<a class="anchor" aria-label="anchor" href="#quick-start-single-point-inversion"></a>
 </h2>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/bradleylab/leafwax" class="external-link">leafwax</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">result</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/invert_d2h.html">invert_d2H</a></span><span class="op">(</span></span>
@@ -77,37 +72,45 @@
 <span>  d2H_wax_sd <span class="op">=</span> <span class="fl">3</span>,</span>
 <span>  longitude  <span class="op">=</span> <span class="op">-</span><span class="fl">90</span>,</span>
 <span>  latitude   <span class="op">=</span> <span class="fl">38</span>,</span>
-<span>  model_name <span class="op">=</span> <span class="st">"baseline_sp"</span></span>
+<span>  model_name <span class="op">=</span> <span class="st">"baseline_sp"</span>,</span>
+<span>  prior      <span class="op">=</span> <span class="fu"><a href="reference/d2h_prior_normal.html">d2h_prior_normal</a></span><span class="op">(</span>mean <span class="op">=</span> <span class="op">-</span><span class="fl">70</span>, sd <span class="op">=</span> <span class="fl">30</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">result</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"d2h_precip_mean"</span>, <span class="st">"d2h_precip_sd"</span>,</span>
-<span>           <span class="st">"d2h_precip_lower"</span>, <span class="st">"d2h_precip_upper"</span><span class="op">)</span><span class="op">]</span></span></code></pre></div>
-<p><code><a href="reference/available_models.html">available_models()</a></code> lists the 14 v10 model variants. Spatial models end in <code>_sp</code> and are recommended whenever site coordinates are known.</p>
+<span><span class="va">result</span><span class="op">$</span><span class="va">summary</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"d2h_precip_median"</span>,</span>
+<span>                   <span class="st">"d2h_precip_lower"</span>, <span class="st">"d2h_precip_upper"</span><span class="op">)</span><span class="op">]</span></span></code></pre></div>
+<p><code><a href="reference/available_models.html">available_models()</a></code> lists the 14 calibration variants; this does not mean that all 14 have a complete reconstruction design.</p>
 </div>
 <div class="section level2">
 <h2 id="paleo-record-workflow">Paleo-record workflow<a class="anchor" aria-label="anchor" href="#paleo-record-workflow"></a>
 </h2>
-<p>For a downcore series, the workflow combines four functions. The calibration’s posterior residual SD (σ<sub>residual</sub>, ≈16 per mil for the spatial models) applies uniformly to absolute and within-record use; see the manuscript Section 4.5.3 for the derivation.</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<p>For a downcore series, the workflow combines four functions. The calibration’s posterior residual SD (σ<sub>residual</sub>, ≈16 per mil for the spatial models) applies uniformly to absolute and within-record use; see the manuscript Methods subsection “Inversion and detection thresholds” for the derivation.</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/bradleylab/leafwax" class="external-link">leafwax</a></span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># 1. Raw per-draw local slope at the site</span></span>
+<span><span class="co"># Example only: the prior must be justified for the record and sensitivity</span></span>
+<span><span class="co"># to alternative proper priors should be reported.</span></span>
+<span><span class="va">reconstruction_prior</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/d2h_prior_normal.html">d2h_prior_normal</a></span><span class="op">(</span>mean <span class="op">=</span> <span class="op">-</span><span class="fl">70</span>, sd <span class="op">=</span> <span class="fl">30</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># 1. Per-draw local slope at the site (per mil wax per per mil precipitation)</span></span>
 <span><span class="va">slope</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/local_effective_slope.html">local_effective_slope</a></span><span class="op">(</span></span>
 <span>  longitude  <span class="op">=</span> <span class="op">-</span><span class="fl">90</span>,</span>
 <span>  latitude   <span class="op">=</span> <span class="fl">38</span>,</span>
 <span>  model_name <span class="op">=</span> <span class="st">"baseline_sp"</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># 2. Inversion with the defended slope</span></span>
+<span><span class="co"># 2. Inversion. Paired local-slope draws are propagated internally; the</span></span>
+<span><span class="co"># separate slope object is retained for diagnostics and the threshold below.</span></span>
 <span><span class="va">recon</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/invert_d2h.html">invert_d2H</a></span><span class="op">(</span></span>
 <span>  d2H_wax    <span class="op">=</span> <span class="va">record</span><span class="op">$</span><span class="va">d2h_wax</span>,</span>
 <span>  d2H_wax_sd <span class="op">=</span> <span class="va">record</span><span class="op">$</span><span class="va">d2h_wax_err</span>,</span>
 <span>  longitude  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="op">-</span><span class="fl">90</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">record</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  latitude   <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span> <span class="fl">38</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">record</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  model_name <span class="op">=</span> <span class="st">"baseline_sp"</span>,</span>
-<span>  slope      <span class="op">=</span> <span class="va">slope</span>,</span>
 <span>  record_id  <span class="op">=</span> <span class="st">"your_record_id"</span>,</span>
-<span>  return_full <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span>  prior      <span class="op">=</span> <span class="va">reconstruction_prior</span>,</span>
+<span>  return_full <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  n_inverse_samples <span class="op">=</span> <span class="fl">4000</span>,</span>
+<span>  seed <span class="op">=</span> <span class="fl">20260801</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># 3. Detection threshold + posterior P(change &gt; magnitude)</span></span>
@@ -136,7 +139,7 @@
 <div class="section level2">
 <h2 id="available-models">Available models<a class="anchor" aria-label="anchor" href="#available-models"></a>
 </h2>
-<p><code><a href="reference/available_models.html">available_models()</a></code> returns the 14 v10 variants. Capability flags are derived from the posterior parameter names, not the model id, so the routing layer correctly reflects what each fit actually contains.</p>
+<p><code><a href="reference/available_models.html">available_models()</a></code> returns the 14 calibration variants. Capability flags are derived from the posterior parameter names, not the model id, so the routing layer correctly reflects what each fit actually contains.</p>
 <table class="table">
 <thead><tr>
 <th>Model</th>
@@ -233,7 +236,7 @@
 <td align="center">x</td>
 <td align="center">x</td>
 <td align="center">x</td>
-<td align="center">x</td>
+<td align="center"></td>
 </tr>
 <tr>
 <td><code>full_sp</code></td>
@@ -241,7 +244,7 @@
 <td align="center">x</td>
 <td align="center">x</td>
 <td align="center">x</td>
-<td align="center">x</td>
+<td align="center"></td>
 </tr>
 <tr>
 <td><code>full_interact</code></td>
@@ -261,65 +264,60 @@
 </tr>
 </tbody>
 </table>
-<p>The “Precip” column flags models that include a fitted precipitation-amount coefficient (<code>beta_precip</code>). The <code>_env</code> and <code>_full*</code> variants carry it; the <code>elevation_*</code> variants do not. The v10 fits did not produce <code>beta_elev</code> coefficients, so no model in the table propagates supplied elevation through the predictor linear combination — the historical “elevation_*” naming reflects the regional context the variants were designed for, not a fitted elevation effect.</p>
+<p>The “Precip” column flags models that include a fitted precipitation-amount coefficient (<code>beta_precip</code>). The <code>_env</code> and <code>_full*</code> variants carry it; the <code>elevation_*</code> variants do not. Nine fitted models include an elevation spline and the saved posterior files retain its coefficients. Elevation is nevertheless not consumed by the current Bayesian reconstruction designs because the complete new-site multiscale spline basis is unavailable. This is a reconstruction-interface boundary, not a claim that elevation was absent from the fitted calibration.</p>
 <p>Spatial models share a single 125-knot Fibonacci-sphere lattice.</p>
+</div>
+<div class="section level2">
+<h2 id="posterior-data-reproducibility">Posterior-data reproducibility<a class="anchor" aria-label="anchor" href="#posterior-data-reproducibility"></a>
+</h2>
+<p>The companion <code>leafwax-data</code> release is the canonical source of complete posterior files. In a development checkout, synchronize and verify that exact file set, then regenerate the bundled preview fixtures:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a><span class="va">LEAFWAX_DATA_DIR</span><span class="op">=</span>../leafwax-data <span class="dt">\</span></span>
+<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a>  <span class="ex">Rscript</span> data-raw/sync_release_posteriors.R</span>
+<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a><span class="ex">Rscript</span> data-raw/regenerate_posteriors_light.R</span></code></pre></div>
+<p>The synchronization script validates every byte size and SHA-256 against the data-release manifest before replacing the checkout copies.</p>
 </div>
 <div class="section level2">
 <h2 id="manuscript-correspondence">Manuscript correspondence<a class="anchor" aria-label="anchor" href="#manuscript-correspondence"></a>
 </h2>
 <p>The paleo workflow maps directly to the manuscript:</p>
 <table class="table">
+<colgroup>
+<col width="66%">
+<col width="33%">
+</colgroup>
 <thead><tr>
 <th>Manuscript section</th>
 <th>Function</th>
 </tr></thead>
 <tbody>
 <tr>
-<td>4.5.3 detection threshold formula</td>
+<td>Methods: Inversion and detection thresholds; Supplement S8.1.1</td>
 <td><code><a href="reference/detect_change.html">detect_change()</a></code></td>
 </tr>
 <tr>
-<td>4.5.5 local slope posterior</td>
-<td><code><a href="reference/local_effective_slope.html">local_effective_slope()</a></code></td>
+<td>Supplement S8.2 vegetation-only envelope</td>
+<td><code><a href="reference/compute_vegetation_envelope.html">compute_vegetation_envelope()</a></code></td>
 </tr>
 <tr>
-<td>4.5.6 four-level claim taxonomy</td>
-<td><code><a href="reference/assess_claim.html">assess_claim()</a></code></td>
-</tr>
-<tr>
-<td>Section S4 inversion machinery</td>
-<td><code><a href="reference/invert_d2h.html">invert_d2H()</a></code></td>
+<td>Supplement S8.1 local slope and Bayesian inversion</td>
+<td>
+<code><a href="reference/local_effective_slope.html">local_effective_slope()</a></code>, <code><a href="reference/invert_d2h.html">invert_d2H()</a></code>
+</td>
 </tr>
 </tbody>
 </table>
+<p><code><a href="reference/assess_claim.html">assess_claim()</a></code> provides an additional package-level claim-screening workflow; the associated manuscript does not present that four-level taxonomy.</p>
 </div>
 <div class="section level2">
 <h2 id="citation">Citation<a class="anchor" aria-label="anchor" href="#citation"></a>
 </h2>
-<p>Cite both the software archive and the related manuscript:</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode bibtex"><code class="sourceCode bibtex"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="co">@software{bradley_leafwax_pkg_2026,</span></span>
-<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a><span class="co">  author  = {Bradley, Alexander S.},</span></span>
-<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a><span class="co">  title   = {leafwax: spatially-aware paleo-precipitation reconstruction</span></span>
-<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a><span class="co">             from leaf-wax hydrogen isotopes},</span></span>
-<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a><span class="co">  year    = {2026},</span></span>
-<span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a><span class="co">  doi     = {10.5281/zenodo.20172570},</span></span>
-<span id="cb5-7"><a href="#cb5-7" tabindex="-1"></a><span class="co">  url     = {https://doi.org/10.5281/zenodo.20172570}</span></span>
-<span id="cb5-8"><a href="#cb5-8" tabindex="-1"></a><span class="co">}</span></span>
-<span id="cb5-9"><a href="#cb5-9" tabindex="-1"></a></span>
-<span id="cb5-10"><a href="#cb5-10" tabindex="-1"></a><span class="va">@unpublished</span>{<span class="ot">bradley_leafwax_paper_2026</span>,</span>
-<span id="cb5-11"><a href="#cb5-11" tabindex="-1"></a>  <span class="dt">author</span> = {Bradley, Alexander S.},</span>
-<span id="cb5-12"><a href="#cb5-12" tabindex="-1"></a>  <span class="dt">title</span>  = {Spatial modeling improves the calibration of leaf wax</span>
-<span id="cb5-13"><a href="#cb5-13" tabindex="-1"></a>            hydrogen isotopes to precipitation},</span>
-<span id="cb5-14"><a href="#cb5-14" tabindex="-1"></a>  <span class="dt">year</span>   = {2026},</span>
-<span id="cb5-15"><a href="#cb5-15" tabindex="-1"></a>  <span class="dt">note</span>   = {Manuscript in preparation}</span>
-<span id="cb5-16"><a href="#cb5-16" tabindex="-1"></a>}</span></code></pre></div>
-<p>The <code>@software</code> DOI is the concept DOI — it always resolves to the latest version. To cite a specific release, replace it with that release’s version DOI from the Zenodo deposit page.</p>
+<p>Citation metadata are provided in <a href="CITATION.cff"><code>CITATION.cff</code></a>. For exact reproducibility, cite the archived release corresponding to the version used.</p>
 </div>
 <div class="section level2">
 <h2 id="help">Help<a class="anchor" aria-label="anchor" href="#help"></a>
 </h2>
 <ul>
-<li>Function reference: <code><a href="reference/invert_d2h.html">?invert_d2H</a></code>, <code><a href="reference/local_effective_slope.html">?local_effective_slope</a></code>, <code><a href="reference/detect_change.html">?detect_change</a></code>, <code><a href="reference/assess_claim.html">?assess_claim</a></code>.</li>
+<li>Function reference: <code><a href="reference/invert_d2h.html">?invert_d2H</a></code>, <code><a href="reference/local_effective_slope.html">?local_effective_slope</a></code>, <code><a href="reference/detect_change.html">?detect_change</a></code>, <code><a href="reference/assess_claim.html">?assess_claim</a></code>, <code><a href="reference/compute_vegetation_envelope.html">?compute_vegetation_envelope</a></code>.</li>
 <li>Vignette: <code><a href="articles/paleo-record-workflow.html">vignette("paleo-record-workflow", package = "leafwax")</a></code>.</li>
 <li>Issues: <a href="https://github.com/bradleylab/leafwax/issues" class="external-link uri">https://github.com/bradleylab/leafwax/issues</a>.</li>
 </ul>
@@ -333,6 +331,7 @@
   </main><aside class="col-md-3"><div class="links">
 <h2 data-toc-skip>Links</h2>
 <ul class="list-unstyled">
+<li><a href="https://cloud.r-project.org/package=leafwax" class="external-link">View on CRAN</a></li>
 <li><a href="https://github.com/bradleylab/leafwax/" class="external-link">Browse source code</a></li>
 <li><a href="https://github.com/bradleylab/leafwax/issues" class="external-link">Report a bug</a></li>
 </ul>
@@ -356,8 +355,7 @@
 <div class="developers">
 <h2 data-toc-skip>Developers</h2>
 <ul class="list-unstyled">
-<li>
-<a href="https://eeps.washu.edu/people/alexander-s-bradley" class="external-link">Alex Bradley</a> <br><small class="roles"> Author, maintainer </small> <a href="https://orcid.org/0000-0002-4044-2802" target="orcid.widget" aria-label="ORCID" class="external-link"><span class="fab fa-orcid orcid" aria-hidden="true"></span></a>  </li>
+<li>Alexander S. Bradley <br><small class="roles"> Author, maintainer </small> <a href="https://orcid.org/0000-0002-4044-2802" target="orcid.widget" aria-label="ORCID" class="external-link"><span class="fab fa-orcid orcid" aria-hidden="true"></span></a>  </li>
 </ul>
 </div>
 
@@ -375,11 +373,11 @@
 
 
     <footer><div class="pkgdown-footer-left">
-  <p>Developed by <a href="https://eeps.washu.edu/people/alexander-s-bradley" class="external-link">Alex Bradley</a>.</p>
+  <p>Developed by Alexander S. Bradley.</p>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer>

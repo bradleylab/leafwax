@@ -18,3 +18,8 @@ print(x, ...)
 - ...:
 
   Additional arguments
+
+## Value
+
+The input `leafwax_posterior` object `x`, invisibly. Called for its side
+effect of printing a one-line model summary to the console.

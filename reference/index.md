@@ -4,11 +4,21 @@
 
 Reconstruct d2H_precip from leaf-wax d2H_wax.
 
-- [`invert_d2h()`](https://bradleylab.github.io/leafwax/reference/invert_d2h.md)
-  [`invert_d2H()`](https://bradleylab.github.io/leafwax/reference/invert_d2h.md)
-  : Invert leaf wax d2H to precipitation d2H
+- [`invert_d2H()`](https://bradleylab.github.io/leafwax/reference/invert_d2h.md)
+  [`invert_d2h()`](https://bradleylab.github.io/leafwax/reference/invert_d2h.md)
+  : Bayesian inversion of leaf-wax d2H to precipitation d2H
 - [`invert_d2H_ensemble()`](https://bradleylab.github.io/leafwax/reference/invert_d2H_ensemble.md)
   : Ensemble predictions across multiple models
+- [`bayesian_linear_inverse()`](https://bradleylab.github.io/leafwax/reference/bayesian_linear_inverse.md)
+  : Bayesian inversion of a linear calibration posterior
+- [`bayesian_record_inverse()`](https://bradleylab.github.io/leafwax/reference/bayesian_record_inverse.md)
+  : Joint Bayesian inversion of a multi-sample record
+- [`d2h_prior_normal()`](https://bradleylab.github.io/leafwax/reference/d2h_prior_normal.md)
+  : Normal prior for precipitation-isotope inversion
+- [`d2h_prior_truncated_normal()`](https://bradleylab.github.io/leafwax/reference/d2h_prior_truncated_normal.md)
+  : Truncated-normal prior for precipitation-isotope inversion
+- [`d2h_prior_uniform()`](https://bradleylab.github.io/leafwax/reference/d2h_prior_uniform.md)
+  : Uniform prior for precipitation-isotope inversion
 
 ## Paleo-record workflow
 
@@ -20,12 +30,14 @@ Local slope, change detection, claim taxonomy.
   : Estimate lag-1 temporal autocorrelation
 - [`detect_change()`](https://bradleylab.github.io/leafwax/reference/detect_change.md)
   : Within-record d2H_precip change detection
+- [`compute_vegetation_envelope()`](https://bradleylab.github.io/leafwax/reference/compute_vegetation_envelope.md)
+  : Vegetation-only envelope for a paleo wax-isotope record
 - [`assess_claim()`](https://bradleylab.github.io/leafwax/reference/assess_claim.md)
   : Assess a paleoclimate claim against the leaf-wax taxonomy
 
 ## Models
 
-Routing and metadata for the 14 v10 model variants.
+Routing and metadata for the 14 calibration-model variants.
 
 - [`available_models()`](https://bradleylab.github.io/leafwax/reference/available_models.md)
   : Get available models
@@ -51,11 +63,11 @@ Internal-style exports (data caching, batch processing, validation) and
 the lower-level invert_d2h() function. Most users will not call these
 directly.
 
-- [`invert_d2h()`](https://bradleylab.github.io/leafwax/reference/invert_d2h.md)
-  [`invert_d2H()`](https://bradleylab.github.io/leafwax/reference/invert_d2h.md)
-  : Invert leaf wax d2H to precipitation d2H
+- [`invert_d2H()`](https://bradleylab.github.io/leafwax/reference/invert_d2h.md)
+  [`invert_d2h()`](https://bradleylab.github.io/leafwax/reference/invert_d2h.md)
+  : Bayesian inversion of leaf-wax d2H to precipitation d2H
 - [`batch_predict()`](https://bradleylab.github.io/leafwax/reference/batch_predict.md)
-  : Batch predict precipitation d2H for multiple sites
+  : Jointly invert multiple observations from one record
 - [`predict_d2h_precip()`](https://bradleylab.github.io/leafwax/reference/predict_d2h_precip.md)
   : Predict precipitation d2H from leaf wax d2H
 - [`validate_inputs()`](https://bradleylab.github.io/leafwax/reference/validate_inputs.md)
@@ -65,7 +77,7 @@ directly.
 - [`get_model_parameters()`](https://bradleylab.github.io/leafwax/reference/get_model_parameters.md)
   : Get model parameters
 - [`detect_model_capabilities()`](https://bradleylab.github.io/leafwax/reference/detect_model_capabilities.md)
-  : Detect model capabilities from static v10 metadata
+  : Detect model capabilities from static metadata
 - [`list_model_names()`](https://bradleylab.github.io/leafwax/reference/list_model_names.md)
   : List model names
 - [`leafwax_config()`](https://bradleylab.github.io/leafwax/reference/leafwax_config.md)
@@ -81,7 +93,7 @@ directly.
 - [`predict_one_gp_mpp()`](https://bradleylab.github.io/leafwax/reference/predict_one_gp_mpp.md)
   : Predict an mPP Gaussian-process random effect at a new location
 - [`download_model_data()`](https://bradleylab.github.io/leafwax/reference/download_model_data.md)
-  : Download model data from GitHub releases
+  : Download model data from the configured public release
 - [`check_data_cache()`](https://bradleylab.github.io/leafwax/reference/check_data_cache.md)
   : Check if model data exists in cache
 - [`clear_download_cache()`](https://bradleylab.github.io/leafwax/reference/clear_download_cache.md)

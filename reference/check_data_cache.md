@@ -38,7 +38,12 @@ Logical indicating whether the cached posterior file exists.
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
-exists <- check_data_cache("baseline_sp")
-} # }
+# \donttest{
+local({
+  old <- options(leafwax.cache_dir = file.path(tempdir(), "leafwax_cache"))
+  on.exit(options(old))
+
+  exists <- check_data_cache("baseline_sp", verbose = FALSE)
+})
+# }
 ```

@@ -25,11 +25,16 @@ Data frame with cache size information
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
-# Get total cache size
-cache_info <- get_cache_info()
+# \donttest{
+local({
+  old <- options(leafwax.cache_dir = file.path(tempdir(), "leafwax_cache"))
+  on.exit(options(old))
 
-# Get size by model and type
-cache_info <- get_cache_info(by_model = TRUE, by_type = TRUE)
-} # }
+  # Get total cache size
+  cache_info <- get_cache_info()
+
+  # Get size by model and type
+  cache_info <- get_cache_info(by_model = TRUE, by_type = TRUE)
+})
+# }
 ```

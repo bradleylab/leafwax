@@ -1,32 +1,13 @@
-# Invert leaf wax d2H to precipitation d2H
+# Bayesian inversion of leaf-wax d2H to precipitation d2H
 
-Uses Bayesian posterior draws to invert leaf wax hydrogen isotope values
-to precipitation isotope values, accounting for all fitted model
-components including vegetation effects and spatial correlations where
-applicable.
+Performs a likelihood-times-prior inversion over paired calibration
+posterior draws. No division by a sampled slope, clipping, or post-hoc
+draw removal is used. Multiple rows jointly reweight the shared
+calibration draw.
 
 ## Usage
 
 ``` r
-invert_d2h(
-  d2h_wax,
-  d2h_wax_err = NULL,
-  longitude,
-  latitude,
-  elevation = NULL,
-  c4_percent = NULL,
-  pft_tree = NULL,
-  pft_shrub = NULL,
-  pft_grass = NULL,
-  model_name = "baseline",
-  n_draws = NULL,
-  return_full = FALSE,
-  credible_level = 0.9,
-  verbose = TRUE,
-  record_id = NULL,
-  slope = NULL
-)
-
 invert_d2H(
   d2H_wax,
   d2H_wax_sd = NULL,
@@ -45,90 +26,44 @@ invert_d2H(
   credible_level = 0.9,
   verbose = TRUE,
   record_id = NULL,
-  slope = NULL
+  slope = NULL,
+  prior = NULL,
+  n_inverse_samples = 0L,
+  seed = NULL,
+  grid_size = 2001L,
+  integration_tolerance = 0.001,
+  tail_mass_tolerance = 1e-08,
+  draw_stability_tolerance = 2
+)
+
+invert_d2h(
+  d2h_wax,
+  d2h_wax_err = NULL,
+  longitude,
+  latitude,
+  elevation = NULL,
+  c4_percent = NULL,
+  pft_tree = NULL,
+  pft_shrub = NULL,
+  pft_grass = NULL,
+  model_name = "baseline",
+  n_draws = NULL,
+  return_full = FALSE,
+  credible_level = 0.9,
+  verbose = TRUE,
+  record_id = NULL,
+  slope = NULL,
+  prior = NULL,
+  n_inverse_samples = 0L,
+  seed = NULL,
+  grid_size = 2001L,
+  integration_tolerance = 0.001,
+  tail_mass_tolerance = 1e-08,
+  draw_stability_tolerance = 2
 )
 ```
 
 ## Arguments
-
-- d2h_wax:
-
-  Numeric vector of leaf wax d2H values (per mil)
-
-- d2h_wax_err:
-
-  Numeric vector of measurement uncertainties (per mil)
-
-- longitude:
-
-  Numeric vector of longitudes (decimal degrees)
-
-- latitude:
-
-  Numeric vector of latitudes (decimal degrees)
-
-- elevation:
-
-  Numeric vector of elevations (meters)
-
-- c4_percent:
-
-  Numeric vector of C4 vegetation percentage (0-100)
-
-- pft_tree:
-
-  Numeric vector of tree PFT fraction (0-1)
-
-- pft_shrub:
-
-  Numeric vector of shrub PFT fraction (0-1)
-
-- pft_grass:
-
-  Numeric vector of grass PFT fraction (0-1)
-
-- model_name:
-
-  Character string specifying which model to use
-
-- n_draws:
-
-  Integer number of posterior draws to use (NULL for all)
-
-- return_full:
-
-  Logical whether to return full posterior draws or just summary
-
-- credible_level:
-
-  Numeric credible interval level (default 0.9)
-
-- verbose:
-
-  Logical whether to print progress messages
-
-- record_id:
-
-  Character or numeric, optional record identifier. When supplied and
-  constant across all input rows, all rows are treated as belonging to
-  the same downcore series: the spatial Gaussian process is evaluated
-  once per posterior draw at the shared site, so spatial draws are
-  reused across the series rather than redrawn per row. The current
-  implementation already shares spatial draws between identical
-  (longitude, latitude) pairs; the `record_id` argument adds explicit
-  validation that the caller intends within-record inference.
-
-- slope:
-
-  Optional numeric override for the d2H_wax-d2H_precip slope. NULL
-  (default) uses the model's site-specific slope, i.e., `beta_oipc` plus
-  the spatial slope GP perturbation at the site. A single numeric
-  replaces the slope with a fixed point estimate (broadcast across all
-  posterior draws). A vector of length `n_draws` is used per draw. Use
-  [`local_effective_slope()`](https://bradleylab.github.io/leafwax/reference/local_effective_slope.md)
-  to build a defensible per-draw override from the calibration's
-  site-specific posterior. When supplied, the override applies uniformly
-  to every input row.
 
 - d2H_wax:
 
@@ -137,6 +72,15 @@ invert_d2H(
 - d2H_wax_sd:
 
   Numeric vector of measurement uncertainties (per mil)
+
+- longitude, latitude:
+
+  Numeric site coordinates in decimal degrees.
+
+- elevation:
+
+  Optional elevations retained in the output but not consumed by the
+  currently supported inversion designs.
 
 - elevation_sd:
 
@@ -152,82 +96,91 @@ invert_d2H(
 
   C4 fraction uncertainty (not used, kept for compatibility)
 
+- pft_tree, pft_shrub, pft_grass:
+
+  Unsupported PFT inputs; supplying any currently fails closed.
+
+- model_name:
+
+  One of `baseline`, `baseline_sp`, or `c4_only_sp`.
+
 - n_posterior_draws:
 
   Integer number of posterior draws to use
 
+- return_full:
+
+  Whether to return joint posterior samples.
+
+- credible_level:
+
+  Central credible interval probability.
+
+- verbose:
+
+  Whether to report loading and diagnostic status.
+
+- record_id:
+
+  Identifier for a single shared-site record. Optional for a one-row
+  inversion and required when `length(d2h_wax) > 1`.
+
+- slope:
+
+  Optional scalar or paired-draw override in per mil wax per per mil
+  precipitation. It is converted to the fitted model's standardized
+  coefficient internally. Zero and negative values are retained.
+
+- prior:
+
+  Required proper precipitation-isotope prior from a `d2h_prior_*()`
+  constructor, or one prior per row.
+
+- n_inverse_samples:
+
+  Number of joint inverse-posterior samples. Required to be positive
+  when `return_full = TRUE`; otherwise it must be zero.
+
+- seed:
+
+  Explicit integer seed required for inverse-posterior samples.
+
+- grid_size:
+
+  Numerical integration grid size.
+
+- integration_tolerance:
+
+  Maximum permitted nested-grid summary change.
+
+- tail_mass_tolerance:
+
+  Maximum permitted unbounded-prior edge mass.
+
+- draw_stability_tolerance:
+
+  Maximum permitted summary change when the paired calibration draw bank
+  is reduced to a deterministic nested half.
+
+- d2h_wax:
+
+  Numeric vector of observed leaf-wax isotope values in per mil.
+
+- d2h_wax_err:
+
+  Non-negative analytical standard deviations in per mil.
+
+- c4_percent:
+
+  C4 cover on a 0–100 scale, required by `c4_only_sp`.
+
+- n_draws:
+
+  Optional deterministic thinning count for paired calibration posterior
+  draws.
+
 ## Value
 
-If return_full is FALSE, a data frame with columns:
-
-- d2h_precip_mean:
-
-  Mean predicted precipitation d2H
-
-- d2h_precip_median:
-
-  Median predicted precipitation d2H
-
-- d2h_precip_sd:
-
-  Standard deviation of the posterior predictive interval
-
-- d2h_precip_lower:
-
-  Lower bound of the credible interval
-
-- d2h_precip_upper:
-
-  Upper bound of the credible interval
-
-- prediction_interval_width:
-
-  Width of the credible interval (upper - lower).
-
-The interval is the posterior predictive specified in manuscript
-supplement Section S4.1, Eq. 7: the wax-error draw combines analytical
-uncertainty with the model's posterior residual SD `sigma`. For
-within-record change detection, the spatial GP intercept's contribution
-cancels in any contrast computed from the returned `posterior_draws`
-(manuscript Section 4.5.3); the same `sigma` applies in both regimes.
-
-If return_full is TRUE, a list with:
-
-- summary:
-
-  The summary data frame described above
-
-- posterior_draws:
-
-  Matrix of all posterior draws (n_draws x n_locations)
-
-- model_info:
-
-  Information about the model used.
-
-## Examples
-
-``` r
-if (FALSE) { # \dontrun{
-# Simple inversion with base model
-results <- invert_d2h(
-  d2h_wax = c(-150, -140, -130),
-  d2h_wax_err = c(3, 3, 3),
-  longitude = c(-120, -110, -100),
-  latitude = c(40, 35, 30),
-  elevation = c(1000, 1500, 500),
-  model = "baseline"
-)
-
-# Inversion with spatial model
-results <- invert_d2h(
-  d2h_wax = c(-150, -140, -130),
-  d2h_wax_err = c(3, 3, 3),
-  longitude = c(-120, -110, -100),
-  latitude = c(40, 35, 30),
-  elevation = c(1000, 1500, 500),
-  model = "baseline_sp",
-  return_full = TRUE
-)
-} # }
-```
+A `leafwax_inverse` object. Its `status` is `"inconclusive"` if
+numerical or saved-draw stability tolerances fail. Posterior samples are
+present only when explicitly requested with a seed.

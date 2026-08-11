@@ -22,8 +22,14 @@ Character string with the cache directory path
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
-cache_dir <- get_cache_dir()
-list.files(cache_dir)
-} # }
+# \donttest{
+local({
+  old <- options(leafwax.cache_dir = file.path(tempdir(), "leafwax_cache"))
+  on.exit(options(old))
+
+  cache_dir <- get_cache_dir(create = FALSE)
+  dir.exists(cache_dir)
+})
+#> [1] FALSE
+# }
 ```

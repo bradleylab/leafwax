@@ -10,9 +10,15 @@
 <url><loc>https://bradleylab.github.io/leafwax/reference/assess_claim.html</loc></url>
 <url><loc>https://bradleylab.github.io/leafwax/reference/available_models.html</loc></url>
 <url><loc>https://bradleylab.github.io/leafwax/reference/batch_predict.html</loc></url>
+<url><loc>https://bradleylab.github.io/leafwax/reference/bayesian_linear_inverse.html</loc></url>
+<url><loc>https://bradleylab.github.io/leafwax/reference/bayesian_record_inverse.html</loc></url>
 <url><loc>https://bradleylab.github.io/leafwax/reference/check_data_cache.html</loc></url>
 <url><loc>https://bradleylab.github.io/leafwax/reference/clear_download_cache.html</loc></url>
 <url><loc>https://bradleylab.github.io/leafwax/reference/compare_models.html</loc></url>
+<url><loc>https://bradleylab.github.io/leafwax/reference/compute_vegetation_envelope.html</loc></url>
+<url><loc>https://bradleylab.github.io/leafwax/reference/d2h_prior_normal.html</loc></url>
+<url><loc>https://bradleylab.github.io/leafwax/reference/d2h_prior_truncated_normal.html</loc></url>
+<url><loc>https://bradleylab.github.io/leafwax/reference/d2h_prior_uniform.html</loc></url>
 <url><loc>https://bradleylab.github.io/leafwax/reference/detect_change.html</loc></url>
 <url><loc>https://bradleylab.github.io/leafwax/reference/detect_model_capabilities.html</loc></url>
 <url><loc>https://bradleylab.github.io/leafwax/reference/download_model_data.html</loc></url>
@@ -42,6 +48,7 @@
 <url><loc>https://bradleylab.github.io/leafwax/reference/list_models.html</loc></url>
 <url><loc>https://bradleylab.github.io/leafwax/reference/load_posteriors.html</loc></url>
 <url><loc>https://bradleylab.github.io/leafwax/reference/local_effective_slope.html</loc></url>
+<url><loc>https://bradleylab.github.io/leafwax/reference/model_capability.html</loc></url>
 <url><loc>https://bradleylab.github.io/leafwax/reference/predict_d2h_precip.html</loc></url>
 <url><loc>https://bradleylab.github.io/leafwax/reference/predict_one_gp_mpp.html</loc></url>
 <url><loc>https://bradleylab.github.io/leafwax/reference/predict_spatial_dual_gp.html</loc></url>

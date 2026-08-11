@@ -18,12 +18,20 @@ predict_d2h_precip(
   pft_tree = NULL,
   pft_shrub = NULL,
   pft_grass = NULL,
+  record_id = NULL,
   model = "auto",
   n_draws = NULL,
   credible_level = 0.9,
   return_draws = FALSE,
   progress = TRUE,
-  verbose = TRUE
+  verbose = TRUE,
+  prior = NULL,
+  n_inverse_samples = 0L,
+  seed = NULL,
+  grid_size = 2001L,
+  integration_tolerance = 0.001,
+  tail_mass_tolerance = 1e-08,
+  draw_stability_tolerance = 2
 )
 ```
 
@@ -69,6 +77,11 @@ predict_d2h_precip(
 
   Numeric vector of grass PFT fraction (optional)
 
+- record_id:
+
+  Optional identifier for one same-site record; required for multi-row
+  input.
+
 - model:
 
   Character string specifying model, or "auto" for automatic selection
@@ -93,68 +106,78 @@ predict_d2h_precip(
 
   Logical whether to print status messages
 
+- prior:
+
+  Required proper precipitation-isotope prior.
+
+- n_inverse_samples:
+
+  Number of joint posterior samples when `return_draws = TRUE`.
+
+- seed:
+
+  Explicit seed required when posterior samples are requested.
+
+- grid_size, integration_tolerance, tail_mass_tolerance:
+
+  Numerical integration controls passed to
+  [`invert_d2H()`](https://bradleylab.github.io/leafwax/reference/invert_d2h.md).
+
+- draw_stability_tolerance:
+
+  Saved-draw stability tolerance in per mil.
+
 ## Value
 
-A data frame with predictions (or list if return_draws = TRUE):
-
-- d2h_precip_mean:
-
-  Mean predicted precipitation d2H
-
-- d2h_precip_median:
-
-  Median predicted precipitation d2H
-
-- d2h_precip_sd:
-
-  Standard deviation of the posterior predictive interval
-
-- d2h_precip_lower:
-
-  Lower bound of the credible interval
-
-- d2h_precip_upper:
-
-  Upper bound of the credible interval
-
-- prediction_interval_width:
-
-  Width of the credible interval
-
-- model_used:
-
-  Name of model used for prediction
+A `leafwax_inverse` object. Its `summary` data frame contains the
+posterior median, central interval, and supporting moments for each row;
+diagnostics and method metadata are always returned. Joint
+`posterior_draws` are included only when `return_draws = TRUE` with an
+explicit sample count and seed.
 
 The interval is the posterior predictive specified in manuscript
-supplement Section S4.1, Eq. 7 (analytical uncertainty plus the model's
-posterior residual SD).
+Supplementary Note 8 (Section S8.1; analytical uncertainty plus the
+model's posterior residual SD).
 
 ## Examples
 
 ``` r
 if (FALSE) { # \dontrun{
-# Using data frame input
-data(example_data)
-results <- predict_d2h_precip(example_data)
+local({
+  old <- options(leafwax.suppress_preview_warning = TRUE)
+  on.exit(options(old))
 
-# Using individual vectors
-results <- predict_d2h_precip(
-  d2h_wax = c(-150, -140, -130),
-  longitude = c(-120, -110, -100),
-  latitude = c(40, 35, 30),
-  elevation = c(1000, 1500, 500)
-)
+  # Using data frame input
+  data(example_data)
+  prior <- d2h_prior_normal(mean = -70, sd = 30)
+  results <- predict_d2h_precip(
+    example_data, prior = prior, verbose = FALSE
+  )
 
-# Specify model explicitly
-results <- predict_d2h_precip(
-  example_data,
-  model = "baseline_env_sp"
-)
+  # Using individual vectors
+  results <- predict_d2h_precip(
+    d2h_wax = c(-150, -140, -130),
+    longitude = rep(-90, 3),
+    latitude = rep(38, 3),
+    record_id = "example_record",
+    elevation = c(1000, 1500, 500), prior = prior,
+    verbose = FALSE
+  )
 
-# Get full posterior draws
-results <- predict_d2h_precip(
-  example_data,
-  return_draws = TRUE
-)
+  # Specify model explicitly
+  results <- predict_d2h_precip(
+    example_data,
+    model = "baseline_sp", prior = prior,
+    verbose = FALSE
+  )
+
+  # Get full posterior draws
+  results <- predict_d2h_precip(
+    example_data,
+    prior = prior, return_draws = TRUE,
+    n_inverse_samples = 1000, seed = 20260801,
+    verbose = FALSE
+  )
+})
 } # }
 ```

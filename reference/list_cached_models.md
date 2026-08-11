@@ -25,11 +25,16 @@ Character vector of available model names
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
-# List all cached models
-models <- list_cached_models()
+# \donttest{
+local({
+  old <- options(leafwax.cache_dir = file.path(tempdir(), "leafwax_cache"))
+  on.exit(options(old))
 
-# List models with full data
-models_full <- list_cached_models(data_type = "full")
-} # }
+  # List all cached models
+  models <- list_cached_models(verbose = FALSE)
+
+  # List models with full data
+  models_full <- list_cached_models(data_type = "full", verbose = FALSE)
+})
+# }
 ```

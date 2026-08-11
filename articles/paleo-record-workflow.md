@@ -25,17 +25,20 @@ uses this per-sample detection threshold:
 
 ``` math
 \mathrm{threshold}_{\mathrm{precip}}
-= \frac{1.96 \sqrt{2(1 - \rho_t)}\, \sqrt{\sigma_{\mathrm{residual}}^2 + \sigma_{\mathrm{analytical}}^2}}{\beta_{\mathrm{eff}}}
+= \frac{1.96 \sqrt{2 \sigma_{\mathrm{residual}}^2 (1 - \rho_t) + 2 \sigma_{\mathrm{analytical}}^2}}{\beta_{\mathrm{eff}}}
 ```
 
 Here `rho_t` is the lag-1 temporal autocorrelation, `sigma_residual` is
 the calibration residual SD on the wax scale, `sigma_analytical` is the
 analytical uncertainty on the wax measurements, and `beta_eff` is the
-local effective slope. The threshold is the smallest `d2H_precip`
-difference between two independent samples at the site that can be
-distinguished from within-record noise at 95 percent confidence. The
-spatial GP intercept is shared by all samples from the same site, so it
-cancels when the package compares two intervals from one record.
+local effective slope in per mil wax per per mil precipitation. The
+autocorrelation factor enters only the residual term, because analytical
+measurement error is independent between samples by construction. The
+threshold is the smallest `d2H_precip` difference between two
+independent samples at the site that can be distinguished from
+within-record noise at 95 percent confidence. The spatial GP intercept
+is shared by all samples from the same site, so it cancels when the
+package compares two intervals from one record.
 
 ## 1. Load both records
 
@@ -139,7 +142,7 @@ supplied by the user. A level can pass only if all lower levels pass.
 | Level | Claim being made | What must be shown |
 |----|----|----|
 | 1 | Wax `d2H` changed between two intervals. | The interval-mean wax contrast exceeds analytical uncertainty at the chosen confidence level, after the requested `rho_t` adjustment. |
-| 2 | The wax change is consistent with directional hydroclimate change. | Level 1 passes and `corroborating_proxies` contains named, non-empty evidence. |
+| 2 | The wax change is consistent with directional hydroclimate change. | Level 1 passes, **both** `sediment_source_ruled_out` and `depositional_artifact_ruled_out` carry independent record-specific evidence, AND **either** (a) `corroborating_proxies` contains named, non-empty evidence (the corroborating-evidence path), **or** (b) the observed `|delta_wax|` exceeds the absolute 97.5% upper bound of the vegetation-only envelope computed from a user-supplied `level2_vegetation_path$vegetation_scenario` and `oipc_ref` (the magnitude path; see Section 7b). |
 | 3 | The record supports a quantitative `d2H_precip` magnitude. | Level 2 passes, a defended `beta_eff` is supplied, the full inversion posterior is available, and the posterior probability of exceeding `magnitude_precip` meets the requested confidence level. |
 | 4 | The quantitative magnitude can be attributed to precipitation isotopes. | Level 3 passes and independent evidence supports stationary vegetation, source-water seasonality, and evapotranspirative enrichment over the interval. |
 
@@ -152,18 +155,27 @@ evidence and citations.
 
 [`local_effective_slope()`](https://bradleylab.github.io/leafwax/reference/local_effective_slope.md)
 returns one slope value for each posterior draw at the site. Each value
-combines the global `beta_oipc` draw with the spatial slope GP. The
-function returns the model draws directly; it does not cap or filter
-them. Passing the full vector to
+combines the global `beta_d2Hp` precipitation-isotope calibration slope
+with the spatial slope GP. The function converts the fitted standardized
+coefficient to per mil wax per per mil precipitation; it does not cap or
+filter the posterior draws. Passing the full vector to
 [`invert_d2H()`](https://bradleylab.github.io/leafwax/reference/invert_d2h.md)
-carries slope uncertainty into the reconstruction. Passing one number,
-such as the posterior median, gives a point-slope sensitivity run.
+preserves paired slope uncertainty in the likelihood mixture. Passing
+one number, such as the posterior median, gives a point-slope
+sensitivity run. Zero or negative values are retained; the Bayesian
+inverse does not divide by or clip individual slope draws.
 
 The examples below use `baseline_sp` (spatial intercepts + slope GP, no
-environmental predictors) for simplicity. `baseline_env_sp` is the
-companion variant whose detection thresholds appear in Figure 5 of the
-accompanying manuscript (Bradley 2026); switching `model_name` is the
-only change needed to use it.
+environmental predictors) because its new-site reconstruction design is
+complete. Calibration variants requiring precipitation amount, the
+elevation basis, PFT terms, or isotope interactions are currently
+refused by the inversion API rather than evaluated with missing or
+defaulted covariates.
+
+The full-posterior slope calculation is displayed but not evaluated when
+the source-package vignette is built because the bundled 100-draw
+fixture is deliberately blocked from inference. It runs after a complete
+posterior deposit has been installed.
 
 ``` r
 
@@ -186,24 +198,34 @@ rbind(
   sugan = quantile(slope_sugan, c(0.025, 0.5, 0.975)),
   sonk  = quantile(slope_sonk,  c(0.025, 0.5, 0.975))
 )
-#>            2.5%       50%     97.5%
-#> sugan 0.2453382 0.3878862 0.5338104
-#> sonk  0.3050322 0.4423601 0.5633999
 ```
 
 ## 5. Invert wax values to precipitation values
 
 [`invert_d2H()`](https://bradleylab.github.io/leafwax/reference/invert_d2h.md)
-uses the slope vector from the previous section. The `record_id`
-argument tells the function that all rows belong to one downcore record.
-`return_full = TRUE` keeps the posterior draws needed by
+combines the wax-isotope likelihood under every paired calibration draw
+with an explicit proper prior on `d2H_precip`. The prior must be
+defended for the record; the normal prior below is an executable
+example, not a package default. The `record_id` argument tells the
+function that all rows belong to one downcore record. All rows jointly
+update the shared calibration-draw weights. `return_full = TRUE`, a
+requested sample count, and an explicit seed produce the joint posterior
+draws needed by
 [`detect_change()`](https://bradleylab.github.io/leafwax/reference/detect_change.md).
 
-The inversion samples analytical uncertainty and the model residual SD.
-For contrasts within one record, the spatial GP intercept cancels
-because each sample uses the same site-level intercept draw.
+The likelihood contains analytical uncertainty and the fitted residual
+SD. For contrasts within one record, posterior samples use the same
+selected calibration draw across rows, so the shared spatial GP
+intercept cancels in a within-draw contrast.
+
+The remaining record-level chunks are displayed but not evaluated in the
+source-package vignette because the distributed 100-draw fixture is
+explicitly blocked from inference. They run only after a complete
+posterior deposit has been installed.
 
 ``` r
+
+record_prior <- d2h_prior_normal(mean = -70, sd = 30)
 
 recon_sugan <- suppressWarnings(invert_d2H(
   d2H_wax    = sugan$d2h_wax,
@@ -214,7 +236,10 @@ recon_sugan <- suppressWarnings(invert_d2H(
   n_posterior_draws = 100,
   slope        = slope_sugan,
   record_id    = "LS13WASU",
+  prior        = record_prior,
   return_full  = TRUE,
+  n_inverse_samples = 1000,
+  seed         = 20260801,
   verbose      = FALSE
 ))
 
@@ -227,7 +252,10 @@ recon_sonk <- suppressWarnings(invert_d2H(
   n_posterior_draws = 100,
   slope        = slope_sonk,
   record_id    = "LS14LASO",
+  prior        = record_prior,
   return_full  = TRUE,
+  n_inverse_samples = 1000,
+  seed         = 20260802,
   verbose      = FALSE
 ))
 ```
@@ -276,10 +304,6 @@ dc_sugan <- detect_change(
   confidence        = 0.95,
   magnitudes        = c(10, 30, 50)
 )
-#> Warning: leafwax preview posteriors in use (detect_change): 100 draws of
-#> 'baseline_sp'. Tail probabilities and 95% credible intervals are unstable at
-#> this sample size; not suitable for inference. Run
-#> download_model_data("baseline_sp") for the full posterior.
 
 rho_sonk <- estimate_temporal_autocorrelation(
   sonk$d2h_wax, sonk$age, method = "ar1"
@@ -297,10 +321,6 @@ dc_sonk <- detect_change(
   confidence        = 0.95,
   magnitudes        = c(10, 30, 50)
 )
-#> Warning: leafwax preview posteriors in use (detect_change): 100 draws of
-#> 'baseline_sp'. Tail probabilities and 95% credible intervals are unstable at
-#> this sample size; not suitable for inference. Run
-#> download_model_data("baseline_sp") for the full posterior.
 
 list(
   sugan = list(rho_t = round(rho_sugan, 3),
@@ -310,43 +330,13 @@ list(
               threshold_permil = round(dc_sonk$threshold, 1),
               intervals        = dc_sonk$intervals)
 )
-#> $sugan
-#> $sugan$rho_t
-#> [1] 0.203
-#> 
-#> $sugan$threshold_permil
-#> [1] 103.8
-#> 
-#> $sugan$intervals
-#>   interval n_baseline n_test delta_mean delta_median delta_lower delta_upper
-#> 1    older         41     37  -9.301603    -7.864667   -31.47903    8.930941
-#>   p_abs_delta_gt_10 p_abs_delta_gt_30 p_abs_delta_gt_50
-#> 1              0.48              0.04              0.01
-#> 
-#> 
-#> $sonk
-#> $sonk$rho_t
-#> [1] 0.716
-#> 
-#> $sonk$threshold_permil
-#> [1] 54.4
-#> 
-#> $sonk$intervals
-#>         interval n_baseline n_test delta_mean delta_median delta_lower
-#> 1 early_holocene         12     15  -137.2436    -137.8394   -200.0781
-#>   delta_upper p_abs_delta_gt_10 p_abs_delta_gt_30 p_abs_delta_gt_50
-#> 1    -94.7102                 1                 1                 1
 ```
 
-The two records differ. Sugan has lag-1 autocorrelation 0.2, a 95
-percent detection threshold of about 104 per mil, and posterior
-probability 0.04 for a 30 per mil shift. Sonk11D has lag-1
-autocorrelation 0.72, a threshold of about 54 per mil, and posterior
-probability 1.00 for a 30 per mil shift.
-
-In this example, the Sugan contrast is too small relative to calibration
-noise. The Sonk11D contrast is large enough for the 30 per mil
-quantitative claim to pass the posterior-probability test.
+The returned objects report the estimated lag-1 autocorrelation, the
+site-specific detection threshold, and the posterior probability that
+each interval contrast exceeds 30 per mil. These values are
+intentionally not embedded in the source-package vignette: they must be
+regenerated from the complete posterior deposit and the declared prior.
 
 ## 7. Assess a claim
 
@@ -367,6 +357,18 @@ build_claim <- function(beta_eff, rho_t, baseline, test, magnitude_precip) {
     confidence        = 0.95,
     beta_eff          = beta_eff,
     magnitude_precip  = magnitude_precip,
+    # Level 2 integrity gates: both must be ruled out by independent
+    # record-specific evidence regardless of which Level 2 path is used.
+    sediment_source_ruled_out = list(
+      value    = TRUE,
+      evidence = "grain size and mineralogy stable across the interval"
+    ),
+    depositional_artifact_ruled_out = list(
+      value    = TRUE,
+      evidence = "continuous varved sequence with no erosional unconformity"
+    ),
+    # Level 2 path (a): corroborating evidence against vegetation
+    # reorganization.
     corroborating_proxies = list(
       regional_proxy = "regional records show coeval shift"
     ),
@@ -418,18 +420,119 @@ c(sugan_highest_level  = verdict_sugan$highest_level,
   sugan_supported_at_4 = verdict_sugan$asserted_supported,
   sonk_highest_level   = verdict_sonk$highest_level,
   sonk_supported_at_4  = verdict_sonk$asserted_supported)
-#>  sugan_highest_level sugan_supported_at_4   sonk_highest_level 
-#>                    0                    0                    4 
-#>  sonk_supported_at_4 
-#>                    1
 ```
 
 Read `verdict$levels` from top to bottom. Each row reports whether a
-level passed and, if it failed, why. In this run, Sugan fails at the
-wax-change step. Sonk11D clears Level 4 because the interval contrast is
-large and the example supplies stationarity evidence. The stationarity
-strings are placeholders; a real Level 4 claim needs record-specific
-evidence and citations.
+level passed and, if it failed, why. The verdict is conditional on the
+complete posterior deposit, the declared inversion prior, and the
+supplied evidence. The stationarity strings are placeholders; a real
+Level 4 claim needs record-specific evidence and citations.
+
+## 7b. Magnitude path: rejecting vegetation as the sole explanation
+
+The Level 2 corroborating-evidence path (section 7 above) requires the
+user to name an independent line of evidence against vegetation
+reorganization. When such evidence is not available, the package
+provides a **magnitude path**: given a user-supplied PFT-change scenario
+for the interval,
+[`compute_vegetation_envelope()`](https://bradleylab.github.io/leafwax/reference/compute_vegetation_envelope.md)
+bounds how much wax contrast vegetation reorganization alone can produce
+at the site, with `d2H_precip` held constant by construction. If the
+observed `|delta_wax|` exceeds the absolute 97.5% upper bound of that
+envelope, vegetation-only causation is rejected for the supplied
+scenario. Manuscript Supplementary Section S8.2 motivates the
+vegetation-only framing; the four-level claim taxonomy is an additional
+package workflow.
+
+What passing the magnitude path rejects: a vegetation-only explanation
+of the contrast under the supplied scenario. What it does **not** do:
+identify the hydroclimate mechanism, quantify the precipitation-isotope
+change, or address sediment-source change, depositional artifact,
+compound-source mixing, age-model errors, evapotranspirative regime
+change, or seasonality shifts. The two integrity gates
+(`sediment_source_ruled_out`, `depositional_artifact_ruled_out`) and the
+Level 4 stationarity-evidence fields remain the user’s responsibility.
+The calibration coefficients are derived from spatial variation across
+sites; applying them to within-record temporal vegetation change assumes
+the same response holds through time at one location.
+
+The function takes `oipc_ref` as a numeric scalar (the
+calibration-period `d2H_precip` at the site, per mil), so the user is in
+control of which OIPC raster product, version, and resampling method is
+used. A typical workflow extracts a single value from the OIPC raster
+(Bowen and Wilkinson 2002) using `terra::extract()` outside the package
+before passing it in. The example below uses a hypothetical value so the
+vignette compiles offline.
+
+``` r
+
+# Hypothetical OIPC value at Sonk11D. In a real analysis, extract from
+# the OIPC raster at (sonk_lon, sonk_lat) using terra::extract().
+sonk_oipc_ref <- -75   # per mil, illustrative only
+
+# Hypothetical regional pollen scenario: a 30 percentage-point
+# woody-to-grass transition across the interval, with a moderate C4
+# increase. Names must be exactly tree, shrub, grass, C4 (case-sensitive).
+env_sonk <- suppressWarnings(compute_vegetation_envelope(
+  oipc_ref   = sonk_oipc_ref,
+  from       = c(tree = 0.4, shrub = 0.3, grass = 0.2, C4 = 0.05),
+  to         = c(tree = 0.1, shrub = 0.2, grass = 0.5, C4 = 0.20),
+  model_name = "full_interact_sp",
+  n_draws    = 100,
+  verbose    = FALSE
+))
+
+c(envelope_median   = env_sonk$envelope_median,
+  envelope_p975_abs = env_sonk$envelope_p975_abs)
+```
+
+A Level 2 claim built on this path supplies the same two integrity gates
+plus a `level2_vegetation_path$vegetation_scenario` and the top-level
+`oipc_ref`. The package treats this path as equivalent to the
+corroborating-evidence path; in either case, the user remains
+responsible for defending the supplied evidence or vegetation scenario.
+
+``` r
+
+sonk_claim_magnitude <- list(
+  level             = 2,
+  interval_baseline = c(4000, 5000),
+  interval_test     = c(5000, 6000),
+  sigma_analytical  = 3,
+  rho_t             = rho_sonk,
+  confidence        = 0.95,
+  sediment_source_ruled_out = list(
+    value    = TRUE,
+    evidence = "grain size + mineralogy stable across the interval"
+  ),
+  depositional_artifact_ruled_out = list(
+    value    = TRUE,
+    evidence = "continuous varved sequence; no unconformity at the boundary"
+  ),
+  oipc_ref = sonk_oipc_ref,
+  level2_vegetation_path = list(
+    vegetation_scenario = list(
+      from = c(tree = 0.4, shrub = 0.3, grass = 0.2, C4 = 0.05),
+      to   = c(tree = 0.1, shrub = 0.2, grass = 0.5, C4 = 0.20),
+      evidence = "hypothetical 30-pp woody-to-grass scenario for the vignette"
+    )
+  )
+)
+
+verdict_sonk_magnitude <- suppressWarnings(assess_claim(
+  record = sonk_record,
+  claim  = sonk_claim_magnitude
+))
+
+c(highest_level = verdict_sonk_magnitude$highest_level,
+  l2_passed     = verdict_sonk_magnitude$levels$passed[2])
+```
+
+When `verdict_sonk_magnitude$levels$summary[2]` reports a pass, the text
+spells out the comparison and reiterates the Supplementary Section S8.2
+caveats. A real analysis would replace the hypothetical PFT scenario
+with one derived from local or regional pollen data, and `oipc_ref` with
+the value extracted from the user’s chosen OIPC product.
 
 ## 8. Plot the reconstructions
 
@@ -474,12 +577,6 @@ plot_recon(recon_sugan, sugan$age,
 plot_recon(recon_sonk, sonk$age,
            "Sonk11D (LS14LASO): large 4-6 ka contrast",
            boundary = 5000, ylim = precip_ylim)
-```
-
-![](paleo-record-workflow_files/figure-html/plot-1.png)
-
-``` r
-
 
 par(op)
 ```

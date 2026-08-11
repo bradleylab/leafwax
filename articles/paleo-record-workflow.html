@@ -7,8 +7,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <title>When can a leaf-wax record support a precipitation-isotope claim? • leafwax</title>
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
-<script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
+<link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
+<script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="When can a leaf-wax record support a precipitation-isotope claim?">
 </head>
@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">leafwax</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.2.4</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.4.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -107,19 +107,22 @@ script is in <code>data-raw/</code>.</p>
 <p>The Iso2k compilation is archived at <a href="https://doi.org/10.25921/57j8-vs18" class="external-link">doi:10.25921/57j8-vs18</a>.</p>
 <p><code><a href="../reference/detect_change.html">detect_change()</a></code> uses this per-sample detection
 threshold:</p>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mrow><mi mathvariant="normal">t</mi><mi mathvariant="normal">h</mi><mi mathvariant="normal">r</mi><mi mathvariant="normal">e</mi><mi mathvariant="normal">s</mi><mi mathvariant="normal">h</mi><mi mathvariant="normal">o</mi><mi mathvariant="normal">l</mi><mi mathvariant="normal">d</mi></mrow><mrow><mi mathvariant="normal">p</mi><mi mathvariant="normal">r</mi><mi mathvariant="normal">e</mi><mi mathvariant="normal">c</mi><mi mathvariant="normal">i</mi><mi mathvariant="normal">p</mi></mrow></msub><mo>=</mo><mfrac><mrow><mn>1.96</mn><msqrt><mrow><mn>2</mn><mo stretchy="false" form="prefix">(</mo><mn>1</mn><mo>−</mo><msub><mi>ρ</mi><mi>t</mi></msub><mo stretchy="false" form="postfix">)</mo></mrow></msqrt><mspace width="0.167em"></mspace><msqrt><mrow><msubsup><mi>σ</mi><mrow><mi mathvariant="normal">r</mi><mi mathvariant="normal">e</mi><mi mathvariant="normal">s</mi><mi mathvariant="normal">i</mi><mi mathvariant="normal">d</mi><mi mathvariant="normal">u</mi><mi mathvariant="normal">a</mi><mi mathvariant="normal">l</mi></mrow><mn>2</mn></msubsup><mo>+</mo><msubsup><mi>σ</mi><mrow><mi mathvariant="normal">a</mi><mi mathvariant="normal">n</mi><mi mathvariant="normal">a</mi><mi mathvariant="normal">l</mi><mi mathvariant="normal">y</mi><mi mathvariant="normal">t</mi><mi mathvariant="normal">i</mi><mi mathvariant="normal">c</mi><mi mathvariant="normal">a</mi><mi mathvariant="normal">l</mi></mrow><mn>2</mn></msubsup></mrow></msqrt></mrow><msub><mi>β</mi><mrow><mi mathvariant="normal">e</mi><mi mathvariant="normal">f</mi><mi mathvariant="normal">f</mi></mrow></msub></mfrac></mrow><annotation encoding="application/x-tex">
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mrow><mi mathvariant="normal">t</mi><mi mathvariant="normal">h</mi><mi mathvariant="normal">r</mi><mi mathvariant="normal">e</mi><mi mathvariant="normal">s</mi><mi mathvariant="normal">h</mi><mi mathvariant="normal">o</mi><mi mathvariant="normal">l</mi><mi mathvariant="normal">d</mi></mrow><mrow><mi mathvariant="normal">p</mi><mi mathvariant="normal">r</mi><mi mathvariant="normal">e</mi><mi mathvariant="normal">c</mi><mi mathvariant="normal">i</mi><mi mathvariant="normal">p</mi></mrow></msub><mo>=</mo><mfrac><mrow><mn>1.96</mn><msqrt><mrow><mn>2</mn><msubsup><mi>σ</mi><mrow><mi mathvariant="normal">r</mi><mi mathvariant="normal">e</mi><mi mathvariant="normal">s</mi><mi mathvariant="normal">i</mi><mi mathvariant="normal">d</mi><mi mathvariant="normal">u</mi><mi mathvariant="normal">a</mi><mi mathvariant="normal">l</mi></mrow><mn>2</mn></msubsup><mo stretchy="false" form="prefix">(</mo><mn>1</mn><mo>−</mo><msub><mi>ρ</mi><mi>t</mi></msub><mo stretchy="false" form="postfix">)</mo><mo>+</mo><mn>2</mn><msubsup><mi>σ</mi><mrow><mi mathvariant="normal">a</mi><mi mathvariant="normal">n</mi><mi mathvariant="normal">a</mi><mi mathvariant="normal">l</mi><mi mathvariant="normal">y</mi><mi mathvariant="normal">t</mi><mi mathvariant="normal">i</mi><mi mathvariant="normal">c</mi><mi mathvariant="normal">a</mi><mi mathvariant="normal">l</mi></mrow><mn>2</mn></msubsup></mrow></msqrt></mrow><msub><mi>β</mi><mrow><mi mathvariant="normal">e</mi><mi mathvariant="normal">f</mi><mi mathvariant="normal">f</mi></mrow></msub></mfrac></mrow><annotation encoding="application/x-tex">
 \mathrm{threshold}_{\mathrm{precip}}
-= \frac{1.96 \sqrt{2(1 - \rho_t)}\, \sqrt{\sigma_{\mathrm{residual}}^2 + \sigma_{\mathrm{analytical}}^2}}{\beta_{\mathrm{eff}}}
+= \frac{1.96 \sqrt{2 \sigma_{\mathrm{residual}}^2 (1 - \rho_t) + 2 \sigma_{\mathrm{analytical}}^2}}{\beta_{\mathrm{eff}}}
 </annotation></semantics></math></p>
 <p>Here <code>rho_t</code> is the lag-1 temporal autocorrelation,
 <code>sigma_residual</code> is the calibration residual SD on the wax
 scale, <code>sigma_analytical</code> is the analytical uncertainty on
 the wax measurements, and <code>beta_eff</code> is the local effective
-slope. The threshold is the smallest <code>d2H_precip</code> difference
-between two independent samples at the site that can be distinguished
-from within-record noise at 95 percent confidence. The spatial GP
-intercept is shared by all samples from the same site, so it cancels
-when the package compares two intervals from one record.</p>
+slope in per mil wax per per mil precipitation. The autocorrelation
+factor enters only the residual term, because analytical measurement
+error is independent between samples by construction. The threshold is
+the smallest <code>d2H_precip</code> difference between two independent
+samples at the site that can be distinguished from within-record noise
+at 95 percent confidence. The spatial GP intercept is shared by all
+samples from the same site, so it cancels when the package compares two
+intervals from one record.</p>
 <div class="section level2">
 <h2 id="load-both-records">1. Load both records<a class="anchor" aria-label="anchor" href="#load-both-records"></a>
 </h2>
@@ -233,8 +236,16 @@ adjustment.</td>
 <td>2</td>
 <td>The wax change is consistent with directional hydroclimate
 change.</td>
-<td>Level 1 passes and <code>corroborating_proxies</code> contains
-named, non-empty evidence.</td>
+<td>Level 1 passes, <strong>both</strong>
+<code>sediment_source_ruled_out</code> and
+<code>depositional_artifact_ruled_out</code> carry independent
+record-specific evidence, AND <strong>either</strong> (a)
+<code>corroborating_proxies</code> contains named, non-empty evidence
+(the corroborating-evidence path), <strong>or</strong> (b) the observed
+<code>|delta_wax|</code> exceeds the absolute 97.5% upper bound of the
+vegetation-only envelope computed from a user-supplied
+<code>level2_vegetation_path$vegetation_scenario</code> and
+<code>oipc_ref</code> (the magnitude path; see Section 7b).</td>
 </tr>
 <tr class="odd">
 <td>3</td>
@@ -265,17 +276,25 @@ evidence and citations.</p>
 </h2>
 <p><code><a href="../reference/local_effective_slope.html">local_effective_slope()</a></code> returns one slope value for each
 posterior draw at the site. Each value combines the global
-<code>beta_oipc</code> draw with the spatial slope GP. The function
-returns the model draws directly; it does not cap or filter them.
-Passing the full vector to <code><a href="../reference/invert_d2h.html">invert_d2H()</a></code> carries slope
-uncertainty into the reconstruction. Passing one number, such as the
-posterior median, gives a point-slope sensitivity run.</p>
+<code>beta_d2Hp</code> precipitation-isotope calibration slope with the
+spatial slope GP. The function converts the fitted standardized
+coefficient to per mil wax per per mil precipitation; it does not cap or
+filter the posterior draws. Passing the full vector to
+<code><a href="../reference/invert_d2h.html">invert_d2H()</a></code> preserves paired slope uncertainty in the
+likelihood mixture. Passing one number, such as the posterior median,
+gives a point-slope sensitivity run. Zero or negative values are
+retained; the Bayesian inverse does not divide by or clip individual
+slope draws.</p>
 <p>The examples below use <code>baseline_sp</code> (spatial intercepts +
-slope GP, no environmental predictors) for simplicity.
-<code>baseline_env_sp</code> is the companion variant whose detection
-thresholds appear in Figure 5 of the accompanying manuscript (Bradley
-2026); switching <code>model_name</code> is the only change needed to
-use it.</p>
+slope GP, no environmental predictors) because its new-site
+reconstruction design is complete. Calibration variants requiring
+precipitation amount, the elevation basis, PFT terms, or isotope
+interactions are currently refused by the inversion API rather than
+evaluated with missing or defaulted covariates.</p>
+<p>The full-posterior slope calculation is displayed but not evaluated
+when the source-package vignette is built because the bundled 100-draw
+fixture is deliberately blocked from inference. It runs after a complete
+posterior deposit has been installed.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">sugan_lon</span> <span class="op">&lt;-</span> <span class="fl">93.95</span>;   <span class="va">sugan_lat</span> <span class="op">&lt;-</span> <span class="fl">38.8667</span></span>
 <span><span class="va">sonk_lon</span>  <span class="op">&lt;-</span> <span class="fl">75.1961</span>; <span class="va">sonk_lat</span>  <span class="op">&lt;-</span> <span class="fl">41.7939</span></span>
@@ -295,23 +314,32 @@ use it.</p>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">rbind</a></span><span class="op">(</span></span>
 <span>  sugan <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/quantile.html" class="external-link">quantile</a></span><span class="op">(</span><span class="va">slope_sugan</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.025</span>, <span class="fl">0.5</span>, <span class="fl">0.975</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  sonk  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/quantile.html" class="external-link">quantile</a></span><span class="op">(</span><span class="va">slope_sonk</span>,  <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.025</span>, <span class="fl">0.5</span>, <span class="fl">0.975</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="op">)</span></span>
-<span><span class="co">#&gt;            2.5%       50%     97.5%</span></span>
-<span><span class="co">#&gt; sugan 0.2453382 0.3878862 0.5338104</span></span>
-<span><span class="co">#&gt; sonk  0.3050322 0.4423601 0.5633999</span></span></code></pre></div>
+<span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="invert-wax-values-to-precipitation-values">5. Invert wax values to precipitation values<a class="anchor" aria-label="anchor" href="#invert-wax-values-to-precipitation-values"></a>
 </h2>
-<p><code><a href="../reference/invert_d2h.html">invert_d2H()</a></code> uses the slope vector from the previous
-section. The <code>record_id</code> argument tells the function that all
-rows belong to one downcore record. <code>return_full = TRUE</code>
-keeps the posterior draws needed by <code><a href="../reference/detect_change.html">detect_change()</a></code>.</p>
-<p>The inversion samples analytical uncertainty and the model residual
-SD. For contrasts within one record, the spatial GP intercept cancels
-because each sample uses the same site-level intercept draw.</p>
+<p><code><a href="../reference/invert_d2h.html">invert_d2H()</a></code> combines the wax-isotope likelihood under
+every paired calibration draw with an explicit proper prior on
+<code>d2H_precip</code>. The prior must be defended for the record; the
+normal prior below is an executable example, not a package default. The
+<code>record_id</code> argument tells the function that all rows belong
+to one downcore record. All rows jointly update the shared
+calibration-draw weights. <code>return_full = TRUE</code>, a requested
+sample count, and an explicit seed produce the joint posterior draws
+needed by <code><a href="../reference/detect_change.html">detect_change()</a></code>.</p>
+<p>The likelihood contains analytical uncertainty and the fitted
+residual SD. For contrasts within one record, posterior samples use the
+same selected calibration draw across rows, so the shared spatial GP
+intercept cancels in a within-draw contrast.</p>
+<p>The remaining record-level chunks are displayed but not evaluated in
+the source-package vignette because the distributed 100-draw fixture is
+explicitly blocked from inference. They run only after a complete
+posterior deposit has been installed.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">recon_sugan</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/warning.html" class="external-link">suppressWarnings</a></span><span class="op">(</span><span class="fu"><a href="../reference/invert_d2h.html">invert_d2H</a></span><span class="op">(</span></span>
+<code class="sourceCode R"><span><span class="va">record_prior</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/d2h_prior_normal.html">d2h_prior_normal</a></span><span class="op">(</span>mean <span class="op">=</span> <span class="op">-</span><span class="fl">70</span>, sd <span class="op">=</span> <span class="fl">30</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">recon_sugan</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/warning.html" class="external-link">suppressWarnings</a></span><span class="op">(</span><span class="fu"><a href="../reference/invert_d2h.html">invert_d2H</a></span><span class="op">(</span></span>
 <span>  d2H_wax    <span class="op">=</span> <span class="va">sugan</span><span class="op">$</span><span class="va">d2h_wax</span>,</span>
 <span>  d2H_wax_sd <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">3</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">sugan</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  longitude  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="va">sugan_lon</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">sugan</span><span class="op">)</span><span class="op">)</span>,</span>
@@ -320,7 +348,10 @@ because each sample uses the same site-level intercept draw.</p>
 <span>  n_posterior_draws <span class="op">=</span> <span class="fl">100</span>,</span>
 <span>  slope        <span class="op">=</span> <span class="va">slope_sugan</span>,</span>
 <span>  record_id    <span class="op">=</span> <span class="st">"LS13WASU"</span>,</span>
+<span>  prior        <span class="op">=</span> <span class="va">record_prior</span>,</span>
 <span>  return_full  <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  n_inverse_samples <span class="op">=</span> <span class="fl">1000</span>,</span>
+<span>  seed         <span class="op">=</span> <span class="fl">20260801</span>,</span>
 <span>  verbose      <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
@@ -333,7 +364,10 @@ because each sample uses the same site-level intercept draw.</p>
 <span>  n_posterior_draws <span class="op">=</span> <span class="fl">100</span>,</span>
 <span>  slope        <span class="op">=</span> <span class="va">slope_sonk</span>,</span>
 <span>  record_id    <span class="op">=</span> <span class="st">"LS14LASO"</span>,</span>
+<span>  prior        <span class="op">=</span> <span class="va">record_prior</span>,</span>
 <span>  return_full  <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  n_inverse_samples <span class="op">=</span> <span class="fl">1000</span>,</span>
+<span>  seed         <span class="op">=</span> <span class="fl">20260802</span>,</span>
 <span>  verbose      <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 </div>
@@ -379,10 +413,6 @@ a much larger contrast.</p>
 <span>  confidence        <span class="op">=</span> <span class="fl">0.95</span>,</span>
 <span>  magnitudes        <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">10</span>, <span class="fl">30</span>, <span class="fl">50</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
-<span><span class="co">#&gt; Warning: leafwax preview posteriors in use (detect_change): 100 draws of</span></span>
-<span><span class="co">#&gt; 'baseline_sp'. Tail probabilities and 95% credible intervals are unstable at</span></span>
-<span><span class="co">#&gt; this sample size; not suitable for inference. Run</span></span>
-<span><span class="co">#&gt; download_model_data("baseline_sp") for the full posterior.</span></span>
 <span></span>
 <span><span class="va">rho_sonk</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_temporal_autocorrelation.html">estimate_temporal_autocorrelation</a></span><span class="op">(</span></span>
 <span>  <span class="va">sonk</span><span class="op">$</span><span class="va">d2h_wax</span>, <span class="va">sonk</span><span class="op">$</span><span class="va">age</span>, method <span class="op">=</span> <span class="st">"ar1"</span></span>
@@ -400,10 +430,6 @@ a much larger contrast.</p>
 <span>  confidence        <span class="op">=</span> <span class="fl">0.95</span>,</span>
 <span>  magnitudes        <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">10</span>, <span class="fl">30</span>, <span class="fl">50</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
-<span><span class="co">#&gt; Warning: leafwax preview posteriors in use (detect_change): 100 draws of</span></span>
-<span><span class="co">#&gt; 'baseline_sp'. Tail probabilities and 95% credible intervals are unstable at</span></span>
-<span><span class="co">#&gt; this sample size; not suitable for inference. Run</span></span>
-<span><span class="co">#&gt; download_model_data("baseline_sp") for the full posterior.</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>  sugan <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>rho_t <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">rho_sugan</span>, <span class="fl">3</span><span class="op">)</span>,</span>
@@ -412,41 +438,13 @@ a much larger contrast.</p>
 <span>  sonk <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>rho_t <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">rho_sonk</span>, <span class="fl">3</span><span class="op">)</span>,</span>
 <span>              threshold_permil <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">dc_sonk</span><span class="op">$</span><span class="va">threshold</span>, <span class="fl">1</span><span class="op">)</span>,</span>
 <span>              intervals        <span class="op">=</span> <span class="va">dc_sonk</span><span class="op">$</span><span class="va">intervals</span><span class="op">)</span></span>
-<span><span class="op">)</span></span>
-<span><span class="co">#&gt; $sugan</span></span>
-<span><span class="co">#&gt; $sugan$rho_t</span></span>
-<span><span class="co">#&gt; [1] 0.203</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $sugan$threshold_permil</span></span>
-<span><span class="co">#&gt; [1] 103.8</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $sugan$intervals</span></span>
-<span><span class="co">#&gt;   interval n_baseline n_test delta_mean delta_median delta_lower delta_upper</span></span>
-<span><span class="co">#&gt; 1    older         41     37  -9.301603    -7.864667   -31.47903    8.930941</span></span>
-<span><span class="co">#&gt;   p_abs_delta_gt_10 p_abs_delta_gt_30 p_abs_delta_gt_50</span></span>
-<span><span class="co">#&gt; 1              0.48              0.04              0.01</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $sonk</span></span>
-<span><span class="co">#&gt; $sonk$rho_t</span></span>
-<span><span class="co">#&gt; [1] 0.716</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $sonk$threshold_permil</span></span>
-<span><span class="co">#&gt; [1] 54.4</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $sonk$intervals</span></span>
-<span><span class="co">#&gt;         interval n_baseline n_test delta_mean delta_median delta_lower</span></span>
-<span><span class="co">#&gt; 1 early_holocene         12     15  -137.2436    -137.8394   -200.0781</span></span>
-<span><span class="co">#&gt;   delta_upper p_abs_delta_gt_10 p_abs_delta_gt_30 p_abs_delta_gt_50</span></span>
-<span><span class="co">#&gt; 1    -94.7102                 1                 1                 1</span></span></code></pre></div>
-<p>The two records differ. Sugan has lag-1 autocorrelation 0.2, a 95
-percent detection threshold of about 104 per mil, and posterior
-probability 0.04 for a 30 per mil shift. Sonk11D has lag-1
-autocorrelation 0.72, a threshold of about 54 per mil, and posterior
-probability 1.00 for a 30 per mil shift.</p>
-<p>In this example, the Sugan contrast is too small relative to
-calibration noise. The Sonk11D contrast is large enough for the 30 per
-mil quantitative claim to pass the posterior-probability test.</p>
+<span><span class="op">)</span></span></code></pre></div>
+<p>The returned objects report the estimated lag-1 autocorrelation, the
+site-specific detection threshold, and the posterior probability that
+each interval contrast exceeds 30 per mil. These values are
+intentionally not embedded in the source-package vignette: they must be
+regenerated from the complete posterior deposit and the declared
+prior.</p>
 </div>
 <div class="section level2">
 <h2 id="assess-a-claim">7. Assess a claim<a class="anchor" aria-label="anchor" href="#assess-a-claim"></a>
@@ -466,6 +464,18 @@ record-specific literature review.</p>
 <span>    confidence        <span class="op">=</span> <span class="fl">0.95</span>,</span>
 <span>    beta_eff          <span class="op">=</span> <span class="va">beta_eff</span>,</span>
 <span>    magnitude_precip  <span class="op">=</span> <span class="va">magnitude_precip</span>,</span>
+<span>    <span class="co"># Level 2 integrity gates: both must be ruled out by independent</span></span>
+<span>    <span class="co"># record-specific evidence regardless of which Level 2 path is used.</span></span>
+<span>    sediment_source_ruled_out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>      value    <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>      evidence <span class="op">=</span> <span class="st">"grain size and mineralogy stable across the interval"</span></span>
+<span>    <span class="op">)</span>,</span>
+<span>    depositional_artifact_ruled_out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>      value    <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>      evidence <span class="op">=</span> <span class="st">"continuous varved sequence with no erosional unconformity"</span></span>
+<span>    <span class="op">)</span>,</span>
+<span>    <span class="co"># Level 2 path (a): corroborating evidence against vegetation</span></span>
+<span>    <span class="co"># reorganization.</span></span>
 <span>    corroborating_proxies <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>      regional_proxy <span class="op">=</span> <span class="st">"regional records show coeval shift"</span></span>
 <span>    <span class="op">)</span>,</span>
@@ -516,22 +526,119 @@ record-specific literature review.</p>
 <span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>sugan_highest_level  <span class="op">=</span> <span class="va">verdict_sugan</span><span class="op">$</span><span class="va">highest_level</span>,</span>
 <span>  sugan_supported_at_4 <span class="op">=</span> <span class="va">verdict_sugan</span><span class="op">$</span><span class="va">asserted_supported</span>,</span>
 <span>  sonk_highest_level   <span class="op">=</span> <span class="va">verdict_sonk</span><span class="op">$</span><span class="va">highest_level</span>,</span>
-<span>  sonk_supported_at_4  <span class="op">=</span> <span class="va">verdict_sonk</span><span class="op">$</span><span class="va">asserted_supported</span><span class="op">)</span></span>
-<span><span class="co">#&gt;  sugan_highest_level sugan_supported_at_4   sonk_highest_level </span></span>
-<span><span class="co">#&gt;                    0                    0                    4 </span></span>
-<span><span class="co">#&gt;  sonk_supported_at_4 </span></span>
-<span><span class="co">#&gt;                    1</span></span></code></pre></div>
+<span>  sonk_supported_at_4  <span class="op">=</span> <span class="va">verdict_sonk</span><span class="op">$</span><span class="va">asserted_supported</span><span class="op">)</span></span></code></pre></div>
 <p>Read <code>verdict$levels</code> from top to bottom. Each row reports
-whether a level passed and, if it failed, why. In this run, Sugan fails
-at the wax-change step. Sonk11D clears Level 4 because the interval
-contrast is large and the example supplies stationarity evidence. The
-stationarity strings are placeholders; a real Level 4 claim needs
-record-specific evidence and citations.</p>
+whether a level passed and, if it failed, why. The verdict is
+conditional on the complete posterior deposit, the declared inversion
+prior, and the supplied evidence. The stationarity strings are
+placeholders; a real Level 4 claim needs record-specific evidence and
+citations.</p>
+</div>
+<div class="section level2">
+<h2 id="b--magnitude-path-rejecting-vegetation-as-the-sole-explanation">7b. Magnitude path: rejecting vegetation as the sole
+explanation<a class="anchor" aria-label="anchor" href="#b--magnitude-path-rejecting-vegetation-as-the-sole-explanation"></a>
+</h2>
+<p>The Level 2 corroborating-evidence path (section 7 above) requires
+the user to name an independent line of evidence against vegetation
+reorganization. When such evidence is not available, the package
+provides a <strong>magnitude path</strong>: given a user-supplied
+PFT-change scenario for the interval,
+<code><a href="../reference/compute_vegetation_envelope.html">compute_vegetation_envelope()</a></code> bounds how much wax contrast
+vegetation reorganization alone can produce at the site, with
+<code>d2H_precip</code> held constant by construction. If the observed
+<code>|delta_wax|</code> exceeds the absolute 97.5% upper bound of that
+envelope, vegetation-only causation is rejected for the supplied
+scenario. Manuscript Supplementary Section S8.2 motivates the
+vegetation-only framing; the four-level claim taxonomy is an additional
+package workflow.</p>
+<p>What passing the magnitude path rejects: a vegetation-only
+explanation of the contrast under the supplied scenario. What it does
+<strong>not</strong> do: identify the hydroclimate mechanism, quantify
+the precipitation-isotope change, or address sediment-source change,
+depositional artifact, compound-source mixing, age-model errors,
+evapotranspirative regime change, or seasonality shifts. The two
+integrity gates (<code>sediment_source_ruled_out</code>,
+<code>depositional_artifact_ruled_out</code>) and the Level 4
+stationarity-evidence fields remain the user’s responsibility. The
+calibration coefficients are derived from spatial variation across
+sites; applying them to within-record temporal vegetation change assumes
+the same response holds through time at one location.</p>
+<p>The function takes <code>oipc_ref</code> as a numeric scalar (the
+calibration-period <code>d2H_precip</code> at the site, per mil), so the
+user is in control of which OIPC raster product, version, and resampling
+method is used. A typical workflow extracts a single value from the OIPC
+raster (Bowen and Wilkinson 2002) using <code>terra::extract()</code>
+outside the package before passing it in. The example below uses a
+hypothetical value so the vignette compiles offline.</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Hypothetical OIPC value at Sonk11D. In a real analysis, extract from</span></span>
+<span><span class="co"># the OIPC raster at (sonk_lon, sonk_lat) using terra::extract().</span></span>
+<span><span class="va">sonk_oipc_ref</span> <span class="op">&lt;-</span> <span class="op">-</span><span class="fl">75</span>   <span class="co"># per mil, illustrative only</span></span>
+<span></span>
+<span><span class="co"># Hypothetical regional pollen scenario: a 30 percentage-point</span></span>
+<span><span class="co"># woody-to-grass transition across the interval, with a moderate C4</span></span>
+<span><span class="co"># increase. Names must be exactly tree, shrub, grass, C4 (case-sensitive).</span></span>
+<span><span class="va">env_sonk</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/warning.html" class="external-link">suppressWarnings</a></span><span class="op">(</span><span class="fu"><a href="../reference/compute_vegetation_envelope.html">compute_vegetation_envelope</a></span><span class="op">(</span></span>
+<span>  oipc_ref   <span class="op">=</span> <span class="va">sonk_oipc_ref</span>,</span>
+<span>  from       <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>tree <span class="op">=</span> <span class="fl">0.4</span>, shrub <span class="op">=</span> <span class="fl">0.3</span>, grass <span class="op">=</span> <span class="fl">0.2</span>, C4 <span class="op">=</span> <span class="fl">0.05</span><span class="op">)</span>,</span>
+<span>  to         <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>tree <span class="op">=</span> <span class="fl">0.1</span>, shrub <span class="op">=</span> <span class="fl">0.2</span>, grass <span class="op">=</span> <span class="fl">0.5</span>, C4 <span class="op">=</span> <span class="fl">0.20</span><span class="op">)</span>,</span>
+<span>  model_name <span class="op">=</span> <span class="st">"full_interact_sp"</span>,</span>
+<span>  n_draws    <span class="op">=</span> <span class="fl">100</span>,</span>
+<span>  verbose    <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>envelope_median   <span class="op">=</span> <span class="va">env_sonk</span><span class="op">$</span><span class="va">envelope_median</span>,</span>
+<span>  envelope_p975_abs <span class="op">=</span> <span class="va">env_sonk</span><span class="op">$</span><span class="va">envelope_p975_abs</span><span class="op">)</span></span></code></pre></div>
+<p>A Level 2 claim built on this path supplies the same two integrity
+gates plus a <code>level2_vegetation_path$vegetation_scenario</code> and
+the top-level <code>oipc_ref</code>. The package treats this path as
+equivalent to the corroborating-evidence path; in either case, the user
+remains responsible for defending the supplied evidence or vegetation
+scenario.</p>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">sonk_claim_magnitude</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>  level             <span class="op">=</span> <span class="fl">2</span>,</span>
+<span>  interval_baseline <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">4000</span>, <span class="fl">5000</span><span class="op">)</span>,</span>
+<span>  interval_test     <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">5000</span>, <span class="fl">6000</span><span class="op">)</span>,</span>
+<span>  sigma_analytical  <span class="op">=</span> <span class="fl">3</span>,</span>
+<span>  rho_t             <span class="op">=</span> <span class="va">rho_sonk</span>,</span>
+<span>  confidence        <span class="op">=</span> <span class="fl">0.95</span>,</span>
+<span>  sediment_source_ruled_out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>    value    <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>    evidence <span class="op">=</span> <span class="st">"grain size + mineralogy stable across the interval"</span></span>
+<span>  <span class="op">)</span>,</span>
+<span>  depositional_artifact_ruled_out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>    value    <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>    evidence <span class="op">=</span> <span class="st">"continuous varved sequence; no unconformity at the boundary"</span></span>
+<span>  <span class="op">)</span>,</span>
+<span>  oipc_ref <span class="op">=</span> <span class="va">sonk_oipc_ref</span>,</span>
+<span>  level2_vegetation_path <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>    vegetation_scenario <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>      from <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>tree <span class="op">=</span> <span class="fl">0.4</span>, shrub <span class="op">=</span> <span class="fl">0.3</span>, grass <span class="op">=</span> <span class="fl">0.2</span>, C4 <span class="op">=</span> <span class="fl">0.05</span><span class="op">)</span>,</span>
+<span>      to   <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>tree <span class="op">=</span> <span class="fl">0.1</span>, shrub <span class="op">=</span> <span class="fl">0.2</span>, grass <span class="op">=</span> <span class="fl">0.5</span>, C4 <span class="op">=</span> <span class="fl">0.20</span><span class="op">)</span>,</span>
+<span>      evidence <span class="op">=</span> <span class="st">"hypothetical 30-pp woody-to-grass scenario for the vignette"</span></span>
+<span>    <span class="op">)</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">verdict_sonk_magnitude</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/warning.html" class="external-link">suppressWarnings</a></span><span class="op">(</span><span class="fu"><a href="../reference/assess_claim.html">assess_claim</a></span><span class="op">(</span></span>
+<span>  record <span class="op">=</span> <span class="va">sonk_record</span>,</span>
+<span>  claim  <span class="op">=</span> <span class="va">sonk_claim_magnitude</span></span>
+<span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>highest_level <span class="op">=</span> <span class="va">verdict_sonk_magnitude</span><span class="op">$</span><span class="va">highest_level</span>,</span>
+<span>  l2_passed     <span class="op">=</span> <span class="va">verdict_sonk_magnitude</span><span class="op">$</span><span class="va">levels</span><span class="op">$</span><span class="va">passed</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span></span></code></pre></div>
+<p>When <code>verdict_sonk_magnitude$levels$summary[2]</code> reports a
+pass, the text spells out the comparison and reiterates the
+Supplementary Section S8.2 caveats. A real analysis would replace the
+hypothetical PFT scenario with one derived from local or regional pollen
+data, and <code>oipc_ref</code> with the value extracted from the user’s
+chosen OIPC product.</p>
 </div>
 <div class="section level2">
 <h2 id="plot-the-reconstructions">8. Plot the reconstructions<a class="anchor" aria-label="anchor" href="#plot-the-reconstructions"></a>
 </h2>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">op</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/graphics/par.html" class="external-link">par</a></span><span class="op">(</span>mfrow <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2</span>, <span class="fl">1</span><span class="op">)</span>, mar <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">4.5</span>, <span class="fl">5.4</span>, <span class="fl">2.2</span>, <span class="fl">1</span><span class="op">)</span>, mgp <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">3.4</span>, <span class="fl">0.8</span>, <span class="fl">0</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">precip_ylim</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/grDevices/extendrange.html" class="external-link">extendrange</a></span><span class="op">(</span></span>
@@ -570,10 +677,8 @@ record-specific evidence and citations.</p>
 <span>           boundary <span class="op">=</span> <span class="fl">800</span>, ylim <span class="op">=</span> <span class="va">precip_ylim</span><span class="op">)</span></span>
 <span><span class="fu">plot_recon</span><span class="op">(</span><span class="va">recon_sonk</span>, <span class="va">sonk</span><span class="op">$</span><span class="va">age</span>,</span>
 <span>           <span class="st">"Sonk11D (LS14LASO): large 4-6 ka contrast"</span>,</span>
-<span>           boundary <span class="op">=</span> <span class="fl">5000</span>, ylim <span class="op">=</span> <span class="va">precip_ylim</span><span class="op">)</span></span></code></pre></div>
-<p><img src="paleo-record-workflow_files/figure-html/plot-1.png" class="r-plt" alt="" width="672"></p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span></span>
+<span>           boundary <span class="op">=</span> <span class="fl">5000</span>, ylim <span class="op">=</span> <span class="va">precip_ylim</span><span class="op">)</span></span>
+<span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/par.html" class="external-link">par</a></span><span class="op">(</span><span class="va">op</span><span class="op">)</span></span></code></pre></div>
 <p>The shaded band is the 90 percent credible interval for each sample.
 It includes analytical uncertainty, regression-parameter uncertainty,
@@ -616,11 +721,11 @@ as direct <code>rho_t</code> estimators.</li>
 
 
     <footer><div class="pkgdown-footer-left">
-  <p>Developed by <a href="https://eeps.washu.edu/people/alexander-s-bradley" class="external-link">Alex Bradley</a>.</p>
+  <p>Developed by Alexander S. Bradley.</p>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer>

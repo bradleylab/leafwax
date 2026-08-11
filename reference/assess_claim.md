@@ -1,15 +1,22 @@
 # Assess a paleoclimate claim against the leaf-wax taxonomy
 
-Walks the four-level taxonomy from manuscript Section 4.5.6 and reports
-the highest level a claim survives at. The taxonomy is:
+Walks the package's four-level taxonomy and reports the highest level a
+claim survives at. The taxonomy is:
 
 - Level 1: a leaf-wax delta-2-H change occurred between two intervals.
   Defensible when the change exceeds analytical uncertainty.
 
 - Level 2: the wax change is consistent with a directional hydroclimate
-  change. Requires corroborating evidence (multi- proxy concordance,
-  sedimentological context, or biomarker evidence for vegetation
-  stability) supplied via `corroborating_proxies`.
+  change. Requires (i) sediment-source change ruled out by independent
+  evidence (`sediment_source_ruled_out`), AND (ii) depositional artifact
+  ruled out by independent evidence (`depositional_artifact_ruled_out`),
+  AND EITHER (a) named corroborating evidence against vegetation
+  reorganization via `corroborating_proxies` (the original path), OR (b)
+  demonstration that the observed wax shift exceeds the vegetation-only
+  envelope computed from a user-supplied PFT-change scenario
+  (`level2_vegetation_path`; see
+  [`compute_vegetation_envelope()`](https://bradleylab.github.io/leafwax/reference/compute_vegetation_envelope.md)
+  and manuscript Supplementary Section S8.2).
 
 - Level 3: the wax change implies a quantitative delta-2-H_precip
   magnitude. Requires a defended local effective slope and explicit
@@ -53,14 +60,24 @@ assess_claim(
   window). Optional fields, used by higher levels: `sigma_analytical`
   (default 3), `rho_t` (default 0; from
   [`estimate_temporal_autocorrelation()`](https://bradleylab.github.io/leafwax/reference/estimate_temporal_autocorrelation.md)),
-  `beta_eff` (numeric scalar; required at Level 3+), `confidence`
-  (default 0.95), `magnitude_precip` (numeric, the precip-space
-  magnitude the user asserts; required at Level 3+),
-  `corroborating_proxies` (list, used at Level 2; the test is
-  non-empty + named), `vegetation_stationary`,
-  `seasonal_source_stationary`, `evapotranspirative_stationary` (each a
-  list with `value` (TRUE) and a non-empty `evidence` string; required
-  at Level 4).
+  `beta_eff` (numeric scalar in per mil wax per per mil precipitation;
+  required at Level 3+), `confidence` (default 0.95), `magnitude_precip`
+  (numeric, the precip-space magnitude the user asserts; required at
+  Level 3+), `sediment_source_ruled_out`,
+  `depositional_artifact_ruled_out` (each a list with `value` (TRUE) and
+  a non-empty `evidence` string; BOTH required at Level 2+ regardless of
+  which Level 2 path is used), `corroborating_proxies` (list, used at
+  Level 2 path (a); the test is non-empty + named),
+  `level2_vegetation_path` (list, used at Level 2 path (b); must contain
+  `vegetation_scenario = list(from, to)` with named numeric vectors over
+  `{tree, shrub, grass, C4}` and an optional `evidence` string. The
+  claim must also supply `oipc_ref` (numeric scalar, calibration-period
+  d2H_precip at the site, per mil) at the top level. An optional
+  `level2_vegetation_path$model_name` selects the calibration model used
+  for the envelope; default `"full_interact_sp"`.),
+  `vegetation_stationary`, `seasonal_source_stationary`,
+  `evapotranspirative_stationary` (each a list with `value` (TRUE) and a
+  non-empty `evidence` string; required at Level 4).
 
 - reconstruction:
 
@@ -79,8 +96,9 @@ assess_claim(
 - ...:
 
   Additional args forwarded to
-  [`invert_d2H()`](https://bradleylab.github.io/leafwax/reference/invert_d2h.md)
-  (e.g., elevation, c4_fraction, pft\_\*, n_posterior_draws).
+  [`invert_d2H()`](https://bradleylab.github.io/leafwax/reference/invert_d2h.md).
+  For an internally constructed Level 3+ reconstruction these must
+  include an explicit `prior`, positive `n_inverse_samples`, and `seed`.
 
 ## Value
 

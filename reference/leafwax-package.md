@@ -2,10 +2,9 @@
 
 The leafwax package provides tools for probabilistic inversion of leaf
 wax hydrogen isotope measurements (delta-2-H) to reconstruct
-precipitation isotope values. It implements hierarchical Bayesian models
-that account for multiple sources of uncertainty including measurement
-error, biological fractionation, and spatial correlation in isotope
-patterns.
+precipitation isotope values. It integrates an explicit proper
+reconstruction prior with the likelihood under paired draws from
+hierarchical calibration posteriors.
 
 ## Main Functions
 
@@ -31,13 +30,15 @@ patterns.
 
 ## Available Models
 
-The package includes 14 calibration models with different capabilities.
-The v10 fits include precipitation amount (`baseline_env*` and `full*`
-variants), C4 abundance, and PFT cover; none of the v10 variants carry a
-fitted elevation coefficient despite the historical "elevation\_\*"
-naming. Runtime capability flags in
+The package can inspect 14 calibration models with different
+capabilities. The The fitted variants include precipitation amount
+(`baseline_env*` and `full*` variants), C4 abundance, and PFT cover.
+Runtime capability flags in
 [`load_posteriors()`](https://bradleylab.github.io/leafwax/reference/load_posteriors.md)
-are derived from each model's posterior columns at load time.
+are derived from each model's posterior columns at load time. The
+validated inversion interface currently supports only `baseline`,
+`baseline_sp`, and `c4_only_sp`; other designs fail closed because their
+complete new-site predictor basis is unavailable.
 
 - **Basic models**: baseline, baseline_sp
 
@@ -57,22 +58,19 @@ on a Fibonacci sphere lattice for improved uncertainty quantification.
 
 Pass `model = "auto"` to
 [`predict_d2h_precip()`](https://bradleylab.github.io/leafwax/reference/predict_d2h_precip.md)
-to let
-[`select_best_model_from_flags()`](https://bradleylab.github.io/leafwax/reference/select_best_model_from_flags.md)
-choose a model based on which covariates the caller has supplied;
-otherwise pick a model name from
-[`available_models()`](https://bradleylab.github.io/leafwax/reference/available_models.md)
+to choose between the supported spatial baseline and C4-only designs.
+Model ensembles have no scientific default and must be supplied
 explicitly.
 
 ## Key Features
 
-- Hierarchical Bayesian framework for uncertainty propagation
+- Explicit proper reconstruction priors
 
-- Support for single and multi-location inversions
+- Joint multi-row calibration-draw reweighting
 
 - Spatial correlation via Gaussian processes
 
-- Automatic handling of missing covariates
+- No slope division, clipping, or post-hoc draw removal
 
 ## References
 
@@ -88,9 +86,6 @@ photosynthesizing organisms. Annual Review of Earth and Planetary
 Sciences, 40, 221-249.
 [doi:10.1146/annurev-earth-042711-105535](https://doi.org/10.1146/annurev-earth-042711-105535)
 
-Bradley, A. (2026). leafwax v10 model posteriors. Zenodo DOI
-[doi:10.5281/zenodo.20085465](https://doi.org/10.5281/zenodo.20085465) .
-
 ## See also
 
 Useful links:
@@ -103,41 +98,16 @@ Useful links:
 
 ## Author
 
-**Maintainer**: Alex Bradley <abradley@wustl.edu>
+**Maintainer**: Alexander S. Bradley <abradley@wustl.edu>
 ([ORCID](https://orcid.org/0000-0002-4044-2802))
 
 ## Examples
 
 ``` r
-# List available models
-models <- available_models()
-print(models)
-#>  [1] "baseline_env"             "baseline_env_sp"         
-#>  [3] "baseline"                 "baseline_sp"             
-#>  [5] "baseline_veg"             "baseline_veg_sp"         
-#>  [7] "c4_only_sp"               "elevation_c4_interact_sp"
-#>  [9] "elevation_c4_sp"          "elevation_only_sp"       
-#> [11] "full_interact"            "full_interact_sp"        
-#> [13] "full"                     "full_sp"                 
+  # List available models
+  models <- available_models()
+  n_models <- length(models)
 
-# Simple single-location inversion
-result <- invert_d2H(
-  d2H_wax = -150,
-  d2H_wax_sd = 3,
-  longitude = -120,
-  latitude = 40,
-  model_name = "baseline"
-)
-#> Loading model: baseline 
-#> Loading model: baseline
-#>   Loaded 100 draws, 17 parameters
-#>   Loaded standardization parameters (20 fields)
-#> Performing inversion for 1 locations
-#> Computing predictions...
-#> 
-#> Inversion complete:
-#>   Mean prediction range: [-33.3, -33.3] per mil
-#>   Mean uncertainty (SD): 26.8 per mil
-#>   Mean 90% width: 90.2 per mil
-#> Warning: leafwax preview posteriors in use (invert_d2H): 100 draws of 'baseline'. Tail probabilities and 95% credible intervals are unstable at this sample size; not suitable for inference. Run download_model_data("baseline") for the full posterior.
+  # Priors are explicit; this constructor does not run an inversion.
+  prior <- d2h_prior_normal(mean = -70, sd = 30)
 ```

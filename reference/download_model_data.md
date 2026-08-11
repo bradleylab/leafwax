@@ -1,7 +1,8 @@
-# Download model data from GitHub releases
+# Download model data from the configured public release
 
-Downloads model posterior draws and lookup tables from GitHub releases
-with progress tracking and integrity verification.
+Downloads model posterior draws from the release configured in
+`inst/extdata/data_urls.json`. Downloads are accepted only when their
+byte size and SHA-256 checksum match the configured release manifest.
 
 ## Usage
 
@@ -52,13 +53,3 @@ download_model_data(
 Logical indicating success
 
 ## Examples
-
-``` r
-if (FALSE) { # \dontrun{
-# Download latest data for a model
-download_model_data("baseline_sp", version = "latest")
-
-# Download specific version
-download_model_data("baseline_env", version = "v1.0.1")
-} # }
-```

@@ -1,6 +1,6 @@
 # Get data download URLs
 
-Constructs download URLs for model data from GitHub releases.
+Constructs download URLs for the configured model-data release.
 
 ## Usage
 
@@ -30,10 +30,6 @@ List of download URLs and filenames
 
 ``` r
 if (FALSE) { # \dontrun{
-# Get URLs for latest version
 urls <- get_data_url("baseline_sp", "latest")
-
-# Get URLs for specific version
-urls <- get_data_url("baseline_sp", "v1.0.1")
 } # }
 ```

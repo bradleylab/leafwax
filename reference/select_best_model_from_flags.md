@@ -1,6 +1,6 @@
 # Select best model based on available data
 
-Automatically selects the most appropriate v10 model name from the 14
+Automatically selects the most appropriate model name from the 14
 shipped variants given which covariates the user has available.
 Spatial-aware models are preferred when `prefer_spatial = TRUE`.
 
@@ -21,8 +21,9 @@ select_best_model_from_flags(
 - has_elevation:
 
   Logical, whether elevation data is available. Accepted for
-  compatibility; shipped v10 posteriors do not contain fitted elevation
-  coefficients, so elevation alone does not change the selected model.
+  compatibility; the reconstruction interface does not consume fitted
+  elevation coefficients, so elevation alone does not change the
+  selected model.
 
 - has_c4:
 
@@ -42,4 +43,4 @@ select_best_model_from_flags(
 
 ## Value
 
-Character string with selected v10 model name
+Character string with the selected model name

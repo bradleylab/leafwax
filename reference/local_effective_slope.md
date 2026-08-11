@@ -1,10 +1,11 @@
 # Local effective slope at a paleo-reconstruction site
 
-Returns a per-draw vector of the d2H_wax-d2H_precip slope at a single
-site, combining the global posterior `beta_oipc` with the spatial slope
-GP prediction at that site. The returned vector is the raw posterior at
-the site; every draw the calibration produced is preserved without
-modification.
+Returns a per-draw vector of the local \\\beta\_{\delta^2 H_p}\\
+calibration slope at a single site, combining the global
+precipitation-isotope slope with the spatial slope GP prediction at that
+site. The fitted coefficient is converted from standard deviations of
+wax per standard deviation of precipitation to per mil wax per per mil
+precipitation. Every posterior draw is preserved; only its units change.
 
 ## Usage
 
@@ -31,7 +32,7 @@ local_effective_slope(
 
 - model_name:
 
-  Character, v10 model name (see
+  Character, calibration model name (see
   [`available_models()`](https://bradleylab.github.io/leafwax/reference/available_models.md)).
   Must be a spatial model (`*_sp`) for the site-specific slope to differ
   from the global mean; non-spatial models return the global posterior
@@ -39,9 +40,9 @@ local_effective_slope(
 
 - override:
 
-  Optional numeric. NULL (default) uses the model slope. A single value
-  broadcasts across all draws. A vector of length `n_draws` is used per
-  draw.
+  Optional numeric in per mil wax per per mil precipitation. NULL
+  (default) uses the model slope. A single value broadcasts across all
+  draws. A vector of length `n_draws` is used per draw.
 
 - n_draws:
 
@@ -56,7 +57,7 @@ local_effective_slope(
 ## Value
 
 Numeric vector of length `n_draws`, the per-draw effective slope at the
-site (after override, if any).
+site in per mil wax per per mil precipitation (after override, if any).
 
 ## Details
 
@@ -68,8 +69,10 @@ Two modes:
   with a defended local value (e.g., from independent evidence about
   source-water seasonality, leaf-water enrichment, or vegetation).
 
-Pass the returned vector to `invert_d2H(..., slope = ...)` to propagate
-it through the inversion.
+The Bayesian inversion propagates its paired local-slope draws
+internally. Pass this vector as `slope = ...` only when deliberately
+overriding that internal calculation with a separately defended slope
+posterior.
 
 Mechanistic reference values (e.g. the simple two-pool stationarity
 bound `alpha = 1 + epsilon_app/1000` ~ 0.88 under
@@ -83,61 +86,42 @@ at the site.
 ## Examples
 
 ``` r
-# \donttest{
-# St. Louis with the baseline_sp model
-s <- local_effective_slope(
-  longitude = -90, latitude = 38,
-  model_name = "baseline_sp",
-  n_draws = 200
-)
-#> Warning: leafwax preview posteriors in use: 100 draws of 'baseline_sp'. Tail probabilities and 95% credible intervals are unstable at this sample size; not suitable for inference. Run download_model_data("baseline_sp") for the full posterior.
-summary(s)
-#>    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
-#>  0.3927  0.5540  0.6020  0.6110  0.6820  0.8342 
+if (FALSE) { # \dontrun{
+local({
+  old <- options(leafwax.suppress_preview_warning = TRUE)
+  on.exit(options(old))
 
-# How often does the calibration imply a slope above the simple-model
-# stationarity bound at this site?
-mean(s > 0.88)
-#> [1] 0
+  # St. Louis with the baseline_sp model
+  s <- local_effective_slope(
+    longitude = -90, latitude = 38,
+    model_name = "baseline_sp",
+    n_draws = 200
+  )
+  slope_summary <- summary(s)
 
-# Override with a defended local slope
-s_fixed <- local_effective_slope(
-  longitude = -90, latitude = 38,
-  model_name = "baseline_sp",
-  override = 0.55
-)
-#> Warning: leafwax preview posteriors in use: 100 draws of 'baseline_sp'. Tail probabilities and 95% credible intervals are unstable at this sample size; not suitable for inference. Run download_model_data("baseline_sp") for the full posterior.
+  # How often does the calibration imply a slope above the simple-model
+  # stationarity bound at this site?
+  fraction_above_bound <- mean(s > 0.88)
 
-# Pass through to the inversion. The slope vector and the
-# inversion's posterior must use the same n_draws: pair
-# local_effective_slope(..., n_draws = N) with
-# invert_d2H(..., n_posterior_draws = N, slope = s), or pass a
-# single point estimate (e.g., median(s)).
-invert_d2H(d2H_wax = -180, d2H_wax_sd = 3,
-           longitude = -90, latitude = 38,
-           model_name = "baseline_sp",
-           n_posterior_draws = 200,
-           slope = s)
-#> Loading model: baseline_sp 
-#> Loading model: baseline_sp
-#>   Loaded 100 draws, 271 parameters
-#>   Loaded 125 spatial knots
-#>   Loaded standardization parameters (20 fields)
-#> Performing inversion for 1 locations
-#>   Computing dual-GP spatial effects (Matern 3/2)...
-#>   Using slope override (range: 0.393 to 0.834) instead of the model's site-specific slope.
-#> Computing predictions...
-#> 
-#> Inversion complete:
-#>   Mean prediction range: [-56.7, -56.7] per mil
-#>   Mean uncertainty (SD): 26 per mil
-#>   Mean 90% width: 88.3 per mil
-#> Warning: leafwax preview posteriors in use (invert_d2H): 100 draws of 'baseline_sp'. Tail probabilities and 95% credible intervals are unstable at this sample size; not suitable for inference. Run download_model_data("baseline_sp") for the full posterior.
-#>   longitude latitude elevation d2h_wax d2h_wax_err d2h_precip_mean
-#> 1       -90       38         0    -180           3       -56.68282
-#>   d2h_precip_median d2h_precip_sd d2h_precip_lower d2h_precip_upper
-#> 1         -57.60734      26.01051        -105.0963        -16.82198
-#>   prediction_interval_width
-#> 1                  88.27435
-# }
+  # Override with a defended local slope
+  s_fixed <- local_effective_slope(
+    longitude = -90, latitude = 38,
+    model_name = "baseline_sp",
+    override = 0.55
+  )
+
+  # Pass through to the inversion. The slope vector and the
+  # inversion's posterior must use the same n_draws: pair
+  # local_effective_slope(..., n_draws = N) with
+  # invert_d2H(..., n_posterior_draws = N, slope = s), or pass a
+  # single point estimate (e.g., median(s)).
+  result <- invert_d2H(d2H_wax = -180, d2H_wax_sd = 3,
+                       longitude = -90, latitude = 38,
+                       model_name = "baseline_sp",
+                       n_posterior_draws = 200,
+                       slope = s,
+                       prior = d2h_prior_normal(-70, 30),
+                       verbose = FALSE)
+})
+} # }
 ```

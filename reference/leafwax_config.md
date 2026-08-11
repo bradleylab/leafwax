@@ -21,11 +21,9 @@ List of options or single option value
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
 # Get all configuration options
-leafwax_config()
+cfg <- leafwax_config()
 
 # Get specific option
-leafwax_config("auto_download")
-} # }
+auto_download <- leafwax_config("auto_download")
 ```

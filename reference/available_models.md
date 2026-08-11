@@ -32,8 +32,8 @@ Character vector of available model names. Models include:
 
 - `elevation_c4_sp`: Historical elevation-context + C4 variant
 
-- `elevation_c4_interact_sp`: Historical elevation/C4-interaction name;
-  C4 effect only
+- `elevation_c4_interact_sp`: C4 effect + OIPC x C4 interaction
+  (spatial; elevation spline fitted, not consumed by inversion)
 
 - `full`: Precipitation amount + vegetation interactions without spatial
   component

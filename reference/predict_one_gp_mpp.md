@@ -3,7 +3,8 @@
 Single-GP version. Used internally by
 [`predict_spatial_dual_gp()`](https://bradleylab.github.io/leafwax/reference/predict_spatial_dual_gp.md)
 for each of the two (intercept, slope) fields. Matches the Matern 3/2
-kernel and standardized-coordinate convention from the v10 Stan model.
+kernel and the chordal (3-D Euclidean on the sphere, km) metric of the
+Stan model.
 
 ## Usage
 
@@ -14,7 +15,8 @@ predict_one_gp_mpp(
   z_knots,
   sigma_draws,
   ls_km_draws,
-  scaling,
+  metric,
+  scaling = NULL,
   jitter = 1e-04
 )
 ```
@@ -42,9 +44,18 @@ predict_one_gp_mpp(
 
   numeric(n_draws), the GP length scale in km (e.g. `ls_intercept_km`).
 
+- metric:
+
+  character; the metric the posterior was FITTED under, one of "chordal"
+  (3-D km; length scale used directly) or "standardized" (former
+  per-axis standardized coords; requires `scaling`). A posterior must be
+  predicted with the same metric it was fitted under, or the
+  interpolation is silently wrong.
+
 - scaling:
 
-  list with `lon_mean`, `lon_sd`, `lat_mean`, `lat_sd`.
+  list with `lon_mean`, `lon_sd`, `lat_mean`, `lat_sd`; required only
+  when metric == "standardized".
 
 - jitter:
 

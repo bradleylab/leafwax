@@ -1,8 +1,9 @@
-# Batch predict precipitation d2H for multiple sites
+# Jointly invert multiple observations from one record
 
-Processes multiple sites with progress indicators and optional
-parallelization. Handles large datasets efficiently by processing in
-chunks.
+Sends all rows through one joint Bayesian inversion so they coherently
+reweight the shared calibration draws. Chunked and parallel processing
+are deliberately disabled because splitting a record changes that joint
+target.
 
 ## Usage
 
@@ -23,7 +24,8 @@ batch_predict(
 
 - data:
 
-  Data frame containing all measurements
+  Data frame containing observations from one same-site record. A
+  `record_id` column is required when there is more than one row.
 
 - model:
 
@@ -31,15 +33,16 @@ batch_predict(
 
 - chunk_size:
 
-  Number of sites to process at once (default 100)
+  Retained for compatibility and recorded in diagnostics; it does not
+  split the joint inversion.
 
 - parallel:
 
-  Logical whether to use parallel processing
+  Must be `FALSE`; parallel chunks would change the target.
 
 - n_cores:
 
-  Number of cores for parallel processing (NULL for auto)
+  Retained for compatibility and diagnostics.
 
 - progress:
 
@@ -55,22 +58,42 @@ batch_predict(
 
 ## Value
 
-Data frame with predictions for all sites
+A `leafwax_inverse` object for the jointly inverted rows.
 
 ## Examples
 
 ``` r
 if (FALSE) { # \dontrun{
-# Load a large dataset
-large_data <- read.csv("sites.csv")
+local({
+  old <- options(leafwax.suppress_preview_warning = TRUE)
+  on.exit(options(old))
 
-# Process with progress bar
-results <- batch_predict(large_data, progress = TRUE)
+  data(example_data)
+  prior <- d2h_prior_normal(mean = -70, sd = 30)
+  large_data <- example_data[rep(seq_len(nrow(example_data)), length.out = 12), ]
+  row.names(large_data) <- NULL
+  large_data$longitude <- large_data$longitude[[1]]
+  large_data$latitude <- large_data$latitude[[1]]
+  large_data$record_id <- "example_record"
 
-# Process in parallel
-results <- batch_predict(large_data, parallel = TRUE, n_cores = 4)
+  # Process in chunks
+  results <- batch_predict(
+    large_data,
+    chunk_size = 6,
+    progress = FALSE,
+    prior = prior,
+    verbose = FALSE
+  )
 
-# Process with specific model
-results <- batch_predict(large_data, model = "baseline_env_sp")
+  # Process with a specific model
+  results <- batch_predict(
+    large_data,
+    model = "baseline_sp",
+    chunk_size = 6,
+    progress = FALSE,
+    prior = prior,
+    verbose = FALSE
+  )
+})
 } # }
 ```
