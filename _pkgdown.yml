@@ -50,7 +50,7 @@ reference:
       - assess_claim
 
   - title: "Models"
-    desc: "Routing and metadata for the 14 v10 model variants."
+    desc: "Routing and metadata for the 14 calibration-model variants."
     contents:
       - available_models
       - get_all_model_metadata
@@ -112,8 +112,8 @@ articles:
 
 news:
   releases:
-    - text: "Version 0.2.2"
-      href: https://github.com/bradleylab/leafwax/releases/tag/v0.2.2
+    - text: "Version 0.4.0"
+      href: https://github.com/bradleylab/leafwax/releases/tag/v0.4.0
 
 development:
   mode: auto

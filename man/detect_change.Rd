@@ -44,8 +44,9 @@ residual SD on the leaf-wax per-mil scale (\code{sigma}, approximately
 \code{estimate_temporal_autocorrelation()} to compute. Defaults to 0
 (independent samples) with a message.}
 
-\item{beta_eff}{Numeric, the local effective slope. Use
-\code{local_effective_slope()} for a point estimate (e.g., its median).}
+\item{beta_eff}{Numeric, the local effective slope in per mil wax per
+per mil precipitation. Use \code{local_effective_slope()} for a point estimate
+(e.g., its median).}
 
 \item{confidence}{Numeric in (0, 1), the confidence level for the
 detection threshold. Default 0.95.}

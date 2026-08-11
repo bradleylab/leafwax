@@ -15,7 +15,7 @@ list_models(check_data = TRUE, verbose = TRUE)
 Data frame with model information
 }
 \description{
-Returns information about the v10 models available in the leafwax
+Returns information about the calibration models available in the leafwax
 package, including which covariates each model uses.
 }
 \examples{

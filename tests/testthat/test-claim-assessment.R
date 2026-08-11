@@ -1,4 +1,4 @@
-# Phase D tests: assess_claim() walks the four-level taxonomy.
+# Tests for assess_claim() and the four-level taxonomy.
 
 # Helper: synthesize a downcore record with two stratigraphic intervals
 # and a configurable wax-space delta between them.
@@ -448,8 +448,8 @@ test_that("L2 path (b) fails when |delta_wax| does not exceed envelope", {
 test_that("L2 path (b) verdict text does NOT contain the deprecated 'hydroclimate interpretation warranted' phrasing on any path", {
   skip_if_preview_posteriors("full_interact_sp")
   # Regression-guard across both successful paths. The exact phrase
-  # was removed during the magnitude-OR-evidence Level 2 redesign;
-  # codex [FIX-2] flagged it as overclaiming.
+  # was removed during the magnitude-OR-evidence Level 2 redesign because it
+  # overstates what the Level 2 evidence supports.
   rec <- .make_record(delta_wax = 50)
   # Path (a)
   out_a <- assess_claim(rec, c(.l2_base_claim(),

@@ -1,6 +1,6 @@
 {
   "version": "1.0.1",
-  "description": "Leafwax v10 hydrogen isotope inversion model metadata",
+  "description": "Leafwax hydrogen isotope inversion model metadata",
   "models": {
     "baseline": {
       "name": "baseline",

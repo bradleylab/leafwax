@@ -1,9 +1,7 @@
-# leafwax 0.3.0.9000
-
-Development version; no public release is claimed.
+# leafwax 0.4.0
 
 * Replaced ratio inversion with a likelihood-based Bayesian inversion over
-  paired calibration draws and a caller-specified proper prior.
+  paired calibration draws and a caller-specified reconstruction prior.
 * Multi-row records jointly reweight shared calibration draws and return
   explicit diagnostics for prior influence, slope sign, numerical integration,
   mixture effective sample size, and saved-draw stability.
@@ -12,26 +10,31 @@ Development version; no public release is claimed.
 * Reconstruction fails closed for calibration variants whose complete new-site
   predictor design is unavailable. Model ensembles require an explicit list of
   compatible models and have no default scientific composition.
+* Public slope values now use physical units (per mil wax per per mil
+  precipitation). `local_effective_slope()` back-transforms the fitted
+  standardized coefficient, and `invert_d2H()` converts physical slope
+  overrides back to fitted-model units internally. This also puts
+  `detect_change()` thresholds on a consistent physical scale.
 
-Posterior data update.
+Posterior data and integrity update.
 
-* Posteriors re-fit on the authoritative chordal analysis run
-  `c2_run_20260728_chordal` (n = 1128 calibration observations; Africa 142).
-  This supersedes the earlier v10 / n = 1129 lineage and the frozen
-  great-circle comparison run. All 14 model posteriors, the shipped
-  100-draw preview tier, and the spatial-model knot metadata were
-  regenerated from the authoritative chordal run.
+* Posteriors were re-fit in the 2026-07-28 chordal-distance calibration
+  analysis (n = 1,128 calibration observations; Africa 142).
+  All 14 model posteriors, the shipped 100-draw preview tier, and the
+  spatial-model knot metadata were generated from this run.
 * Three interaction models changed their coefficient set to match the
-  frozen Stan specifications: `elevation_c4_interact_sp` now carries the
+  fitted Stan specifications: `elevation_c4_interact_sp` carries the
   `beta_oipc_x_c4` interaction term (previously absent), while `full` and
   `full_sp` no longer carry `beta_oipc_x_c4` (retaining the plant-functional-type
   interactions `beta_oipc_x_grass`, `beta_oipc_x_shrub`, `beta_oipc_x_tree`).
-* The chordal posterior files are public in the companion data repository;
-  package-registry and archived releases remain deferred until final review.
+* Complete posterior files are distributed in companion data release v3.0.0
+  (doi:10.5281/zenodo.21880665).
+  `download_model_data()` verifies both file size and SHA-256 against the
+  immutable release manifest before a file enters the package cache.
 
-# leafwax 0.2.7 (pre-release milestone)
+# leafwax 0.2.7
 
-Package-check and distribution-metadata polish; no CRAN release is claimed.
+CRAN compatibility updates.
 
 * Updated `DESCRIPTION` formatting for CRAN: software/service names are quoted
   as `'Stan'` and `'Zenodo'`, and the data-deposit reference now uses
@@ -45,15 +48,15 @@ Package-check and distribution-metadata polish; no CRAN release is claimed.
 * Updated package documentation for the precipitation-isotope calibration
   slope.
 
-# leafwax 0.2.6 (pre-release milestone)
+# leafwax 0.2.6
 
-Initial package-completeness milestone; no CRAN release is claimed.
+Initial CRAN release.
 
 ## Features
 
 * Bayesian inversion of leaf-wax δ²H to precipitation δ²H using
   spatially-aware hierarchical calibrations (14 model variants from
-  Bradley 2026, in prep). Posteriors are pre-computed in Stan and
+  Bradley 2026). Posteriors are pre-computed in Stan and
   shipped as serialized draws, so prediction does not require Stan.
 * Four-level claim taxonomy via `assess_claim()`: from analytical-noise
   thresholds (Level 1) through directional hydroclimate change (Level 2,
@@ -67,5 +70,5 @@ Initial package-completeness milestone; no CRAN release is claimed.
   as `2 * sigma_residual^2 * (1 - rho_t) + 2 * sigma_analytical^2`,
   applying the lag-1 autocorrelation factor only to the residual term
   (analytical measurement error is independent between samples).
-* A 100-draw preview posterior tier was prepared for package checks. The
-  planned public full-posterior deposit was not released in this milestone.
+* A 100-draw preview posterior tier ships with the package; complete posterior
+  files are distributed separately.

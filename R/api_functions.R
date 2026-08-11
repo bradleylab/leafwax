@@ -237,8 +237,8 @@ predict_d2h_precip <- function(data = NULL,
     # Provide helpful error message
     if (grepl("not found|not available", e$message)) {
       message(
-        "\nComplete model data are unavailable. Use a validated working ",
-        "checkout; public download wiring is pending final validation."
+        "\nComplete model data are unavailable. Install the full posterior ",
+        "archive in the package cache or use a validated working checkout."
       )
     }
 
@@ -248,19 +248,19 @@ predict_d2h_precip <- function(data = NULL,
 
 #' Select best model based on available data
 #'
-#' Automatically selects the most appropriate v10 model name from the 14
+#' Automatically selects the most appropriate model name from the 14
 #' shipped variants given which covariates the user has available.
 #' Spatial-aware models are preferred when `prefer_spatial = TRUE`.
 #'
 #' @param has_elevation Logical, whether elevation data is available.
-#'   Accepted for compatibility; shipped v10 posteriors do not contain
+#'   Accepted for compatibility; the reconstruction interface does not consume
 #'   fitted elevation coefficients, so elevation alone does not change
 #'   the selected model.
 #' @param has_c4 Logical, whether C4 vegetation data is available
 #' @param has_pft Logical, whether PFT data is available
 #' @param prefer_spatial Logical, whether to prefer spatial models
 #' @param verbose Logical, whether to print selection reasoning
-#' @return Character string with selected v10 model name
+#' @return Character string with the selected model name
 #' @export
 select_best_model_from_flags <- function(has_elevation = FALSE,
                                          has_c4 = FALSE,
@@ -272,10 +272,10 @@ select_best_model_from_flags <- function(has_elevation = FALSE,
 
   # Pick the richest model that uses every fitted covariate the user has.
   # Elevation is not used for routing because the Bayesian reconstruction
-  # does not CONSUME elevation (narrowed-inversion decision), independent of
+  # does not consume elevation, independent of
   # whether the deposit carries beta_elev columns. Chordal deposits DO retain
   # those columns, but routing still ignores elevation by design -- do not
-  # "fix" this to route on elevation unless the inversion is changed to consume it.
+  # route on elevation unless the inversion is changed to consume it.
   # If prefer_spatial is FALSE, drop "_sp" suffix candidates first.
   candidates <- if (prefer_spatial) {
     if (has_pft && has_c4) {
@@ -316,7 +316,7 @@ select_best_model_from_flags <- function(has_elevation = FALSE,
 
 #' List available models with details
 #'
-#' Returns information about the v10 models available in the leafwax
+#' Returns information about the calibration models available in the leafwax
 #' package, including which covariates each model uses.
 #'
 #' @param check_data Logical, whether to check if model data is available
@@ -331,7 +331,7 @@ select_best_model_from_flags <- function(has_elevation = FALSE,
 #' }
 list_models <- function(check_data = TRUE, verbose = TRUE) {
 
-  # Pull metadata directly from the v10 routing layer (model_utils.R)
+  # Pull metadata directly from the model routing layer (model_utils.R)
   metadata <- get_all_model_metadata()
 
   # Create summary data frame
@@ -430,7 +430,7 @@ list_models <- function(check_data = TRUE, verbose = TRUE) {
       cat("Models with data:", n_available, "of", nrow(model_df), "\n")
 
       if (n_available < nrow(model_df)) {
-        cat("\nPublic full-posterior download wiring is pending final validation.\n")
+        cat("\nAutomatic full-posterior download is not configured in this build.\n")
       }
     }
   }
@@ -553,7 +553,7 @@ validate_inputs <- function(d2h_wax, longitude, latitude,
     }
   }
 
-  # v10 metadata uses `has_vegetation`; the older `has_pft` field is kept
+  # Current metadata uses `has_vegetation`; the older `has_pft` field is kept
   # as a fallback so legacy callers passing in their own metadata still work.
   has_pft_flag <- isTRUE(model_info$has_vegetation %||% model_info$has_pft)
   if (has_pft_flag) {
@@ -593,9 +593,9 @@ validate_inputs <- function(d2h_wax, longitude, latitude,
 
   if (isTRUE(model_info$has_elevation)) validated$elevation <- elevation
   if (isTRUE(model_info$has_c4)) validated$c4_fraction <- c4_fraction
-  # v10 metadata uses has_vegetation in place of has_pft; honour both so
+  # Current metadata uses has_vegetation in place of has_pft; honour both so
   # PFT vectors aren't silently dropped from the validated list when a
-  # caller passes a v10 metadata object.
+  # caller passes a compatible metadata object.
   if (has_pft_flag) {
     validated$pft_tree <- pft_tree
     validated$pft_shrub <- pft_shrub

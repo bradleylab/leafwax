@@ -4,16 +4,18 @@
 \alias{get_data_manifest}
 \title{Get data manifest}
 \usage{
-get_data_manifest()
+get_data_manifest(cache_dir = NULL)
+}
+\arguments{
+\item{cache_dir}{Cache directory containing \code{manifest.json}.}
 }
 \value{
 Parsed manifest list, or \code{NULL} if no manifest is
 available locally and the download failed.
 }
 \description{
-Loads or downloads the data manifest with file checksums. Returns
-\code{NULL} (with a \code{warning()}) when the manifest is unreachable and
-there is no cached copy on disk; callers must treat that as
-"checksum verification skipped" rather than "no checksums found".
+Loads or downloads the data manifest with file checksums. Returns \code{NULL}
+with a warning when no current manifest is available. Download callers that
+request verification fail closed in that case.
 }
 \keyword{internal}

@@ -3,9 +3,8 @@
 #' Download model data from the configured public release
 #'
 #' Downloads model posterior draws from the release configured in
-#' `inst/extdata/data_urls.json`. Development builds fail closed while
-#' `release_ready` is false, preventing an older incompatible posterior deposit
-#' from being mixed with the current package.
+#' `inst/extdata/data_urls.json`. Downloads are accepted only when their byte
+#' size and SHA-256 checksum match the configured release manifest.
 #'
 #' @param model_name Character string specifying the model name
 #' @param version Version tag to download (default "latest")
@@ -24,7 +23,7 @@
 #'   "baseline",
 #'   version = "latest",
 #'   cache_dir = cache_dir,
-#'   verify = FALSE,
+#'   verify = TRUE,
 #'   verbose = FALSE
 #' )
 #' \dontshow{unlink(cache_dir, recursive = TRUE, force = TRUE)}
@@ -44,11 +43,28 @@ download_model_data <- function(model_name,
     cache_dir <- get_cache_dir(create = TRUE)
   }
 
-  # Get download URLs
+  # Get download URLs and, by default, the immutable release manifest.
   urls <- get_data_url(model_name, version, data_type)
 
   if (length(urls) == 0) {
     stop("No download URLs found for model: ", model_name)
+  }
+
+  manifest <- NULL
+  if (isTRUE(verify)) {
+    manifest <- get_data_manifest(cache_dir = cache_dir)
+    if (is.null(manifest)) {
+      stop("Checksum verification was requested, but the data manifest is unavailable.",
+           call. = FALSE)
+    }
+    configured_version <- as.character(get_url_config()$version)
+    if (!identical(as.character(manifest$version), configured_version)) {
+      stop(
+        "Cached data manifest version ", manifest$version,
+        " does not match package configuration ", configured_version, ".",
+        call. = FALSE
+      )
+    }
   }
 
   # Download each file
@@ -58,10 +74,25 @@ download_model_data <- function(model_name,
     filename <- urls[[i]]$filename
     local_path <- file.path(cache_dir, filename)
 
-    # Check if file exists
+    # Verify an existing cached file before trusting it.
     if (file.exists(local_path) && !overwrite) {
+      if (isTRUE(verify)) {
+        verification_error <- tryCatch({
+          .verify_downloaded_file(local_path, basename(filename), manifest)
+          NULL
+        }, error = identity)
+        if (!is.null(verification_error)) {
+          unlink(local_path)
+          stop(
+            "Cached file failed integrity verification and was removed: ",
+            filename, ". ", conditionMessage(verification_error),
+            call. = FALSE
+          )
+        }
+      }
       if (verbose) {
-        message("File already exists (use overwrite=TRUE to replace): ", filename)
+        message(if (isTRUE(verify)) "Verified cached file: " else "Using cached file: ",
+                filename)
       }
       next
     }
@@ -76,10 +107,14 @@ download_model_data <- function(model_name,
       message("Downloading: ", filename)
     }
 
-    # Download with progress bar
+    # Download to a temporary file in the destination directory. The cached
+    # path is replaced only after verification succeeds.
+    temp_path <- tempfile(pattern = paste0(basename(filename), "."),
+                          tmpdir = local_dir)
+    on.exit(unlink(temp_path), add = TRUE)
     success <- download_with_progress(
       url = url,
-      destfile = local_path,
+      destfile = temp_path,
       verbose = verbose
     )
 
@@ -89,14 +124,28 @@ download_model_data <- function(model_name,
       break
     }
 
-    # Verify integrity if requested. The check is a placeholder; a real
-    # checksum-based implementation lives in the upstream data-release
-    # tooling and is not exposed in this package. We log the intent and
-    # skip the check so the call path stays usable.
-    if (verify && success) {
-      if (verbose) message("Verifying file integrity (placeholder; ",
-                           "no checksum manifest shipped in this build)...")
+    if (isTRUE(verify)) {
+      verification_error <- tryCatch({
+        .verify_downloaded_file(temp_path, basename(filename), manifest)
+        NULL
+      }, error = identity)
+      if (!is.null(verification_error)) {
+        unlink(temp_path)
+        stop(
+          "Downloaded file failed integrity verification and was removed: ",
+          filename, ". ", conditionMessage(verification_error),
+          call. = FALSE
+        )
+      }
+      if (verbose) message("Verified SHA-256: ", filename)
     }
+
+    if (!file.copy(temp_path, local_path, overwrite = TRUE)) {
+      unlink(temp_path)
+      stop("Could not move verified download into the cache: ", filename,
+           call. = FALSE)
+    }
+    unlink(temp_path)
   }
 
   if (success && verbose) {
@@ -104,6 +153,30 @@ download_model_data <- function(model_name,
   }
 
   return(invisible(success))
+}
+
+.verify_downloaded_file <- function(path, filename, manifest) {
+  entry <- manifest$files[[filename]]
+  if (is.null(entry) || is.null(entry$sha256) || is.null(entry$size_bytes)) {
+    stop("Manifest has no complete entry for ", filename, ".", call. = FALSE)
+  }
+  expected_sha <- tolower(as.character(entry$sha256))
+  if (!grepl("^[0-9a-f]{64}$", expected_sha)) {
+    stop("Manifest SHA-256 is invalid for ", filename, ".", call. = FALSE)
+  }
+  actual_size <- unname(file.info(path)$size)
+  if (!identical(as.numeric(actual_size), as.numeric(entry$size_bytes))) {
+    stop(
+      "File size mismatch for ", filename, ": expected ", entry$size_bytes,
+      " bytes, received ", actual_size, ".",
+      call. = FALSE
+    )
+  }
+  actual_sha <- digest::digest(file = path, algo = "sha256")
+  if (!identical(actual_sha, expected_sha)) {
+    stop("SHA-256 mismatch for ", filename, ".", call. = FALSE)
+  }
+  invisible(TRUE)
 }
 
 #' Get data download URLs
@@ -133,6 +206,18 @@ get_data_url <- function(model_name, version = "latest",
       "until the coordinated chordal data release passes final validation.",
       call. = FALSE
     )
+  }
+
+  valid_versions <- c("latest", as.character(url_config$release_tag))
+  if (!version %in% valid_versions) {
+    stop(
+      "This package supports posterior data release ", url_config$release_tag,
+      "; requested version was ", version, ".",
+      call. = FALSE
+    )
+  }
+  if (!model_name %in% names(url_config$models)) {
+    stop("Unknown calibration model: ", model_name, call. = FALSE)
   }
 
   # Get base URL for version
@@ -271,27 +356,35 @@ get_url_config <- function() {
 
 #' Get data manifest
 #'
-#' Loads or downloads the data manifest with file checksums. Returns
-#' `NULL` (with a `warning()`) when the manifest is unreachable and
-#' there is no cached copy on disk; callers must treat that as
-#' "checksum verification skipped" rather than "no checksums found".
+#' Loads or downloads the data manifest with file checksums. Returns `NULL`
+#' with a warning when no current manifest is available. Download callers that
+#' request verification fail closed in that case.
 #'
+#' @param cache_dir Cache directory containing `manifest.json`.
 #' @return Parsed manifest list, or `NULL` if no manifest is
 #'   available locally and the download failed.
 #' @keywords internal
-get_data_manifest <- function() {
+get_data_manifest <- function(cache_dir = NULL) {
 
-  cache_dir <- get_cache_dir()
+  if (is.null(cache_dir)) cache_dir <- get_cache_dir()
+  if (!dir.exists(cache_dir)) {
+    dir.create(cache_dir, recursive = TRUE, showWarnings = FALSE)
+  }
   manifest_file <- file.path(cache_dir, "manifest.json")
+  url_config <- get_url_config()
 
-  # Download if not present or older than 1 day. If the download
-  # fails, surface the error to the caller via warning() rather than
-  # silently masquerading as "manifest with zero files" (which earlier
-  # callers misread as "no checksums available -> trust the file").
-  if (!file.exists(manifest_file) ||
-      difftime(Sys.time(), file.info(manifest_file)$mtime, units = "days") > 1) {
+  cached <- NULL
+  if (file.exists(manifest_file)) {
+    cached <- tryCatch(
+      jsonlite::fromJSON(manifest_file),
+      error = function(e) NULL
+    )
+  }
+  cached_is_current <- !is.null(cached) &&
+    identical(as.character(cached$version), as.character(url_config$version)) &&
+    difftime(Sys.time(), file.info(manifest_file)$mtime, units = "days") <= 1
 
-    url_config <- get_url_config()
+  if (!cached_is_current) {
     if (!isTRUE(url_config$release_ready)) {
       warning(
         "Public data manifest is unavailable while release wiring is disabled.",
@@ -301,10 +394,12 @@ get_data_manifest <- function() {
     }
 
     download_err <- NULL
+    temp_manifest <- tempfile(pattern = "leafwax-manifest-", tmpdir = cache_dir)
+    on.exit(unlink(temp_manifest), add = TRUE)
     tryCatch({
       utils::download.file(
         url_config$manifest_url,
-        manifest_file,
+        temp_manifest,
         mode = "wb",
         quiet = TRUE
       )
@@ -312,11 +407,27 @@ get_data_manifest <- function() {
       download_err <<- conditionMessage(e)
     })
 
-    if (!is.null(download_err) && !file.exists(manifest_file)) {
+    if (!is.null(download_err)) {
       warning("Could not fetch data manifest: ", download_err,
               call. = FALSE)
       return(NULL)
     }
+    downloaded <- tryCatch(
+      jsonlite::fromJSON(temp_manifest),
+      error = function(e) NULL
+    )
+    if (is.null(downloaded) ||
+        !identical(as.character(downloaded$version),
+                   as.character(url_config$version))) {
+      warning("Downloaded data manifest is invalid or has the wrong version.",
+              call. = FALSE)
+      return(NULL)
+    }
+    if (!file.copy(temp_manifest, manifest_file, overwrite = TRUE)) {
+      warning("Could not store the downloaded data manifest.", call. = FALSE)
+      return(NULL)
+    }
+    cached <- downloaded
   }
 
   if (!file.exists(manifest_file)) {
@@ -325,7 +436,7 @@ get_data_manifest <- function() {
     return(NULL)
   }
 
-  jsonlite::fromJSON(manifest_file)
+  cached
 }
 
 #' Clear download cache

@@ -4,7 +4,7 @@
 #' The leafwax package provides tools for probabilistic inversion of leaf wax
 #' hydrogen isotope measurements (delta-2-H) to reconstruct precipitation isotope values.
 #' It integrates an explicit proper reconstruction prior with the likelihood
-#' under paired draws from frozen hierarchical calibration posteriors.
+#' under paired draws from hierarchical calibration posteriors.
 #'
 #' @section Main Functions:
 #' \describe{
@@ -17,10 +17,8 @@
 #'
 #' @section Available Models:
 #' The package can inspect 14 calibration models with different capabilities. The
-#' v10 fits include precipitation amount (\code{baseline_env*} and
-#' \code{full*} variants), C4 abundance, and PFT cover; none of the v10
-#' variants carry a fitted elevation coefficient despite the historical
-#' "elevation_*" naming. Runtime capability flags in
+#' The fitted variants include precipitation amount (\code{baseline_env*} and
+#' \code{full*} variants), C4 abundance, and PFT cover. Runtime capability flags in
 #' \code{load_posteriors()} are derived from each model's posterior
 #' columns at load time. The validated inversion interface currently supports
 #' only `baseline`, `baseline_sp`, and `c4_only_sp`; other designs fail closed

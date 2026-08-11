@@ -14,8 +14,8 @@
 #                      divided by its calibration SD); length scale converted
 #                      via the former coord_scale_km rule.
 # A posterior MUST be predicted with the metric it was fitted under; mixing them
-# is a silent error. New (chordal-refit) posteriors are "chordal"; legacy frozen
-# posteriors are "standardized".
+# is a silent error. Current posteriors are "chordal"; older unstamped posteriors
+# are treated as "standardized" with a warning.
 
 #' @importFrom stats dist
 NULL
@@ -183,9 +183,9 @@ predict_one_gp_mpp <- function(coords_new, knot_coords, z_knots,
 
 #' Predict both spatial intercept and spatial slope at new locations
 #'
-#' v10 carries two independent GPs. Both share knot coordinates and a
+#' The spatial calibration carries two independent GPs. Both share knot coordinates and a
 #' single length scale parameter (`ls_intercept_km == ls_slope_km` in
-#' v10's posterior, two names for the same draw), but have distinct
+#' posterior (two names for the same draw), but have distinct
 #' `sigma_intercept_spatial` and `sigma_slope_spatial`, and distinct
 #' `z_intercept_spatial[*]` and `z_slope_spatial[*]` knot effects.
 #'

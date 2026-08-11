@@ -1,7 +1,8 @@
 # Per-draw d2H_wax<-d2H_precip slope at a specific site, with optional
-# user override. Returns the raw posterior vector of the local slope
+# user override. Returns the posterior vector of the local slope in physical
+# units (per mil wax per per mil precipitation)
 # at the requested coordinates so downstream uncertainty propagation
-# reflects the calibration's full inferential picture (SPEC.md §3.3).
+# reflects the calibration's full inferential picture.
 # The function does not clip, filter, or otherwise post-process the
 # draws; mechanistic reasoning about plausible slope magnitudes
 # belongs in the calibration's prior, not in a post-hoc filter.
@@ -11,9 +12,10 @@
 #' Returns a per-draw vector of the local
 #' \eqn{\beta_{\delta^2 H_p}}{beta_d2Hp} calibration slope at a single
 #' site, combining the global precipitation-isotope slope with the spatial
-#' slope GP prediction at that site. The returned vector is the raw posterior
-#' at the site; every draw the calibration produced is preserved without
-#' modification.
+#' slope GP prediction at that site. The fitted coefficient is converted from
+#' standard deviations of wax per standard deviation of precipitation to
+#' per mil wax per per mil precipitation. Every posterior draw is preserved;
+#' only its units change.
 #'
 #' Two modes:
 #' \itemize{
@@ -39,18 +41,20 @@
 #'
 #' @param longitude Numeric, single longitude in decimal degrees.
 #' @param latitude Numeric, single latitude in decimal degrees.
-#' @param model_name Character, v10 model name (see
+#' @param model_name Character, calibration model name (see
 #'   `available_models()`). Must be a spatial model (`*_sp`) for the
 #'   site-specific slope to differ from the global mean; non-spatial
 #'   models return the global posterior unchanged.
-#' @param override Optional numeric. NULL (default) uses the model
+#' @param override Optional numeric in per mil wax per per mil precipitation.
+#'   NULL (default) uses the model
 #'   slope. A single value broadcasts across all draws. A vector of
 #'   length `n_draws` is used per draw.
 #' @param n_draws Integer, optional number of posterior draws to use
 #'   (`NULL` uses all). Forwarded to `load_posteriors()`.
 #' @param verbose Logical, whether to print progress messages.
 #' @return Numeric vector of length `n_draws`, the per-draw effective
-#'   slope at the site (after override, if any).
+#'   slope at the site in per mil wax per per mil precipitation (after
+#'   override, if any).
 #' @export
 #' @examples
 #' \dontrun{
@@ -146,7 +150,10 @@ local_effective_slope <- function(longitude,
     }
   }
 
-  slope <- beta_d2Hp + slope_pert
+  slope <- .model_slope_to_physical(
+    beta_d2Hp + slope_pert,
+    model$scaling
+  )
 
   # Override replaces the model slope with a user-supplied value or
   # vector. The override is the user's decision; the package does not

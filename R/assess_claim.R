@@ -1,7 +1,6 @@
 # R/assess_claim.R - Package-level Level 1-4 claim taxonomy.
 #
-# Phase D of the v0.2.0 paleo-record workflow. Walks the four-level
-# package claim taxonomy and reports the highest
+# Walks the four-level paleo-record claim taxonomy and reports the highest
 # level the claim survives at, with itemized pass/fail reasons.
 
 #' Assess a paleoclimate claim against the leaf-wax taxonomy
@@ -49,7 +48,8 @@
 #'   Optional fields, used by higher levels:
 #'   `sigma_analytical` (default 3),
 #'   `rho_t` (default 0; from `estimate_temporal_autocorrelation()`),
-#'   `beta_eff` (numeric scalar; required at Level 3+),
+#'   `beta_eff` (numeric scalar in per mil wax per per mil precipitation;
+#'   required at Level 3+),
 #'   `confidence` (default 0.95),
 #'   `magnitude_precip` (numeric, the precip-space magnitude the user
 #'     asserts; required at Level 3+),

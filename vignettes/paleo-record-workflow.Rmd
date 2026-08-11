@@ -46,10 +46,10 @@ The Iso2k compilation is archived at
 
 Here `rho_t` is the lag-1 temporal autocorrelation, `sigma_residual` is
 the calibration residual SD on the wax scale, `sigma_analytical` is the
-analytical uncertainty on the wax measurements, and `beta_eff` is the
-local effective slope. The autocorrelation factor enters only the
-residual term, because analytical measurement error is independent
-between samples by construction. The threshold is the smallest
+analytical uncertainty on the wax measurements, and `beta_eff` is the local
+effective slope in per mil wax per per mil precipitation. The autocorrelation
+factor enters only the residual term, because analytical measurement error is
+independent between samples by construction. The threshold is the smallest
 `d2H_precip` difference between two independent samples at the site
 that can be distinguished from within-record noise at 95 percent
 confidence. The spatial GP intercept is shared by all samples from the
@@ -163,7 +163,8 @@ record-specific evidence and citations.
 `local_effective_slope()` returns one slope value for each posterior
 draw at the site. Each value combines the global `beta_d2Hp`
 precipitation-isotope calibration slope with the spatial slope GP. The
-function returns the model draws directly; it does not cap or filter them.
+function converts the fitted standardized coefficient to per mil wax per
+per mil precipitation; it does not cap or filter the posterior draws.
 Passing the full vector to `invert_d2H()` preserves paired slope uncertainty
 in the likelihood mixture. Passing one number, such as the posterior median,
 gives a point-slope sensitivity run. Zero or negative values are retained;
@@ -177,7 +178,7 @@ inversion API rather than evaluated with missing or defaulted covariates.
 
 The full-posterior slope calculation is displayed but not evaluated when the
 source-package vignette is built because the bundled 100-draw fixture is
-deliberately blocked from inference. It runs after a complete frozen posterior
+deliberately blocked from inference. It runs after a complete posterior
 deposit has been installed.
 
 ```{r slope, eval = FALSE}
@@ -220,7 +221,7 @@ within-draw contrast.
 
 The remaining record-level chunks are displayed but not evaluated in the
 source-package vignette because the distributed 100-draw fixture is explicitly
-blocked from inference. They run only after a complete frozen posterior deposit
+blocked from inference. They run only after a complete posterior deposit
 has been installed.
 
 ```{r invert, eval = FALSE}
@@ -333,7 +334,7 @@ The returned objects report the estimated lag-1 autocorrelation, the
 site-specific detection threshold, and the posterior probability that each
 interval contrast exceeds 30 per mil. These values are intentionally not
 embedded in the source-package vignette: they must be regenerated from the
-complete frozen posterior deposit and the declared prior.
+complete posterior deposit and the declared prior.
 
 ## 7. Assess a claim
 

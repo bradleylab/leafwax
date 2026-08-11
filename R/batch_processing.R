@@ -361,8 +361,8 @@ compare_models <- function(data,
 
   if (length(models_with_data) == 0) {
     stop(
-      "No complete model data available. Use a validated working checkout; ",
-      "public download wiring is pending final validation."
+      "No complete model data available. Install the full posterior archive ",
+      "in the package cache or use a validated working checkout."
     )
   }
 

@@ -1,13 +1,13 @@
 Package: leafwax
 Title: Bayesian Inversion of Leaf Wax Hydrogen Isotopes to Precipitation
-Version: 0.3.0.9000
+Version: 0.4.0
 Authors@R:
     person("Alexander S.", "Bradley", , "abradley@wustl.edu", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0002-4044-2802"))
 Author: Alexander S. Bradley [aut, cre] (<https://orcid.org/0000-0002-4044-2802>)
 Maintainer: Alexander S. Bradley <abradley@wustl.edu>
 Description: Full Bayesian inversion of leaf wax hydrogen isotopes to
-    reconstruct precipitation isotopes from frozen hierarchical calibration
+    reconstruct precipitation isotopes from hierarchical calibration
     posteriors. The likelihood is integrated over paired calibration draws and
     an explicit proper reconstruction prior, without dividing by sampled
     slopes. Multi-sample records jointly reweight shared calibration draws.
@@ -23,6 +23,7 @@ Language: en-US
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.3
 Imports:
+    digest,
     jsonlite,
     stats,
     utils

@@ -17,12 +17,12 @@
 # Output: ~1.5 MB total across 14 models, ~155 KB per spatial model
 # and ~10-15 KB per non-spatial model.
 
-suppressPackageStartupMessages({
-  library(here)
-})
+if (!file.exists("DESCRIPTION")) {
+  stop("Run this script from the leafwax package root.")
+}
 
-heavy_dir <- here::here("inst", "extdata", "posteriors")
-light_dir <- here::here("inst", "extdata", "posteriors_light")
+heavy_dir <- file.path("inst", "extdata", "posteriors")
+light_dir <- file.path("inst", "extdata", "posteriors_light")
 n_keep <- 100L
 
 stopifnot(dir.exists(heavy_dir))

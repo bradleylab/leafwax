@@ -2,7 +2,7 @@
 #
 # GENERATED FILE - do not edit by hand.
 # Regenerate with: Rscript data-raw/generate_model_capabilities.R
-# Source of truth: leafwax_working/config.yaml (model_configs).
+# Source of truth: leafwax-spatial/config.yaml (model_configs).
 #
 # Per-model fitted capabilities, taken directly from the config flags that
 # drove each fit (include_c4/pft/gp/elevation/precip/veg_interactions). This

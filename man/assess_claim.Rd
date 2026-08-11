@@ -26,7 +26,8 @@ columns of equal length. \code{d2h_wax_err} is optional; defaults to
 Optional fields, used by higher levels:
 \code{sigma_analytical} (default 3),
 \code{rho_t} (default 0; from \code{estimate_temporal_autocorrelation()}),
-\code{beta_eff} (numeric scalar; required at Level 3+),
+\code{beta_eff} (numeric scalar in per mil wax per per mil precipitation;
+required at Level 3+),
 \code{confidence} (default 0.95),
 \code{magnitude_precip} (numeric, the precip-space magnitude the user
 asserts; required at Level 3+),

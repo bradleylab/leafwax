@@ -14,8 +14,8 @@ preview_tier_message <- function(model_name, n_draws, context = NULL) {
     "leafwax preview posteriors in use", ctx, ": ",
     n_draws, " draws of '", model_name, "'. ",
     "Tail probabilities and credible intervals are unstable at this sample ",
-    "size; not suitable for inference. The complete posterior deposit is not ",
-    "yet wired into this development build."
+    "size; not suitable for inference. Run download_model_data(\"",
+    model_name, "\") to install the verified complete posterior."
   )
 }
 
@@ -31,8 +31,8 @@ require_inference_tier <- function(tier, model_name, context,
   stop(
     "The bundled preview posterior", draw_text, " for '", model_name,
     "' is a code-path fixture and cannot be used by ", context,
-    ". Use a validated working checkout with the complete posterior deposit; ",
-    "public download wiring will be enabled after final validation.",
+    ". Run download_model_data(\"", model_name,
+    "\") to install the verified complete posterior.",
     call. = FALSE
   )
 }
@@ -52,8 +52,7 @@ warn_preview_tier <- function(model_name, n_draws, context = NULL) {
 # .onLoad seeds defaults; leafwax_config() and leafwax_set_config()
 # enumerate the same names without duplication.
 LEAFWAX_DEFAULTS <- list(
-  # Public chordal-posterior download wiring is deliberately unset until the
-  # coordinated data/package release passes final validation.
+  # Retained for compatibility; release URLs are read from data_urls.json.
   data_url = NULL,
 
   # Default cache directory (NULL means use rappdirs default)
@@ -95,7 +94,7 @@ LEAFWAX_DEFAULTS <- list(
     packageStartupMessage(
       "Welcome to leafwax!\n",
       "The bundled 100-draw posteriors are preview fixtures only.\n",
-      "Public full-posterior download wiring is pending final validation."
+      "Install complete posteriors in the package cache for inference."
     )
   } else if (has_cache && interactive()) {
     # Show cache status

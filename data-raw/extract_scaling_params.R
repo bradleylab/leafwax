@@ -1,26 +1,35 @@
 # data-raw/extract_scaling_params.R
 #
-# Pulls the standardization parameters used in v10 model fitting out of
-# the leafwax-spatial _prepared_data/ directory and ships them as
-# inst/extdata/scaling_params.rds so invert_d2H() can use them instead
-# of placeholder defaults.
+# Pulls the standardization parameters used in the reported chordal model fits
+# from the analysis run's _prepared_data/ directory and ships them as
+# inst/extdata/scaling_params.rds so invert_d2H() can use the exact fitted
+# standardization rather than refusing inference.
 #
-# All 14 model variants share an identical scaling_params list (verified
-# 2026-05-06). lat/lon means + SDs are computed from the latitude/longitude
-# arrays in stan_data because the v10 pipeline doesnt name them in
+# All 17 fitted configurations share an identical scaling_params list. Latitude and
+# longitude means and SDs are computed from the coordinate arrays in stan_data
+# because the fitting pipeline does not name them in
 # scaling_params (it stores coord_scaling = c(lon_sd, lat_sd) only and
 # subtracts the empirical means inline before kriging).
 #
 # Run from package root:
-#   Rscript data-raw/extract_scaling_params.R
+#   LEAFWAX_RUN_DIR=<analysis-run>/model_output \
+#     Rscript data-raw/extract_scaling_params.R
 
-V10_PREPARED_DIR <- "/Users/abradley/Desktop/proxy_uncertainty/leafwax_gca_working/results/c2_run_20260501/_prepared_data"
-PKG_ROOT         <- "/Users/abradley/Desktop/proxy_uncertainty/leafwax-pkg"
+MODEL_RUN_DIR    <- Sys.getenv("LEAFWAX_RUN_DIR", unset = "")
+PKG_ROOT         <- normalizePath(".", mustWork = TRUE)
+if (!file.exists(file.path(PKG_ROOT, "DESCRIPTION"))) {
+  stop("Run this script from the leafwax package root.")
+}
+if (!nzchar(MODEL_RUN_DIR)) {
+  stop("Set LEAFWAX_RUN_DIR to the chordal analysis run's model_output directory.")
+}
+MODEL_RUN_DIR    <- normalizePath(MODEL_RUN_DIR, mustWork = FALSE)
+PREPARED_DIR     <- file.path(MODEL_RUN_DIR, "_prepared_data")
 OUT_FILE         <- file.path(PKG_ROOT, "inst", "extdata", "scaling_params.rds")
 
-ref_file <- file.path(V10_PREPARED_DIR, "stan_data_full_sp.rds")
+ref_file <- file.path(PREPARED_DIR, "stan_data_full_sp.rds")
 if (!file.exists(ref_file)) {
-  stop("v10 prepared-data reference file not found: ", ref_file)
+  stop("Prepared-data reference file not found: ", ref_file)
 }
 
 ref <- readRDS(ref_file)
@@ -40,7 +49,7 @@ stopifnot(abs(sp$lon_sd - cs[1]) < 1e-6,
 
 # Cross-validate against all other stan_data files: scaling_params core
 # should be identical, and lat/lon stats should match (same input data).
-fns <- list.files(V10_PREPARED_DIR, "^stan_data_.*[.]rds$", full.names = TRUE)
+fns <- list.files(PREPARED_DIR, "^stan_data_.*[.]rds$", full.names = TRUE)
 core_fields <- c("d2H_mean", "d2H_sd", "oipc_mean", "oipc_sd",
                  "elev_mean", "elev_sd", "c4_mean", "c4_sd",
                  "precip_mean", "precip_sd")
@@ -56,10 +65,8 @@ cat("Cross-validated scaling_params across", length(fns), "stan_data files.\n")
 
 # Add lineage tag
 sp$.lineage <- list(
-  source       = "v10 (manuscript: bradleylab/leafwax-spatial @ 0621384)",
-  source_file  = ref_file,
-  source_mtime = format(file.info(ref_file)$mtime, "%Y-%m-%d %H:%M:%S %Z"),
-  extracted_on = format(Sys.time(), "%Y-%m-%d %H:%M:%S %Z")
+  source_fit = "2026-07-28 chordal-distance calibration fit",
+  reference_file = basename(ref_file)
 )
 
 saveRDS(sp, OUT_FILE, compress = "xz")

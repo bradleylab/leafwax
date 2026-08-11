@@ -22,7 +22,7 @@ A \code{leafwax_posterior} object: a list with \code{draws},
 "light"), optional \code{spatial}, and accessor closures.
 }
 \description{
-Loads posterior draws for one of the 14 leafwax v10 models. The
+Loads posterior draws for one of the 14 leafwax calibration models. The
 function searches three tiers in order:
 }
 \details{
@@ -40,10 +40,8 @@ sample size. The package warns when this tier is loaded, and inferential
 functions fail closed.
 }
 
-Public download wiring is disabled in the current development build until
-the coordinated chordal data release passes final validation. For current
-inference, use a validated working checkout containing the complete
-posterior deposit.
+Use \code{\link[=download_model_data]{download_model_data()}} once to populate the verified cache before
+inferential inversion from an installed package.
 }
 \examples{
 local({

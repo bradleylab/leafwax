@@ -1,9 +1,9 @@
 # R/detect_change.R - Within-record change detection for downcore
 # d2H_precip reconstructions.
 #
-# Phase C of the v0.2.0 paleo-record workflow. Implements the within-
-# record change-detection threshold from the manuscript Methods subsection
-# "Inversion and detection thresholds" and Supplementary Section S8.1.1, and
+# Implements the within-record change-detection threshold from the manuscript
+# Methods subsection "Inversion and detection thresholds" and Supplementary
+# Section S8.1.1, and
 # computes the posterior probability that delta-d2H_precip between two
 # stratigraphic intervals exceeds a user-supplied magnitude.
 
@@ -134,8 +134,9 @@ estimate_temporal_autocorrelation <- function(d2h_wax, age,
 #' @param rho_t Numeric, lag-1 temporal autocorrelation. Use
 #'   `estimate_temporal_autocorrelation()` to compute. Defaults to 0
 #'   (independent samples) with a message.
-#' @param beta_eff Numeric, the local effective slope. Use
-#'   `local_effective_slope()` for a point estimate (e.g., its median).
+#' @param beta_eff Numeric, the local effective slope in per mil wax per
+#'   per mil precipitation. Use `local_effective_slope()` for a point estimate
+#'   (e.g., its median).
 #' @param confidence Numeric in (0, 1), the confidence level for the
 #'   detection threshold. Default 0.95.
 #' @param magnitudes Optional numeric vector of magnitudes (per mil) to
@@ -217,7 +218,7 @@ detect_change <- function(reconstruction,
   }
   if (missing(beta_eff) || !is.numeric(beta_eff) || length(beta_eff) != 1L ||
       !is.finite(beta_eff) || abs(beta_eff) < .Machine$double.eps^0.5) {
-    stop("beta_eff must be a single non-zero finite numeric value")
+    stop("beta_eff must be a single non-zero finite numeric value in per mil wax per per mil precipitation")
   }
   if (!is.numeric(confidence) || length(confidence) != 1L ||
       !is.finite(confidence) || confidence <= 0 || confidence >= 1) {
