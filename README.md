@@ -18,17 +18,23 @@ closed because their complete new-site predictor basis is unavailable.
 
 ## Installation
 
-Install the development version from the public source repository.
+Version 0.4.0 is prepared as a source release. The CRAN update is managed
+separately from the manuscript release.
 
 The installed tarball ships a 100-draw "preview" fixture under
 `inst/extdata/posteriors_light/` so the package builds and tests
 without network access. The preview tier is for code-path
 verification only — tail probabilities and 95% intervals are noisy
 at 100 draws. Inferential inversion refuses this preview tier. Complete
-posteriors are required. The fitted-model files are publicly available in
-[`bradleylab/leafwax-data`](https://github.com/bradleylab/leafwax-data).
-Automatic download is disabled in development builds, so place the complete
-posterior files in the package cache or a validated development checkout.
+posteriors are required. After installing the release, download and verify the
+needed model once:
+
+```r
+download_model_data("baseline_sp")
+```
+
+The files come from the immutable v3.0.0 companion data release. Both byte size
+and SHA-256 are checked against its manifest before a file enters the cache.
 
 ## Quick start: single-point inversion
 
@@ -148,6 +154,21 @@ is unavailable. This is a reconstruction-interface boundary, not a claim that
 elevation was absent from the fitted calibration.
 
 Spatial models share a single 125-knot Fibonacci-sphere lattice.
+
+## Posterior-data reproducibility
+
+The companion `leafwax-data` release is the canonical source of complete
+posterior files. In a development checkout, synchronize and verify that exact
+file set, then regenerate the bundled preview fixtures:
+
+```bash
+LEAFWAX_DATA_DIR=../leafwax-data \
+  Rscript data-raw/sync_release_posteriors.R
+Rscript data-raw/regenerate_posteriors_light.R
+```
+
+The synchronization script validates every byte size and SHA-256 against the
+data-release manifest before replacing the checkout copies.
 
 ## Manuscript correspondence
 

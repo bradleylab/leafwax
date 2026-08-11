@@ -73,17 +73,24 @@ test_that("local_effective_slope: converts units without clipping posterior", {
     n_draws = 200, verbose = FALSE
   )
   model <- load_posteriors("baseline_sp", n_draws = 200, verbose = FALSE)
-  beta <- leafwax:::.model_slope_to_physical(
-    as.numeric(model$draws$beta_d2Hp), model$scaling
+  dual <- predict_spatial_dual_gp(
+    matrix(c(-90, 38), nrow = 1),
+    model$spatial$knot_locs,
+    model$draws,
+    model$scaling,
+    metric = model$metadata$spatial_metric
+  )
+  expected <- leafwax:::.model_slope_to_physical(
+    as.numeric(model$draws$beta_d2Hp) + as.numeric(dual$slope[, 1]),
+    model$scaling
   )
   # The function must not expose a `ceiling` argument that would
   # induce post-hoc modification of the draws.
   expect_false("ceiling" %in% names(formals(local_effective_slope)))
-  # Raw beta_d2Hp draws above 0.88 must propagate through the
-  # public API without being clipped.
-  if (any(beta > 0.88)) {
-    expect_true(any(s > 0.88))
-  }
+  # The local field may shift every draw below a mechanistic reference at a
+  # particular site. Compare to the complete hand calculation, not the global
+  # coefficient alone, to test that no clipping occurred.
+  expect_equal(s, expected, tolerance = 0)
 })
 
 test_that("slope unit conversions round trip exactly", {

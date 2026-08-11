@@ -2,6 +2,7 @@ cff-version: 1.2.0
 message: "If you use this software, cite the archived release and the associated manuscript."
 type: software
 title: "leafwax: spatially-aware paleo-precipitation reconstruction from leaf-wax hydrogen isotopes"
+version: "0.4.0"
 authors:
   - family-names: Bradley
     given-names: Alexander S.

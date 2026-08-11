@@ -105,9 +105,8 @@ normalise_posterior_names <- function(draws) {
 #'    sample size. The package warns when this tier is loaded, and inferential
 #'    functions fail closed.
 #'
-#' Automatic download is disabled in the current development build. For
-#' inference, use a validated working checkout containing the complete
-#' posterior deposit.
+#' Use [download_model_data()] once to populate the verified cache before
+#' inferential inversion from an installed package.
 #'
 #' @param model_name Character string specifying the model name.
 #' @param n_draws Integer number of posterior draws to use, or `NULL`
@@ -288,7 +287,7 @@ load_posteriors <- function(model_name, n_draws = NULL, verbose = TRUE) {
           length(scaling) - 1L, " fields)\n", sep = "")
     }
   } else if (verbose) {
-    cat("  No scaling_params.rds found; invert_d2H will fall back to placeholder defaults\n")
+    cat("  No scaling_params.rds found; Bayesian inversion will refuse inference\n")
   }
 
   # Create model object with helper functions

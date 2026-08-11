@@ -38,9 +38,9 @@ jobs:
 
           ok <- leafwax::download_model_data(
             "baseline_sp",
-            version = "v1.0.1",
+            version = "v3.0.0",
             overwrite = TRUE,
-            verify = FALSE,
+            verify = TRUE,
             verbose = TRUE
           )
           stopifnot(isTRUE(ok))
@@ -73,8 +73,11 @@ jobs:
             latitude = 38,
             model_name = "baseline_sp",
             slope = slope,
+            prior = leafwax::d2h_prior_normal(-70, 30),
             n_posterior_draws = 1000,
             return_full = TRUE,
+            n_inverse_samples = 1000,
+            seed = 20260810,
             verbose = FALSE
           )
           stopifnot(is.list(recon))

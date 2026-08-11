@@ -1,9 +1,7 @@
-# leafwax 0.3.0.9000
-
-Development version.
+# leafwax 0.4.0
 
 * Replaced ratio inversion with a likelihood-based Bayesian inversion over
-  paired calibration draws and a caller-specified proper prior.
+  paired calibration draws and a caller-specified reconstruction prior.
 * Multi-row records jointly reweight shared calibration draws and return
   explicit diagnostics for prior influence, slope sign, numerical integration,
   mixture effective sample size, and saved-draw stability.
@@ -18,10 +16,10 @@ Development version.
   overrides back to fitted-model units internally. This also puts
   `detect_change()` thresholds on a consistent physical scale.
 
-Posterior data update.
+Posterior data and integrity update.
 
-* Posteriors re-fit on the authoritative chordal analysis run
-  `c2_run_20260728_chordal` (n = 1128 calibration observations; Africa 142).
+* Posteriors were re-fit in the 2026-07-28 chordal-distance calibration
+  analysis (n = 1,128 calibration observations; Africa 142).
   All 14 model posteriors, the shipped 100-draw preview tier, and the
   spatial-model knot metadata were generated from this run.
 * Three interaction models changed their coefficient set to match the
@@ -29,8 +27,9 @@ Posterior data update.
   `beta_oipc_x_c4` interaction term (previously absent), while `full` and
   `full_sp` no longer carry `beta_oipc_x_c4` (retaining the plant-functional-type
   interactions `beta_oipc_x_grass`, `beta_oipc_x_shrub`, `beta_oipc_x_tree`).
-* The chordal posterior files are public in the companion data repository.
-  Automatic download is disabled in development builds.
+* Complete posterior files are distributed in companion data release v3.0.0.
+  `download_model_data()` verifies both file size and SHA-256 against the
+  immutable release manifest before a file enters the package cache.
 
 # leafwax 0.2.7
 

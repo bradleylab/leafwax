@@ -34,9 +34,8 @@ Logical indicating success
 }
 \description{
 Downloads model posterior draws from the release configured in
-\code{inst/extdata/data_urls.json}. Development builds fail closed while
-\code{release_ready} is false, preventing an older incompatible posterior deposit
-from being mixed with the current package.
+\code{inst/extdata/data_urls.json}. Downloads are accepted only when their byte
+size and SHA-256 checksum match the configured release manifest.
 }
 \examples{
 \dontrun{
@@ -45,7 +44,7 @@ ok <- download_model_data(
   "baseline",
   version = "latest",
   cache_dir = cache_dir,
-  verify = FALSE,
+  verify = TRUE,
   verbose = FALSE
 )
 \dontshow{unlink(cache_dir, recursive = TRUE, force = TRUE)}

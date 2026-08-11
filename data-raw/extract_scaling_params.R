@@ -2,10 +2,10 @@
 #
 # Pulls the standardization parameters used in the reported chordal model fits
 # from the analysis run's _prepared_data/ directory and ships them as
-# inst/extdata/scaling_params.rds so invert_d2H() can use them instead
-# of placeholder defaults.
+# inst/extdata/scaling_params.rds so invert_d2H() can use the exact fitted
+# standardization rather than refusing inference.
 #
-# All 14 model variants share an identical scaling_params list. Latitude and
+# All 17 fitted configurations share an identical scaling_params list. Latitude and
 # longitude means and SDs are computed from the coordinate arrays in stan_data
 # because the fitting pipeline does not name them in
 # scaling_params (it stores coord_scaling = c(lon_sd, lat_sd) only and
@@ -65,7 +65,7 @@ cat("Cross-validated scaling_params across", length(fns), "stan_data files.\n")
 
 # Add lineage tag
 sp$.lineage <- list(
-  source_run = basename(dirname(MODEL_RUN_DIR)),
+  source_fit = "2026-07-28 chordal-distance calibration fit",
   reference_file = basename(ref_file)
 )
 

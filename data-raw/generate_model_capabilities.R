@@ -6,15 +6,17 @@
 # interaction models (config: include_veg_interactions = false) and hardcoded
 # has_elevation = FALSE. This manifest replaces that guesswork with the config.
 #
-# Run from the package root (with the analysis repo colocated):
-#   Rscript data-raw/generate_model_capabilities.R
+# Run from the package root:
+#   LEAFWAX_ANALYSIS_DIR=../leafwax-spatial \
+#     Rscript data-raw/generate_model_capabilities.R
 
 library(yaml)
 
-cfg_path <- "../leafwax_working/config.yaml"
+analysis_dir <- Sys.getenv("LEAFWAX_ANALYSIS_DIR", unset = "../leafwax-spatial")
+cfg_path <- file.path(analysis_dir, "config.yaml")
 if (!file.exists(cfg_path)) {
-  stop("config.yaml not found at '", cfg_path, "'. Run from the leafwax-pkg root ",
-       "with the leafwax_working analysis repo colocated.")
+  stop("Analysis config not found at '", cfg_path,
+       "'. Set LEAFWAX_ANALYSIS_DIR to the leafwax-spatial checkout.")
 }
 cfg <- yaml::read_yaml(cfg_path)
 mc <- cfg$model_configs
@@ -55,7 +57,7 @@ header <- c(
   "#",
   "# GENERATED FILE - do not edit by hand.",
   "# Regenerate with: Rscript data-raw/generate_model_capabilities.R",
-  "# Source of truth: leafwax_working/config.yaml (model_configs).",
+  "# Source of truth: leafwax-spatial/config.yaml (model_configs).",
   "#",
   "# Per-model fitted capabilities, taken directly from the config flags that",
   "# drove each fit (include_c4/pft/gp/elevation/precip/veg_interactions). This",
