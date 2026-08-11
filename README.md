@@ -33,8 +33,10 @@ needed model once:
 download_model_data("baseline_sp")
 ```
 
-The files come from the immutable v3.0.0 companion data release. Both byte size
-and SHA-256 are checked against its manifest before a file enters the cache.
+The files come from the immutable
+[v3.0.0 companion data release](https://doi.org/10.5281/zenodo.21880665).
+Both byte size and SHA-256 are checked against its manifest before a file enters
+the cache.
 
 ## Quick start: single-point inversion
 

@@ -27,7 +27,8 @@ Posterior data and integrity update.
   `beta_oipc_x_c4` interaction term (previously absent), while `full` and
   `full_sp` no longer carry `beta_oipc_x_c4` (retaining the plant-functional-type
   interactions `beta_oipc_x_grass`, `beta_oipc_x_shrub`, `beta_oipc_x_tree`).
-* Complete posterior files are distributed in companion data release v3.0.0.
+* Complete posterior files are distributed in companion data release v3.0.0
+  (doi:10.5281/zenodo.21880665).
   `download_model_data()` verifies both file size and SHA-256 against the
   immutable release manifest before a file enters the package cache.
 

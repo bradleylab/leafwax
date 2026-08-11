@@ -281,11 +281,17 @@ test_that("preview fixtures fail closed at inferential boundaries", {
   )
 })
 
-test_that("development build does not route downloads to an older release", {
-  expect_error(
-    get_data_url("baseline", "latest"),
-    "disabled in this development build"
+test_that("downloads resolve to the immutable v3 posterior release", {
+  urls <- get_data_url("baseline", "latest")
+  expect_equal(length(urls), 1L)
+  expect_equal(
+    urls[[1]]$url,
+    paste0(
+      "https://raw.githubusercontent.com/bradleylab/leafwax-data/",
+      "v3.0.0/baseline_posterior.rds"
+    )
   )
+  expect_equal(get_url_config()$version_doi, "10.5281/zenodo.21880665")
 })
 
 test_that("ensemble and comparison APIs have no implicit scientific defaults", {

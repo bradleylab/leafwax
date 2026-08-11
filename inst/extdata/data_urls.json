@@ -1,9 +1,9 @@
 {
-  "release_ready": false,
+  "release_ready": true,
   "version": "3.0.0",
   "release_tag": "v3.0.0",
   "concept_doi": "10.5281/zenodo.20085465",
-  "version_doi": null,
+  "version_doi": "10.5281/zenodo.21880665",
   "base_url_latest": "https://raw.githubusercontent.com/bradleylab/leafwax-data/v3.0.0",
   "base_url_version": "https://raw.githubusercontent.com/bradleylab/leafwax-data/{version}",
   "manifest_url": "https://raw.githubusercontent.com/bradleylab/leafwax-data/v3.0.0/manifest.json",
@@ -25,7 +25,7 @@
     "full_interact_sp":         { "filename": "full_interact_sp_posterior.rds" }
   },
   "notes": {
-    "status": "Download activation requires the immutable v3.0.0 data tag and its archived release identifier.",
+    "status": "Downloads are verified against the immutable v3.0.0 release manifest.",
     "data_repository": "https://github.com/bradleylab/leafwax-data"
   }
 }
